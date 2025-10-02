@@ -13,6 +13,7 @@ src/main/resources
 *.iws
 *.iml
 *.ipr
+.idea
 
 ### Eclipse ###
 .apt_generated
