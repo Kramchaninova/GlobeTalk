@@ -20,10 +20,10 @@ public class Token {
     }
 
     /**
-     * Загружает токен бота из файла tocken.txt в ресурсах
+     * Загружает токен бота из файла TOKEN.txt в ресурсах
      */
     public void load() {
-        String fileName = "src/main/resources/token.txt";
+        String fileName = "src/main/resources/TOKEN.txt";
 
         try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
             token = reader.readLine();

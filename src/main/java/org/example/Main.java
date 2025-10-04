@@ -23,13 +23,10 @@ public class Main {
      *
      * @param botToken токен аутентификации для Telegram Bot API
      */
-    public void startBot(String botToken) {
+    public void startBotInTg(String botToken) {
         // Использование try-with-resources для автоматического управления ресурсами
         // TelegramBotsLongPollingApplication обрабатывает входящие обновления с серверов Telegram
         try (TelegramBotsLongPollingApplication botsApplication = new TelegramBotsLongPollingApplication()) {
-
-            // Регистрация команд бота в меню Telegram
-            registerBotCommands(botToken);
 
             // Создание экземпляра бота с предоставленным токеном
             Bot bot = new Bot(botToken);
@@ -52,44 +49,6 @@ public class Main {
     }
 
     /**
-     * Регистрирует команды бота в меню Telegram
-     *
-     * @param botToken токен аутентификации для Telegram Bot API
-     */
-    private void registerBotCommands(String botToken) {
-        try {
-            List<BotCommand> commands = new ArrayList<>();
-
-            // Добавление команд (без символа '/', так как это формальный признак команды для бота)
-            commands.add(new BotCommand("start", "начать работу с ботом"));
-            commands.add(new BotCommand("help", "справка по командам"));
-
-            // OkHttpTelegramClient - реализация клиента для взаимодействия с Telegram API
-            OkHttpTelegramClient client = new OkHttpTelegramClient(botToken);
-
-            // SetMyCommands - метод Telegram Bot API для настройки команд бота
-            SetMyCommands setCommands = SetMyCommands.builder() // Создание меню команд
-                    .commands(commands)          // Передача списка команд
-                    .scope(new BotCommandScopeDefault()) // Область видимости (все чаты)
-                    .build(); // Финальное создание объекта
-
-            // Отправка команд на сервер Telegram (execute возвращает boolean)
-            client.execute(setCommands);
-
-            // Отчет в терминал об успешной регистрации команд
-            System.out.println("Команды зарегистрированы");
-
-        } catch (Exception e) {
-            // Обработка ошибок при регистрации команд
-            System.err.println("Ошибка регистрации команд: " + e.getMessage());
-
-            // e - объект исключения
-            // printStackTrace() - метод для вывода подробной информации об ошибке в консоль
-            e.printStackTrace();
-        }
-    }
-
-    /**
      * Главный метод приложения
      * Загружает токен бота и запускает его
      *
@@ -100,6 +59,6 @@ public class Main {
         token.load();
         String botToken = token.get();
         Main mainInstance = new Main();
-        mainInstance.startBot(botToken);
+        mainInstance.startBotInTg(botToken);
     }
 }
