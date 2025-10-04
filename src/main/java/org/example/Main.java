@@ -1,14 +1,6 @@
 package org.example;
 
 import org.telegram.telegrambots.longpolling.TelegramBotsLongPollingApplication;
-import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
-import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
-import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScopeDefault;
-
-import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Главный класс для запуска и настройки Telegram бота
