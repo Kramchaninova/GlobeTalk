@@ -5,29 +5,29 @@ import java.io.FileReader;
 import java.io.IOException;
 
 /**
- * Класс для загрузки и хранения токена бота из TG из файла.
+ * Класс для загрузки и хранения токена OpenRouter (для подключении ии) и из файла.
  * Обеспечивает безопасное чтение токена из текстового файла.
  *
  */
-public class Token {
-    String token = "";
+public class Token_Openrouter {
+    String token_openrouter = "";
 
     /**
      * Возвращает текущий токен бота
      */
     public String get() {
-        return token;
+        return token_openrouter ;
     }
 
     /**
      * Загружает токен бота из файла TOKEN.txt в ресурсах
      */
     public void load() {
-        String fileName = "src/main/resources/TOKEN.txt";
+        String fileName = "src/main/resources/TOKEN_OPENROUTER.txt";
 
         try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
-            token = reader.readLine();
-            System.out.println("Токен загружен TG");
+            token_openrouter  = reader.readLine();
+            System.out.println("Токен Openrouter загружен");
         } catch (IOException e) {
             e.printStackTrace();
         }

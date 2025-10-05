@@ -38,7 +38,11 @@ public class Main {
             // Обработка исключений, возникающих во время работы бота
             e.printStackTrace();
         }
+
+
+
     }
+
 
     /**
      * Главный метод приложения
@@ -50,7 +54,12 @@ public class Main {
         Token token = new Token();
         token.load();
         String botToken = token.get();
+
         Main mainInstance = new Main();
+        //запуск бота
         mainInstance.startBotInTg(botToken);
+
+
+
     }
 }

@@ -35,6 +35,8 @@ public class Bot implements LongPollingSingleThreadUpdateConsumer {
         this.telegramClient = new OkHttpTelegramClient(botToken);
         //закидываем клиенрта в стартбот
         this.startBot = new StartBot(telegramClient);
+
+
         registerBotCommands();
     }
 

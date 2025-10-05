@@ -16,13 +16,15 @@ import java.util.List;
 
 public class StartBot {
     private final TelegramClient telegramClient;
-
-
     public StartBot(TelegramClient telegramClient) {
         this.telegramClient = telegramClient;
     }
 
-
+    /**
+     * startTest - метод привествия, те после нажания команды /start сдоровается и высылает кнопками варианты ответов
+     * @param chatId
+     * @return
+     */
     public SendMessage startTest(long chatId) {
 
         SendMessage message = SendMessage.builder()
@@ -74,16 +76,21 @@ public class StartBot {
     public SendMessage HandleButtonClick(String callbackData, long chatId){
         switch (callbackData){
             case "yes_button":
-                //присобачить сюда ии
-                //ии в отдельный класс и для каждого вопроса из теста свои кнопки
-                //тест в отдельный класс, чтобы на отложенных сообщений и на скорость
-                // вызывать одно и то же
+                //ВНИАМНИЕ: тут класс создания и генерирования ответов
 
+                //создаем экземпляр класса StartYesButton
+                StartYesButton testGeneration = new StartYesButton();
+                // генерация теста и возвращение его
+                String test = testGeneration.getGeneratedTest();
 
-                //ниже чисто для проверки
+                System.out.println("Сгенерированный тест:");
+                System.out.println(test);
+
+                // временное возвращение (часть ники), тут потом будет метод который будет высылать сообщения потоком
+                // вместо с кнопками
                 return SendMessage.builder()
                         .chatId(chatId)
-                        .text("ПОГНАЛИ\n\n")
+                        .text("ПОГНАЛИИИ!!!\n\n")
                         .build();
 
 
@@ -91,7 +98,7 @@ public class StartBot {
                 return SendMessage.builder()
                         .chatId(chatId)
                         .text("Не сомневайтесь в себе!!!\n\n"+
-                                "Когда будете готовы используйте /start"+
+                                "Когда будете готовы используйте /start.\n\n"+
                                 "Для списка команд нажмите /help.\n\n")
                         .build();
             default:
