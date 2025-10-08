@@ -1,13 +1,12 @@
 
 package org.example;
 
-import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
-import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
+import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
 import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScopeDefault;
-import org.telegram.telegrambots.meta.generics.TelegramClient;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,53 +16,58 @@ import java.util.List;
  * Bot.java - основной класс бота, реализующий интерфейс для получения обновлений
  * Обрабатывает текстовые команды и кнопки, возвращая ответы пользователю.т
  */
-public class Bot implements LongPollingSingleThreadUpdateConsumer {
+public class Bot extends TelegramLongPollingBot  {
 
-    private final TelegramClient telegramClient;
+    private final String botToken;
+    private final String botUsername;
     private final LogicBot logicBot;
 
-    public Bot(String botToken) {
-        this.telegramClient = new OkHttpTelegramClient(botToken);
-        this.logicBot = new LogicBot(botToken);
+    public Bot(String botToken, String botUsername) {
+        super(botToken); //супер вызывает конструктор родительского класс лонгполинг (выше)
+        this.botToken = botToken;
+        this.botUsername = botUsername;
+        this.logicBot = new LogicBot(this);
         registerBotCommands();
     }
 
     @Override
-    public void consume(Update update){
+    public String getBotUsername() {
+        return botUsername;
+    }
+
+    @Override
+    public String getBotToken() {
+        return botToken;
+    }
+
+
+    @Override
+    public void onUpdateReceived(Update update){
         // передаем все обновления в LogicBot для обработки
         logicBot.processUpdate(update);
     }
 
     /**
-     * Регистрирует команды бота в меню Telegram, боковое меню
+     * регистрируем команды бота в боковом меню Telegram
      */
     public void registerBotCommands() {
         try {
             List<BotCommand> commands = new ArrayList<>();
 
-            // Добавление команд (без символа '/', так как это формальный признак команды для бота)
+            // добавление команд (без символа '/', так как это формальный признак команды для бота)
             commands.add(new BotCommand("start", "начать работу с ботом"));
             commands.add(new BotCommand("help", "справка по командам"));
 
+            //esecute - способ отправки запроса к телеграм апи
+            execute(SetMyCommands.builder()
+                    .commands(commands) //передача списка комаед
+                    .scope(new BotCommandScopeDefault()) //scope - область видимости, а вторая после нью типо всем
+                    .build());
 
-            // SetMyCommands - метод Telegram Bot API для настройки команд бота
-            SetMyCommands setCommands = SetMyCommands.builder() // Создание меню команд
-                    .commands(commands)          // Передача списка команд
-                    .scope(new BotCommandScopeDefault()) // Область видимости (все чаты)
-                    .build(); // Финальное создание объекта
-
-            //Проверка на отправку запроса
-            boolean success = telegramClient.execute(setCommands);
-
-            if (success) {
-                System.out.println("Команды бота успешно зарегистрированы");
-            } else {
-                System.err.println("Не удалось зарегистрировать команды бота");
-            }
-
-        } catch (Exception e) {
-            System.err.println("Ошибка регистрации команд: " + e.getMessage());
-            e.printStackTrace();
+            System.out.println("команды зарегестрированы в боковом меню");
+        } catch (TelegramApiException e) {
+            System.err.println("ошибка регистрации команд: " + e.getMessage());
         }
     }
+
 }

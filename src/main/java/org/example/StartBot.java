@@ -3,8 +3,6 @@ package org.example;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
-import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,10 +13,6 @@ import java.util.List;
  */
 
 public class StartBot {
-    private final TelegramClient telegramClient;
-    public StartBot(TelegramClient telegramClient) {
-        this.telegramClient = telegramClient;
-    }
 
     /**
      * startTest - метод привествия, те после нажания команды /start сдоровается и высылает кнопками варианты ответов
@@ -35,13 +29,6 @@ public class StartBot {
                         "Вы готовы начать тест?\n\n")
                 .build();
 
-        //была ошибка, в новой версии нет конструктора по умолчанию
-        InlineKeyboardMarkup markupInLine = new InlineKeyboardMarkup(new ArrayList<>());
-        //список списков в котором хрянтся кнопки
-        //читаем все оч внимательно: первая строка rowS, а вторая row
-        List<InlineKeyboardRow> rowsInline  = new ArrayList<>();
-        InlineKeyboardRow rowInline = new InlineKeyboardRow();
-
         //уже создаем непосредственно кнопки
         // тоже нет конструктора надо делать как выше
         InlineKeyboardButton yes_button = InlineKeyboardButton.builder()
@@ -54,14 +41,22 @@ public class StartBot {
                 .callbackData("no_button")
                 .build();
 
+        //список где кнопки хранятся грубо говоря в строку
+        List<InlineKeyboardButton> rowInline  = new ArrayList<>();
+
         //добавляем уже кнопки ряд
         rowInline.add(yes_button); //эта будет слева
         rowInline.add(no_button); //эта будет справа
 
-        rowsInline.add(rowInline);
-        markupInLine.setKeyboard(rowsInline);
+        //список списков то же самое что и в строку только еще на столбцы разделили
+        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+        keyboard.add(rowInline);
 
-        message.setReplyMarkup(markupInLine);
+        // создаём разметку клавиатуры и добавляем в сообщение
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        markup.setKeyboard(keyboard);
+        message.setReplyMarkup(markup);
+
         return message;
 
     }
