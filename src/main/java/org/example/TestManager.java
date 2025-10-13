@@ -16,16 +16,18 @@ import java.util.regex.Pattern;
  */
 public class TestManager {
 
-    // Храним тесты, ответы, индексы и баллы для каждого пользователя
-    private static final Map<Long, List<SendMessage>> currentTests = new HashMap<>();
+    // Храним как строки тесты, ответы, индексы и баллы для каждого пользователя
+    private static final Map<Long, List<String>> currentTests = new HashMap<>();
     private static final Map<Long, List<String>> correctAnswers = new HashMap<>();
     private static final Map<Long, Integer> currentIndexes = new HashMap<>();
     private static final Map<Long, Integer> scoreMap = new HashMap<>();
 
+    private static final String ANSWER_ERROR = "Не удалось распознать вопросы в тесте.";
+    private static final String AGAIN_TEST= "Сначала начните тест командой /start.";
     /**
      * Генерация списка вопросов и правильных ответов из текста теста
      */
-    public static SendMessage generateTest(long chatId, String test) {
+    public static String generateTest(long chatId, String test) {
         Pattern pattern = Pattern.compile(
                 "(\\d+)\\s*\\((\\d+)\\s*p?o?i?n?t?s?\\)\\s*\\n" +
                         "(.+?)\\n" +
@@ -38,7 +40,7 @@ public class TestManager {
         );
 
         Matcher matcher = pattern.matcher(test);
-        List<SendMessage> questions = new ArrayList<>();
+        List<String> questions = new ArrayList<>();
         List<String> answers = new ArrayList<>();
 
         // Обрабатываем каждый вопрос из сгенерированного теста:
@@ -53,26 +55,19 @@ public class TestManager {
             String answerD = matcher.group(7);
             String correctAnswer = matcher.group(8).trim();
 
-            SendMessage message = SendMessage.builder()
-                    .chatId(chatId)
-                    .text(number + " (" + points + " points)\n\n" +
-                            question + "\n\n" +
-                            answerA + "\n" +
-                            answerB + "\n" +
-                            answerC + "\n" +
-                            answerD)
-                    .build();
+            String questionText = number + " (" + points + " points)\n\n" +
+                    question + "\n\n" +
+                    answerA + "\n" +
+                    answerB + "\n" +
+                    answerC + "\n" +
+                    answerD;
 
-            message.setReplyMarkup(createAnswerKeyboard());
-            questions.add(message);
+            questions.add(questionText);
             answers.add(correctAnswer);
         }
 
         if (questions.isEmpty()) {
-            return SendMessage.builder()
-                    .chatId(chatId)
-                    .text("Не удалось распознать вопросы в тесте.")
-                    .build();
+            return ANSWER_ERROR;
         }
 
         currentTests.put(chatId, questions);
@@ -86,12 +81,9 @@ public class TestManager {
     /**
      * Обработка нажатий на кнопки A/B/C/D
      */
-    public static SendMessage handleAnswer(String callbackData, long chatId) {
+    public static String handleAnswer(String callbackData, long chatId) {
         if (!currentTests.containsKey(chatId)) {
-            return SendMessage.builder()
-                    .chatId(chatId)
-                    .text("Сначала начните тест командой /start.")
-                    .build();
+            return AGAIN_TEST;
         }
 
         // Определяем выбранную букву
@@ -101,7 +93,7 @@ public class TestManager {
         int score = scoreMap.get(chatId);
 
         // Получаем количество баллов за этот вопрос из текста
-        String questionText = currentTests.get(chatId).get(index).getText();
+        String questionText = currentTests.get(chatId).get(index);
         Pattern pointPattern = Pattern.compile("\\((\\d+)\\s*p?o?i?n?t?s?\\)");
         Matcher pointMatcher = pointPattern.matcher(questionText);
         int pointsForQuestion = 1;
@@ -117,14 +109,14 @@ public class TestManager {
 
         // Переход к следующему вопросу
         index++;
-        List<SendMessage> questions = currentTests.get(chatId);
+        List<String> questions = currentTests.get(chatId);
 
         if (index >= questions.size()) {
             // Подсчёт общей суммы баллов
             int totalPoints = 0;
             Pattern totalPointPattern = Pattern.compile("\\((\\d+)\\s*p?o?i?n?t?s?\\)");
-            for (SendMessage q : questions) {
-                Matcher m = totalPointPattern.matcher(q.getText());
+            for (String q : questions) {
+                Matcher m = totalPointPattern.matcher(q);
                 if (m.find()) {
                     totalPoints += Integer.parseInt(m.group(1));
                 }
@@ -138,12 +130,9 @@ public class TestManager {
             correctAnswers.remove(chatId);
             scoreMap.remove(chatId);
 
-            return SendMessage.builder()
-                    .chatId(chatId)
-                    .text("Тест завершён!\n\n" +
+            return "Тест завершён!\n\n" +
                             "Вы набрали " + earnedPoints + " баллов из " + totalPoints + " возможных.\n\n" +
-                            "Отличная работа!")
-                    .build();
+                            "Отличная работа!";
         }
 
         currentIndexes.put(chatId, index);
@@ -176,5 +165,11 @@ public class TestManager {
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(keyboard);
         return markup;
+    }
+
+    public static boolean isTestActive(long chatId) {
+        return currentTests.containsKey(chatId) &&
+                currentIndexes.containsKey(chatId) &&
+                currentIndexes.get(chatId) < currentTests.get(chatId).size();
     }
 }

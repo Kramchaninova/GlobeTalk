@@ -1,6 +1,5 @@
 package org.example;
 
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
@@ -12,21 +11,33 @@ import java.util.*;
  */
 
 public class StartBot {
+
+    private static final String START_MESSAGE = "Вас приветствует телеграмм бот GlobeTalk для изучения иностранных языков!\n\n" +
+            "Перед началом обучения, пройдите короткий тестик для определения вашего уровня владения языка.\n\n" +
+            "Для списка команд нажмите /help.\n\n"+
+            "Вы готовы начать тест?\n\n";
+
+    private static final String NO_BUTTON_CLICK = "Не сомневайтесь в себе!!!\n\n"+
+            "Когда будете готовы используйте /start.\n\n"+
+            "Для списка команд нажмите /help.\n\n";
+
+    private static final String UNKNOWN_CLICK = "Неизвестная команда";
+
     /**
      * startTest - метод привествия, те после нажания команды /start сдоровается и высылает кнопками варианты ответов
      * @param chatId
      * @return
      */
-    public SendMessage startTest(long chatId) {
+    public String startTest( long chatId){
+        return START_MESSAGE;
+    }
 
-        SendMessage message = SendMessage.builder()
-                .chatId(chatId)
-                .text("Вас приветствует телеграмм бот GlobeTalk для изучения иностранных языков!\n\n" +
-                        "Перед началом обучения, пройдите короткий тестик для определения вашего уровня владения языка.\n\n" +
-                        "Для списка команд нажмите /help.\n\n"+
-                        "Вы готовы начать тест?\n\n")
-                .build();
-
+    /**
+     * createStartButton - метод создания кнопок в стартовом сообщении
+     * @param chatId
+     * @return
+     */
+    public InlineKeyboardMarkup createStartButton(long chatId) {
         //уже создаем непосредственно кнопки
         // тоже нет конструктора надо делать как выше
         InlineKeyboardButton yes_button = InlineKeyboardButton.builder()
@@ -53,9 +64,7 @@ public class StartBot {
         // создаём разметку клавиатуры и добавляем в сообщение
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(keyboard);
-        message.setReplyMarkup(markup);
-
-        return message;
+        return markup;
 
     }
 
@@ -65,7 +74,7 @@ public class StartBot {
      * @param chatId
      * @return
      */
-    public SendMessage HandleButtonClick(String callbackData, long chatId){
+    public String handleButtonClick(String callbackData, long chatId){
         switch (callbackData){
             case "A_button":
             case "B_button":
@@ -85,28 +94,19 @@ public class StartBot {
 
             }
 
-
-
             case "no_button":
-                return SendMessage.builder()
-                        .chatId(chatId)
-                        .text("Не сомневайтесь в себе!!!\n\n"+
-                                "Когда будете готовы используйте /start.\n\n"+
-                                "Для списка команд нажмите /help.\n\n")
-                        .build();
+                return NO_BUTTON_CLICK;
             default:
-                return SendMessage.builder()
-                        .chatId(chatId)
-                        .text("Неизвестная команда")
-                        .build();
+                return UNKNOWN_CLICK;
         }
     }
 
     /**
+     * createAnswerKeyboard - метод, который создает кнопки для ответов на вопросы
      * Клавиатура с ответами A-D
      */
 
-    private InlineKeyboardMarkup createAnswerKeyboard() {
+    public InlineKeyboardMarkup createAnswerKeyboard() {
         InlineKeyboardButton a = InlineKeyboardButton.builder()
                 .text("A")
                 .callbackData("A_button")

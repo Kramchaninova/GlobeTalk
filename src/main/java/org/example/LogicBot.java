@@ -6,9 +6,9 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 
 
-/** LogicBot - класс для обработки логики бота.
+/**
+ * LogicBot - класс для обработки логики бота.
  * обрабатывает входящие сообщения, команды и callback запросы от кнопок
- *
  */
 
 
@@ -34,7 +34,8 @@ public class LogicBot {
 
 
 
-    /**метод обаботки входящий обновлений (сообщений) и нажание кнопок
+    /**
+     * processUpdate - метод обаботки входящий обновлений (сообщений) и нажание кнопок
      * @param update
      */
     public void processUpdate(Update update) {
@@ -45,7 +46,28 @@ public class LogicBot {
                 String callbackData = update.getCallbackQuery().getData();
                 long chatId = update.getCallbackQuery().getMessage().getChatId();
 
-                SendMessage message = startBot.HandleButtonClick(callbackData, chatId);
+                String responseText = startBot.handleButtonClick(callbackData, chatId);
+
+                SendMessage message = SendMessage.builder()
+                        .chatId(chatId)
+                        .text(responseText)
+                        .build();
+
+                //добавила реакции на сообщения и метод isTestActive, тк если этого не сделать
+                //все следующии сообщения псоле кнопки yes_button будут идти с 4мя кнопками
+                if (callbackData.equals("yes_button")){
+                    message.setReplyMarkup(startBot.createAnswerKeyboard());
+                }else if (callbackData.equals("A_button") ||
+                        callbackData.equals("B_button") ||
+                        callbackData.equals("C_button") ||
+                        callbackData.equals("D_button")) {
+                    if (TestManager.isTestActive(chatId)) {
+                            message.setReplyMarkup(startBot.createAnswerKeyboard());
+                        }
+                } else if (callbackData.equals("no_button")) {
+                    message.setReplyMarkup(startBot.createStartButton(chatId));
+                }
+
                 bot.execute(message);
             }
             //это уже чисто для команд
@@ -55,8 +77,18 @@ public class LogicBot {
 
 
                 if (messageText.startsWith("/")) {
-                    SendMessage responce = handleCommand(messageText, chatId);
-                    if (responce!=null) bot.execute(responce);
+                    String responseText = handleCommand(messageText, chatId);
+                    if (responseText != null) {
+                        SendMessage response = SendMessage.builder()
+                                .chatId(chatId)
+                                .text(responseText)
+                                .build();
+                        if (messageText.equals("/start")) {
+                            response.setReplyMarkup(startBot.createStartButton(chatId));
+                        }
+
+                        bot.execute(response);
+                    }
                 }
             }
         } catch (TelegramApiException e){
@@ -68,9 +100,7 @@ public class LogicBot {
      * Если в сообщении была команда, т.е. текст начинается с /, то обрабатываем ее
      *и высылаем текст, который привязан к командам
      */
-    private SendMessage handleCommand(String command, long chatId) {
-        String responseText;
-
+    public String handleCommand(String command, long chatId) {
         switch (command) {
             case "/start":
                 /** StartBot - отельный класс для реализации старта бота
@@ -78,19 +108,12 @@ public class LogicBot {
                  */
                 return startBot.startTest(chatId);
 
-
             case "/help":
-                responseText = COMMAND_HELP;
-                break;
+                return COMMAND_HELP;
 
             default:
-                responseText = COMMAND_UNKNOWN;
-                break;
+                return COMMAND_UNKNOWN;
         }
 
-        return SendMessage.builder()
-                .chatId(chatId)
-                .text(responseText)
-                .build();
     }
 }

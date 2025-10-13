@@ -26,7 +26,8 @@ public class StartYesButton {
      */
     public String getGeneratedTest() {
         try {
-            // Загружаем API ключ через Token_Openrouter
+            // загружаем API ключ через Token_Openrouter, ОЧЕНЬ ВАЖНО: мы работаем не напрямую с гпт
+            //Опен Роутер - это "лпатформа-посредник"
             Token_Openrouter token_openrouter = new Token_Openrouter();
             token_openrouter.load();
 

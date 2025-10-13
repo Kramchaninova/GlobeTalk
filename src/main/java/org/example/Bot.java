@@ -48,7 +48,7 @@ public class Bot extends TelegramLongPollingBot  {
     }
 
     /**
-     * регистрируем команды бота в боковом меню Telegram
+     * registerBotCommands - регистрирует команды бота в боковом меню Telegram
      */
     public void registerBotCommands() {
         try {
