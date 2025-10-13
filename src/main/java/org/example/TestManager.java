@@ -10,17 +10,18 @@ import java.util.regex.Pattern;
 
 /**
  * TestManager.java — класс для обработки и хранения логики теста:
- *  - парсинг текста теста;
- *  - создание сообщений с вопросами и кнопками;
- *  - подсчёт баллов и переход между вопросами.
+ * - парсинг текста теста;
+ * - создание сообщений с вопросами и кнопками;
+ * - подсчёт баллов и переход между вопросами.
  */
 public class TestManager {
 
-    // Храним тесты, ответы, индексы и баллы для каждого пользователя
+    // Храним тесты, ответы, индексы, баллы, общее кол-во баллов для каждого пользователя
     private static final Map<Long, List<SendMessage>> currentTests = new HashMap<>();
     private static final Map<Long, List<String>> correctAnswers = new HashMap<>();
     private static final Map<Long, Integer> currentIndexes = new HashMap<>();
     private static final Map<Long, Integer> scoreMap = new HashMap<>();
+    private static final Map<Long, List<Integer>> questionPoints = new HashMap<>();
 
     /**
      * Генерация списка вопросов и правильных ответов из текста теста
@@ -40,6 +41,7 @@ public class TestManager {
         Matcher matcher = pattern.matcher(test);
         List<SendMessage> questions = new ArrayList<>();
         List<String> answers = new ArrayList<>();
+        List<Integer> pointsList = new ArrayList<>();
 
         // Обрабатываем каждый вопрос из сгенерированного теста:
         // извлекаем номер, баллы, текст вопроса, варианты ответов и правильный ответ.
@@ -55,8 +57,7 @@ public class TestManager {
 
             SendMessage message = SendMessage.builder()
                     .chatId(chatId)
-                    .text(number + " (" + points + " points)\n\n" +
-                            question + "\n\n" +
+                    .text(question + "\n\n" +
                             answerA + "\n" +
                             answerB + "\n" +
                             answerC + "\n" +
@@ -66,6 +67,7 @@ public class TestManager {
             message.setReplyMarkup(createAnswerKeyboard());
             questions.add(message);
             answers.add(correctAnswer);
+            pointsList.add(Integer.parseInt(points));
         }
 
         if (questions.isEmpty()) {
@@ -79,6 +81,7 @@ public class TestManager {
         correctAnswers.put(chatId, answers);
         currentIndexes.put(chatId, 0);
         scoreMap.put(chatId, 0);
+        questionPoints.put(chatId, pointsList);
 
         return questions.get(0);
     }
@@ -121,14 +124,7 @@ public class TestManager {
 
         if (index >= questions.size()) {
             // Подсчёт общей суммы баллов
-            int totalPoints = 0;
-            Pattern totalPointPattern = Pattern.compile("\\((\\d+)\\s*p?o?i?n?t?s?\\)");
-            for (SendMessage q : questions) {
-                Matcher m = totalPointPattern.matcher(q.getText());
-                if (m.find()) {
-                    totalPoints += Integer.parseInt(m.group(1));
-                }
-            }
+            int totalPoints = questionPoints.get(chatId).stream().mapToInt(Integer::intValue).sum();
 
             int earnedPoints = scoreMap.get(chatId);
 
@@ -137,13 +133,34 @@ public class TestManager {
             currentIndexes.remove(chatId);
             correctAnswers.remove(chatId);
             scoreMap.remove(chatId);
+            questionPoints.remove(chatId);
 
-            return SendMessage.builder()
-                    .chatId(chatId)
-                    .text("Тест завершён!\n\n" +
-                            "Вы набрали " + earnedPoints + " баллов из " + totalPoints + " возможных.\n\n" +
-                            "Отличная работа!")
-                    .build();
+            if (earnedPoints <= 6) {
+                return SendMessage.builder()
+                        .chatId(chatId)
+                        .text("Тест завершён!\n\n" +
+                                "Вы набрали " + earnedPoints + " баллов из " + totalPoints + " возможных.\n" +
+                                "Вы уровень владения языком A1-A2 (Начальный).\n\n" +
+                                "Отличная работа!")
+                        .build();
+            } else if (earnedPoints <= 12) {
+                return SendMessage.builder()
+                        .chatId(chatId)
+                        .text("Тест завершён!\n\n" +
+                                "Вы набрали " + earnedPoints + " баллов из " + totalPoints + " возможных.\n" +
+                                "Вы уровень владения языком B1-B2 (Средний).\n\n" +
+                                "Отличная работа!")
+                        .build();
+            } else {
+                return SendMessage.builder()
+                        .chatId(chatId)
+                        .text("Тест завершён!\n\n" +
+                                "Вы уровень владения языком C1-C2 (Продвинутый).\n\n" +
+                                "Вы набрали " + earnedPoints + " баллов из " + totalPoints + " возможных.\n" +
+                                "Отличная работа!")
+                        .build();
+            }
+
         }
 
         currentIndexes.put(chatId, index);
