@@ -6,8 +6,6 @@ import java.io.IOException;
 import org.json.*;
 
 /**OpenRouterClient - класс работы с ии.
- * Здесь
- *
  */
 
 public class OpenRouterClient {
