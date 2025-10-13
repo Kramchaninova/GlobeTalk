@@ -5,8 +5,6 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**StartBot.java - класс который обрабатывает команнду /start,
  * а именно: высылает создает приветсвенное письмо и кнопки под ним,
@@ -14,13 +12,6 @@ import java.util.regex.Pattern;
  */
 
 public class StartBot {
-
-    // Храним тесты, индексы и результаты для каждого пользователя
-    private static final Map<Long, List<SendMessage>> currentTests = new HashMap<>();
-    private static final Map<Long, Integer> currentIndexes = new HashMap<>();
-    private static final Map<Long, List<String>> correctAnswers = new HashMap<>();
-    private static final Map<Long, Integer> scoreMap = new HashMap<>();
-
     /**
      * startTest - метод привествия, те после нажания команды /start сдоровается и высылает кнопками варианты ответов
      * @param chatId
@@ -76,6 +67,12 @@ public class StartBot {
      */
     public SendMessage HandleButtonClick(String callbackData, long chatId){
         switch (callbackData){
+            case "A_button":
+            case "B_button":
+            case "C_button":
+            case "D_button": {
+                return TestManager.handleAnswer(callbackData, chatId);
+            }
             case "yes_button": {
                 //ВНИАМНИЕ: тут класс создания и генерирования ответов
 
@@ -84,130 +81,8 @@ public class StartBot {
                 // генерация теста и возвращение его
                 String test = testGeneration.getGeneratedTest();
 
-                Pattern pattern = Pattern.compile(
-                        "(\\d+)\\s*\\((\\d+)\\s*p?o?i?n?t?s?\\)\\s*\\n" +
-                                "(.+?)\\n" +
-                                "(A\\..+?)\\n" +
-                                "(B\\..+?)\\n" +
-                                "(C\\..+?)\\n" +
-                                "(D\\..+?)\\n" +
-                                "Answer:\\s+?([A-D])",
-                        Pattern.DOTALL
-                );
+                return TestManager.generateTest(chatId, test);
 
-                Matcher matcher = pattern.matcher(test);
-                List<SendMessage> questions = new ArrayList<>();
-                List<String> answers = new ArrayList<>();
-
-                // Обрабатываем каждый вопрос из сгенерированного теста:
-                // извлекаем номер, баллы, текст вопроса, варианты ответов и правильный ответ.
-                while (matcher.find()) {
-                    String number = matcher.group(1);
-                    String points = matcher.group(2);
-                    String question = matcher.group(3);
-                    String answerA = matcher.group(4);
-                    String answerB = matcher.group(5);
-                    String answerC = matcher.group(6);
-                    String answerD = matcher.group(7);
-                    String correctAnswer = matcher.group(8).trim();
-
-                    SendMessage message = SendMessage.builder()
-                            .chatId(chatId)
-                            .text(number + " (" + points + " points)\n\n" +
-                                    question + "\n\n" +
-                                    answerA + "\n" +
-                                    answerB + "\n" +
-                                    answerC + "\n" +
-                                    answerD)
-                            .build();
-
-                    message.setReplyMarkup(createAnswerKeyboard());
-                    questions.add(message);
-                    answers.add(correctAnswer);
-                }
-
-                if (questions.isEmpty()) {
-                    return SendMessage.builder()
-                            .chatId(chatId)
-                            .text("Не удалось распознать вопросы в тесте.")
-                            .build();
-                }
-
-                currentTests.put(chatId, questions);
-                correctAnswers.put(chatId, answers);
-                currentIndexes.put(chatId, 0);
-                scoreMap.put(chatId, 0);
-
-                return questions.get(0);
-            }
-
-            // Ответ пользователя (A,B,C или D)
-            case "A_button":
-            case "B_button":
-            case "C_button":
-            case "D_button": {
-                if (!currentTests.containsKey(chatId)) {
-                    return SendMessage.builder()
-                            .chatId(chatId)
-                            .text("Сначала начните тест командой /start.")
-                            .build();
-                }
-
-                // Определяем выбранную букву
-                String chosen = callbackData.substring(0, 1);
-
-                int index = currentIndexes.get(chatId);
-                List<String> correct = correctAnswers.get(chatId);
-                int score = scoreMap.get(chatId);
-
-                // Получаем количество баллов за этот вопрос из текста
-                String questionText = currentTests.get(chatId).get(index).getText();
-                Pattern pointPattern = Pattern.compile("\\((\\d+)\\s*p?o?i?n?t?s?\\)");
-                Matcher pointMatcher = pointPattern.matcher(questionText);
-                int pointsForQuestion = 1; // по умолчанию
-                if (pointMatcher.find()) {
-                    pointsForQuestion = Integer.parseInt(pointMatcher.group(1));
-                }
-
-                // Проверяем ответ
-                if (correct.get(index).equalsIgnoreCase(chosen)) {
-                    score += pointsForQuestion;  // прибавляем реальные баллы
-                    scoreMap.put(chatId, score);
-                }
-
-                // Следующий вопрос
-                index++;
-                List<SendMessage> questions = currentTests.get(chatId);
-
-                if (index >= questions.size()) {
-                    // Подсчёт общей суммы баллов
-                    int totalPoints = 0;
-                    Pattern totalPointPattern = Pattern.compile("\\((\\d+)\\s*p?o?i?n?t?s?\\)");
-                    for (SendMessage q : questions) {
-                        Matcher m = totalPointPattern.matcher(q.getText());
-                        if (m.find()) {
-                            totalPoints += Integer.parseInt(m.group(1));
-                        }
-                    }
-
-                    int earnedPoints = scoreMap.get(chatId);
-
-                    // Очищаем данные после завершения
-                    currentTests.remove(chatId);
-                    currentIndexes.remove(chatId);
-                    correctAnswers.remove(chatId);
-                    scoreMap.remove(chatId);
-
-                    return SendMessage.builder()
-                            .chatId(chatId)
-                            .text("Тест завершён!\n\n" +
-                                    "Вы набрали " + earnedPoints + " баллов из " + totalPoints + " возможных.\n\n" +
-                                    "Отличная работа!")
-                            .build();
-                }
-
-                currentIndexes.put(chatId, index);
-                return questions.get(index);
             }
 
 
