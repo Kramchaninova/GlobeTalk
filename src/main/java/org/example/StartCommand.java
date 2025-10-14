@@ -5,44 +5,35 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 
 import java.util.*;
 
-/**
- * Обработка команды /start и связанных кнопок.
- * Отвечает за приветственное сообщение, создание стартовой клавиатуры и обработку нажатий
- * на кнопки "Да" и "Нет" для начала теста.
+/**StartBot.java - класс который обрабатывает команнду /start,
+ * а именно: высылает создает приветсвенное письмо и кнопки под ним,
+ * ну и соответсвенно реакции на эти кнопки
  */
 
 public class StartCommand {
 
-    private final TestHandler testHandler;
-
-    public StartCommand(TestHandler testHandler) {
-        this.testHandler = testHandler;
-    }
-
     private static final String START_MESSAGE = "Вас приветствует телеграмм бот GlobeTalk для изучения иностранных языков!\n\n" +
             "Перед началом обучения, пройдите короткий тестик для определения вашего уровня владения языка.\n\n" +
-            "Для списка команд нажмите /help.\n\n" +
+            "Для списка команд нажмите /help.\n\n"+
             "Вы готовы начать тест?\n\n";
 
-    private static final String NO_BUTTON_CLICK = "Не сомневайтесь в себе!!!\n\n" +
-            "Когда будете готовы используйте /start.\n\n" +
+    private static final String NO_BUTTON_CLICK = "Не сомневайтесь в себе!!!\n\n"+
+            "Когда будете готовы используйте /start.\n\n"+
             "Для списка команд нажмите /help.\n\n";
 
     private static final String UNKNOWN_CLICK = "Неизвестная команда";
 
     /**
-     * Формирует приветственное сообщение и предложение пройти тест.
-     *
+     * startTest - метод привествия, те после нажания команды /start сдоровается и высылает кнопками варианты ответов
      * @param chatId
      * @return
      */
-    public String startTest(long chatId) {
+    public String startTest( long chatId){
         return START_MESSAGE;
     }
 
     /**
-     * Создает стартовую inline-клавиатуру с кнопками "Да" и "Нет".
-     *
+     * createStartButton - метод создания кнопок в стартовом сообщении
      * @param chatId
      * @return
      */
@@ -60,7 +51,7 @@ public class StartCommand {
                 .build();
 
         //список где кнопки хранятся грубо говоря в строку
-        List<InlineKeyboardButton> rowInline = new ArrayList<>();
+        List<InlineKeyboardButton> rowInline  = new ArrayList<>();
 
         //добавляем уже кнопки ряд
         rowInline.add(yes_button); //эта будет слева
@@ -78,14 +69,13 @@ public class StartCommand {
     }
 
     /**
-     * Обрабатывает нажатия на кнопки стартовой клавиатуры.
-     *
+     * HandleButtonClick - метод обрабатывающий реакции, взятые с кнопок
      * @param callbackData
      * @param chatId
      * @return
      */
-    public String handleButtonClick(String callbackData, long chatId) {
-        switch (callbackData) {
+    public String handleButtonClick(String callbackData, long chatId){
+        switch (callbackData){
             case "yes_button": {
                 //ВНИАМНИЕ: тут класс создания и генерирования ответов
 
@@ -94,7 +84,7 @@ public class StartCommand {
                 // генерация теста и возвращение его
                 String test = testGeneration.getGeneratedTest();
 
-                return testHandler.generateTest(chatId, test);
+                return TestManager.generateTest(chatId, test);
 
             }
 
@@ -109,4 +99,28 @@ public class StartCommand {
      * createAnswerKeyboard - метод, который создает кнопки для ответов на вопросы
      * @return
      */
+
+    public InlineKeyboardMarkup createAnswerKeyboard() {
+        InlineKeyboardButton a = InlineKeyboardButton.builder()
+                .text("A")
+                .callbackData("A_button")
+                .build();
+        InlineKeyboardButton b = InlineKeyboardButton.builder()
+                .text("B")
+                .callbackData("B_button")
+                .build();
+        InlineKeyboardButton c = InlineKeyboardButton.builder()
+                .text("C")
+                .callbackData("C_button")
+                .build();
+        InlineKeyboardButton d = InlineKeyboardButton.builder()
+                .text("D")
+                .callbackData("D_button")
+                .build();
+
+        List<List<InlineKeyboardButton>> keyboard = List.of(List.of(a, b, c, d));
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        markup.setKeyboard(keyboard);
+        return markup;
+    }
 }
