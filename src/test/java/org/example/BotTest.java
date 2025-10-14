@@ -61,8 +61,13 @@ public class BotTest {
     }
 
     String testText;
+
+    /**
+     * Проверка генерации теста для последующих тестов
+     *
+     */
     @BeforeEach
-    void setUp() {
+    void testGenerateTest() {
         testText = """
                 1 (1 points)
                 What is the capital of France?
@@ -92,6 +97,10 @@ public class BotTest {
         testManager.generateTest(12345L, testText);
     }
 
+    /**
+     * Проверка обработки кнопки.
+     *
+     */
     @Test
     void testHandleCorrectAnswer() {
         // Отправляем правильный ответ (вопрос 1 - правильный B)
@@ -102,6 +111,9 @@ public class BotTest {
         assertTrue(response.contains("Which word is a verb?"), "Должен быть следующий вопрос");
     }
 
+    /**
+     * Проверка на неправильный ответ
+     */
     @Test
     void testHandleIncorrectAnswer() {
         // Отправляем неправильный ответ (вопрос 1 - правильный B, мы нажимаем A)
@@ -112,6 +124,9 @@ public class BotTest {
         assertTrue(response.contains("Which word is a verb?"));
     }
 
+    /**
+     * Проверка на вывод результатов после теста.
+     */
     @Test
     void testFinalAnswer() {
         // Ответы: B (правильно), B (правильно), B (правильно)

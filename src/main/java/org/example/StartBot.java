@@ -97,7 +97,7 @@ public class StartBot {
 
     /**
      * createAnswerKeyboard - метод, который создает кнопки для ответов на вопросы
-     * Клавиатура с ответами A-D
+     * @return
      */
 
     public InlineKeyboardMarkup createAnswerKeyboard() {

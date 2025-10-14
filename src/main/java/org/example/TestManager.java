@@ -21,7 +21,10 @@ public class TestManager {
     private static final String ANSWER_ERROR = "Не удалось распознать вопросы в тесте.";
     private static final String AGAIN_TEST= "Сначала начните тест командой /start.";
     /**
-     * Генерация списка вопросов и правильных ответов из текста теста
+     * Метод, который разбирает текст с тестом, извлекает вопросы, варианты ответов и правильные ответы.
+     * Сохраняет вопросы и ответы в отдельные структуры данных для конкретного пользователя.
+     * Инициализирует индекс текущего вопроса и общий счётчик баллов.
+     * Возвращает текст первого вопроса для начала теста.
      */
     public static String generateTest(long chatId, String test) {
         Pattern pattern = Pattern.compile(
@@ -75,7 +78,13 @@ public class TestManager {
     }
 
     /**
-     * Обработка нажатий на кнопки A/B/C/D
+     *
+     * Обрабатывает выбор ответа пользователя на вопрос теста (кнопки A/B/C/D).
+     * Проверяет правильность ответа, начисляет баллы и возвращает следующий вопрос.
+     * Если вопросы закончились, подсчитывает итоговый результат и уровень владения языком.
+     * @param callbackData
+     * @param chatId
+     * @return
      */
     public static String handleAnswer(String callbackData, long chatId) {
         if (!currentTests.containsKey(chatId)) {
