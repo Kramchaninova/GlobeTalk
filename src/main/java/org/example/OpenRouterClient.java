@@ -3,9 +3,11 @@ package org.example;
 import java.net.http.*;
 import java.net.URI;
 import java.io.IOException;
+
 import org.json.*;
 
-/**OpenRouterClient - класс работы с ии.
+/**
+ * OpenRouterClient - класс работы с ии.
  */
 
 public class OpenRouterClient {
@@ -17,10 +19,11 @@ public class OpenRouterClient {
 
 
     /**
-     * sendRequest - метод отправки запроса через OpenRouter
+     * отправка запроса через OpenRouter.
+     *
      * @param userPrompt - наш запрос, который мы задали в StartYesButton
      * @return - возвращаем ответ на запрос в виде строки
-     * @throws IOException - если траблы с сетью или с вводом/выводом
+     * @throws IOException          - если проблемы с сетью или с вводом/выводом
      * @throws InterruptedException - если поток был вызван ожидания ответа
      */
 
@@ -38,7 +41,9 @@ public class OpenRouterClient {
     }
 
 
-    /**createRequestBody - метод для создания тела HTTP запроса в формате json
+    /**
+     * createRequestBody - метод для создания тела HTTP запроса в формате json
+     *
      * @param userPrompt - наш запрос
      * @return - возвращает json строку с телом запроса
      */
@@ -46,17 +51,19 @@ public class OpenRouterClient {
         // String.format - подставляет значение userPrompt в шаблон
         // replace("\"", "\\\"") - экранирует кавычки в промпте чтобы не сломать JSON
         return String.format("""
-            {
-              "model": "gpt-3.5-turbo",
-              "messages": [
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": "%s"}
-              ]
-            }
-        """, userPrompt.replace("\"", "\\\""));
+                    {
+                      "model": "gpt-3.5-turbo",
+                      "messages": [
+                        {"role": "system", "content": "You are a helpful assistant."},
+                        {"role": "user", "content": "%s"}
+                      ]
+                    }
+                """, userPrompt.replace("\"", "\\\""));
     }
 
-    /**createHttpRequest - метод для создания HTTP запроса
+    /**
+     * createHttpRequest - метод для создания HTTP запроса
+     *
      * @param requestBody - тело в формате json (предыдущий метод)
      * @return настроенный объект HttpRequest
      */
@@ -74,7 +81,9 @@ public class OpenRouterClient {
                 .build();
     }
 
-    /**processResponse - метод обработки HTTp ответ от APi
+    /**
+     * processResponse - метод обработки HTTp ответ от APi
+     *
      * @param response - ответ от сервера
      * @return - возвращаем текст от ии
      * @throws JSONException - ошибка парсинга json

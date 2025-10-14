@@ -5,8 +5,8 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 /**
- * Главный класс для запуска и настройки Telegram бота
- * Реализует механизм long-polling для получения обновлений
+ * Запуск и настройка Telegram бота.
+ * Реализует механизм long-polling для получения обновлений.
  */
 public class Main {
     public static void main(String[] args) {

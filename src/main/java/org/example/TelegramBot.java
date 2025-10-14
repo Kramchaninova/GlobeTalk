@@ -13,20 +13,20 @@ import java.util.List;
 
 
 /**
- * Bot.java - основной клёасс бота, реализующий интерфейс для получения обновлений
+ * Bot.java - основной класс бота, реализующий интерфейс для получения обновлений
  * Обрабатывает текстовые команды и кнопки, возвращая ответы пользователю.т
  */
-public class TelegramBot extends TelegramLongPollingBot  {
+public class TelegramBot extends TelegramLongPollingBot {
 
     private final String botToken;
     private final String botUsername;
-    private final LogicBot logicBot;
+    private final BotLogic botLogic;
 
     public TelegramBot(String botToken, String botUsername) {
         super(botToken); //супер вызывает конструктор родительского класс лонгполинг (выше)
         this.botToken = botToken;
         this.botUsername = botUsername;
-        this.logicBot = new LogicBot();
+        this.botLogic = new BotLogic();
         registerBotCommands();
     }
 
@@ -42,9 +42,9 @@ public class TelegramBot extends TelegramLongPollingBot  {
 
 
     @Override
-    public void onUpdateReceived(Update update){
+    public void onUpdateReceived(Update update) {
         // передаем все обновления в LogicBot для обработки
-        logicBot.processUpdate(update, this);
+        botLogic.processUpdate(update, this);
     }
 
     /**

@@ -10,8 +10,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TelegramBotTest {
     private final TelegramBot likeTelegramBot = new TelegramBot("test-token", "TestBot");
-    private final LogicBot logicBot = new LogicBot(likeTelegramBot);
-    private final TestManager testManager = new TestManager();
+    private final BotLogic botLogic = new BotLogic(likeTelegramBot);
+    private final TestHandler testHandler = new TestHandler();
 
     /**
      * Проверка команды /start
@@ -21,7 +21,7 @@ public class TelegramBotTest {
 
     @Test
     void testStartCommand() {
-        String result = logicBot.handleCommand("/start", 12345L);
+        String result = botLogic.handleCommand("/start", 12345L);
 
         Assertions.assertEquals("Вас приветствует телеграмм бот GlobeTalk для изучения иностранных языков!\n\n" +
                 "Перед началом обучения, пройдите короткий тестик для определения вашего уровня владения языка.\n\n" +
@@ -36,7 +36,7 @@ public class TelegramBotTest {
 
     @Test
     void testHelpCommand() {
-        String result = logicBot.handleCommand("/help", 12345L);
+        String result = botLogic.handleCommand("/help", 12345L);
 
         Assertions.assertEquals("  **Список доступных команд:**\n\n" +
                 "'/start' - начать работу с ботом\n" +
@@ -55,7 +55,7 @@ public class TelegramBotTest {
 
     @Test
     void testUnknownCommand() {
-        String result = logicBot.handleCommand("/unknown", 12345L);
+        String result = botLogic.handleCommand("/unknown", 12345L);
 
         Assertions.assertEquals("Неизвестная команда. Введите /help для списка доступных команд.", result);
     }
@@ -94,7 +94,7 @@ public class TelegramBotTest {
                 Answer: B
                 """;
 
-        testManager.generateTest(12345L, testText);
+        testHandler.generateTest(12345L, testText);
     }
 
     /**
@@ -104,7 +104,7 @@ public class TelegramBotTest {
     @Test
     void testHandleCorrectAnswer() {
         // Отправляем правильный ответ (вопрос 1 - правильный B)
-        String response = testManager.handleAnswer("B_button", 12345L);
+        String response = testHandler.handleAnswer("B_button", 12345L);
 
         // Проверяем, что возвращён следующий вопрос
         assertNotNull(response);
@@ -117,7 +117,7 @@ public class TelegramBotTest {
     @Test
     void testHandleIncorrectAnswer() {
         // Отправляем неправильный ответ (вопрос 1 - правильный B, мы нажимаем A)
-        String response = testManager.handleAnswer("A_button", 12345L);
+        String response = testHandler.handleAnswer("A_button", 12345L);
 
         // Проверяем, что мы всё равно перешли к следующему вопросу
         assertNotNull(response);
@@ -130,9 +130,9 @@ public class TelegramBotTest {
     @Test
     void testFinalAnswer() {
         // Ответы: B (правильно), B (правильно), B (правильно)
-        testManager.handleAnswer("B_button", 12345L);
-        testManager.handleAnswer("B_button", 12345L);
-        String finalResponse = testManager.handleAnswer("B_button", 12345L);
+        testHandler.handleAnswer("B_button", 12345L);
+        testHandler.handleAnswer("B_button", 12345L);
+        String finalResponse = testHandler.handleAnswer("B_button", 12345L);
 
         // Проверяем, что тест завершён и подсчитаны баллы
         assertNotNull(finalResponse);

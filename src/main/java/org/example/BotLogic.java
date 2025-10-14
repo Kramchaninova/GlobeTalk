@@ -5,21 +5,18 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-
-
 /**
- * LogicBot - класс для обработки логики бота.
- * обрабатывает входящие сообщения, команды и callback запросы от кнопок
+ * Отвечает за обработку входящих сообщений и callback-запросов.
+ * Отправляет команды классу StartCommand и обработку тестов классу TestHandler.
  */
 
-
-public class LogicBot {
+public class BotLogic {
     private final StartCommand startCommand;
-    private final TestManager testManager;
+    private final TestHandler testHandler;
 
-    public LogicBot(){
-        this.startCommand = new StartCommand();
-        this.testManager = new TestManager();
+    public BotLogic(){
+        this.testHandler = new TestHandler();
+        this.startCommand = new StartCommand(testHandler);
     }
 
     private static final String COMMAND_HELP = "  **Список доступных команд:**\n\n" +
@@ -34,10 +31,11 @@ public class LogicBot {
     private static final String COMMAND_UNKNOWN = "Неизвестная команда. Введите /help для списка доступных команд.";
 
 
-
     /**
-     * processUpdate - метод обаботки входящий обновлений (сообщений)
+     * Обработка входящего обновления (сообщения) от Telegram.
+     * Разделяет сообщения и callback-запросы на соответствующие обработчики.
      * @param update
+     * @param bot
      */
     public void processUpdate(Update update, TelegramLongPollingBot bot) {
         try {
@@ -54,7 +52,7 @@ public class LogicBot {
     }
 
     /**
-     * handleCallbackQuery  - обработка нажатий кнопок
+     * Обработка нажатий на inline-кнопки.
      * @param update
      * @param bot
      * @throws TelegramApiException
@@ -71,7 +69,8 @@ public class LogicBot {
     }
 
     /**
-     * методо обработки команд вручную введенных
+     * Обработка входящих текстовых сообщений.
+     * Проверяет, является ли сообщение командой (начинается с "/") и вызывает соответствующую обработку.
      * @param update
      * @param bot
      * @throws TelegramApiException
@@ -96,24 +95,26 @@ public class LogicBot {
     }
 
     /**
-     * Обработка ответов с кнопок
+     * Обрабатывает callbackData, полученные от нажатий кнопок.
+     * Отправляет ответы на тесты TestHandler или стартовые кнопки StartCommand.
      * @param callbackData
      * @param chatId
      * @return
      */
+
     private String processCallbackData(String callbackData, long chatId) {
         if (callbackData.equals("A_button") ||
                 callbackData.equals("B_button") ||
                 callbackData.equals("C_button") ||
                 callbackData.equals("D_button")) {
-            return testManager.handleAnswer(callbackData, chatId);
+            return testHandler.handleAnswer(callbackData, chatId);
         } else {
             return startCommand.handleButtonClick(callbackData, chatId);
         }
     }
 
     /**
-     * Cоздание сообщений с нужными кнопками
+     * Создает сообщение с нужной inline-клавиатурой в зависимости от callbackData.
      * @param chatId
      * @param text
      * @param callbackData
@@ -126,13 +127,13 @@ public class LogicBot {
                 .build();
 
         if (callbackData.equals("yes_button")) {
-            message.setReplyMarkup(startCommand.createAnswerKeyboard());
+            message.setReplyMarkup(testHandler.createAnswerKeyboard());
         } else if (callbackData.equals("A_button") ||
                 callbackData.equals("B_button") ||
                 callbackData.equals("C_button") ||
                 callbackData.equals("D_button")) {
-            if (TestManager.isTestActive(chatId)) {
-                message.setReplyMarkup(startCommand.createAnswerKeyboard());
+            if (testHandler.isTestActive(chatId)) {
+                message.setReplyMarkup(testHandler.createAnswerKeyboard());
             }
         } else if (callbackData.equals("no_button")) {
             message.setReplyMarkup(startCommand.createStartButton(chatId));
@@ -141,17 +142,17 @@ public class LogicBot {
         return message;
     }
 
-
     /**
-     * Если в сообщении была команда, т.е. текст начинается с /, то обрабатываем ее
-     *и высылаем текст, который привязан к командам
+     * Eсли в сообщении была команда, т.е. текст начинается с /, то обрабатываем ее.
+     * Высылаем текст, который привязан к командам.
+     * @param command
+     * @param chatId
+     * @return
      */
+
     public String handleCommand(String command, long chatId) {
         switch (command) {
             case "/start":
-                /** StartBot - отельный класс для реализации старта бота
-                 * в дальнейшем логично было бы на каждую задачу выводить по классу
-                 */
                 return startCommand.startTest(chatId);
 
             case "/help":

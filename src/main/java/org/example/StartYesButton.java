@@ -2,7 +2,8 @@ package org.example;
 
 import java.io.IOException;
 
-/** StartYesButton - класс, который хранит запрос (PROMT),
+/**
+ * StartYesButton - класс, который хранит запрос (PROMT),
  * подгружает api token openrouter,
  * вызывает метод отправки нашего запроса непосредственно ии
  */
@@ -10,7 +11,7 @@ import java.io.IOException;
 
 public class StartYesButton {
     //наш  шедевро запрос
-    private static final String PROMPT= "Напиши тест на 9 вопросов на проверку английского языка: 3 вопроса на уровень c1-c2, 3 вопроса на уровень b1-b2," +
+    private static final String PROMPT = "Напиши тест на 9 вопросов на проверку английского языка: 3 вопроса на уровень c1-c2, 3 вопроса на уровень b1-b2," +
             "3 вопроса на уровень a1-a2. так же навешай баллы за ответы: на уровень c - 3 балла, на уровень b  - 2 балла," +
             "на уровень a - 1 балла. так же нужно относительно уровней делать в разброс задания, так же на каждый вопрос" +
             "должно быть 4 варианта ответов. " +
@@ -28,10 +29,10 @@ public class StartYesButton {
         try {
             // загружаем API ключ через Token_Openrouter, ОЧЕНЬ ВАЖНО: мы работаем не напрямую с гпт
             //Опен Роутер - это "лпатформа-посредник"
-            Token_Openrouter token_openrouter = new Token_Openrouter();
-            token_openrouter.load();
+            TokenOpenRouter token_openRouter = new TokenOpenRouter();
+            token_openRouter.load();
 
-            String apiKey = token_openrouter.get();
+            String apiKey = token_openRouter.get();
 
             //оносительно бесполезная вещь
             if (apiKey == null || apiKey.isEmpty()) {
