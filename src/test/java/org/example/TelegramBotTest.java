@@ -4,21 +4,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;
 
+/**
+ * TelegramBotTest - тесты на логику
+ */
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TelegramBotTest {
-    private final TelegramBot likeTelegramBot = new TelegramBot("test-token", "TestBot");
-    private final LogicBot logicBot = new LogicBot(likeTelegramBot);
-    private final TestManager testManager = new TestManager();
+    private final LogicBot logicBot = new LogicBot();
+    private final TestHandler testHandler = new TestHandler();
 
     /**
      * Проверка команды /start
-     * Проверяет приветственное сообщение с описанием бота и создателями.
-     * Убеждается что есть ссылка на помощь и корректный ID чата.
      */
-
     @Test
     void testStartCommand() {
         String result = logicBot.handleCommand("/start", 12345L);
@@ -31,9 +28,7 @@ public class TelegramBotTest {
 
     /**
      * Проверка команды /help
-     * Проверяет наличие списка команд и описания работы бота.
      */
-
     @Test
     void testHelpCommand() {
         String result = logicBot.handleCommand("/help", 12345L);
@@ -49,10 +44,7 @@ public class TelegramBotTest {
 
     /**
      * Проверка неизвестной команды
-     * Проверяет сообщение об ошибке для неподдерживаемых команд.
-     * а также, что бот предлагает помощь
      */
-
     @Test
     void testUnknownCommand() {
         String result = logicBot.handleCommand("/unknown", 12345L);
@@ -60,11 +52,10 @@ public class TelegramBotTest {
         Assertions.assertEquals("Неизвестная команда. Введите /help для списка доступных команд.", result);
     }
 
-    String testText;
+    private String testText;
 
     /**
      * Проверка генерации теста для последующих тестов
-     *
      */
     @BeforeEach
     void testGenerateTest() {
@@ -94,21 +85,22 @@ public class TelegramBotTest {
                 Answer: B
                 """;
 
-        testManager.generateTest(12345L, testText);
+        testHandler.generateTest(12345L, testText);
     }
 
     /**
      * Проверка обработки кнопки.
-     *
      */
     @Test
     void testHandleCorrectAnswer() {
-        // Отправляем правильный ответ (вопрос 1 - правильный B)
-        String response = testManager.handleAnswer("B_button", 12345L);
+        String response = testHandler.handleAnswer("B_button", 12345L);
 
-        // Проверяем, что возвращён следующий вопрос
-        assertNotNull(response);
-        assertTrue(response.contains("Which word is a verb?"), "Должен быть следующий вопрос");
+        String expectedQuestion = "Which word is a verb?\n" +
+                "A. Apple\n" +
+                "B. Run\n" +
+                "C. Table\n" +
+                "D. House";
+        Assertions.assertEquals(expectedQuestion, response);
     }
 
     /**
@@ -116,12 +108,14 @@ public class TelegramBotTest {
      */
     @Test
     void testHandleIncorrectAnswer() {
-        // Отправляем неправильный ответ (вопрос 1 - правильный B, мы нажимаем A)
-        String response = testManager.handleAnswer("A_button", 12345L);
+        String response = testHandler.handleAnswer("A_button", 12345L);
 
-        // Проверяем, что мы всё равно перешли к следующему вопросу
-        assertNotNull(response);
-        assertTrue(response.contains("Which word is a verb?"));
+        String expectedQuestion = "Which word is a verb?\n" +
+                "A. Apple\n" +
+                "B. Run\n" +
+                "C. Table\n" +
+                "D. House";
+        Assertions.assertEquals(expectedQuestion, response);
     }
 
     /**
@@ -129,14 +123,68 @@ public class TelegramBotTest {
      */
     @Test
     void testFinalAnswer() {
-        // Ответы: B (правильно), B (правильно), B (правильно)
-        testManager.handleAnswer("B_button", 12345L);
-        testManager.handleAnswer("B_button", 12345L);
-        String finalResponse = testManager.handleAnswer("B_button", 12345L);
+        String customTestText = """
+                1 (6 points)
+                Test question?
+                A. Wrong
+                B. Correct
+                C. Wrong
+                D. Wrong
+                Answer: B
+                """;
 
-        // Проверяем, что тест завершён и подсчитаны баллы
-        assertNotNull(finalResponse);
-        assertTrue(finalResponse.contains("Тест завершён!"));
-        assertTrue(finalResponse.contains("Вы набрали"));
+        testHandler.generateTest(12345L, customTestText);
+        String finalResponse = testHandler.handleAnswer("B_button", 12345L);
+
+        String expectedResponse = "Тест завершён!\n\n" +
+                "Вы набрали 6 баллов из 6 возможных.\n" +
+                "Ваш уровень владения языком A1-A2 (Начальный)\n\n" +
+                "Отличная работа!";
+
+        Assertions.assertEquals(expectedResponse, finalResponse);
+    }
+
+    /**
+     * Проверка подсчета баллов при неправильных ответах
+     */
+    @Test
+    void testScoreCalculation() {
+        String testText = """
+                1 (1 points)
+                Question 1?
+                A. Wrong
+                B. Correct
+                C. Wrong
+                D. Wrong
+                Answer: B
+                
+                2 (2 points)
+                Question 2?
+                A. Wrong
+                B. Correct
+                C. Wrong
+                D. Wrong
+                Answer: B
+                
+                3 (3 points)
+                Question 3?
+                A. Wrong
+                B. Correct
+                C. Wrong
+                D. Wrong
+                Answer: B
+                """;
+
+        testHandler.generateTest(99999L, testText); // ДРУГОЙ chatId чтобы не конфликтовать
+        testHandler.handleAnswer("A_button", 99999L);
+        testHandler.handleAnswer("A_button", 99999L);
+        String finalResponse = testHandler.handleAnswer("A_button", 99999L);
+
+        String expectedResponse = "Тест завершён!\n\n" +
+                "Вы набрали 0 баллов из 6 возможных.\n" +
+                "Ваш уровень владения языком A1-A2 (Начальный)\n\n" +
+                "Отличная работа!";
+
+        Assertions.assertEquals(expectedResponse, finalResponse);
     }
 }

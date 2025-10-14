@@ -15,11 +15,11 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 public class LogicBot {
     private final StartCommand startCommand;
-    private final TestManager testManager;
+    private final TestHandler testHandler;
 
     public LogicBot(){
-        this.startCommand = new StartCommand();
-        this.testManager = new TestManager();
+        this.testHandler = new TestHandler();
+        this.startCommand = new StartCommand(this.testHandler);
     }
 
     private static final String COMMAND_HELP = "  **Список доступных команд:**\n\n" +
@@ -106,7 +106,7 @@ public class LogicBot {
                 callbackData.equals("B_button") ||
                 callbackData.equals("C_button") ||
                 callbackData.equals("D_button")) {
-            return testManager.handleAnswer(callbackData, chatId);
+            return testHandler.handleAnswer(callbackData, chatId);
         } else {
             return startCommand.handleButtonClick(callbackData, chatId);
         }
@@ -131,7 +131,7 @@ public class LogicBot {
                 callbackData.equals("B_button") ||
                 callbackData.equals("C_button") ||
                 callbackData.equals("D_button")) {
-            if (TestManager.isTestActive(chatId)) {
+            if (testHandler.isTestActive(chatId)) {
                 message.setReplyMarkup(startCommand.createAnswerKeyboard());
             }
         } else if (callbackData.equals("no_button")) {

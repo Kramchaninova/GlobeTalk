@@ -35,14 +35,14 @@ public class StartYesButton {
     /**
      * Метод для генерации теста и сохранение в txt файл
      */
-    public String getGeneratedTest() {
+    public String generateTest() {
         try {
             // загружаем API ключ через Token_Openrouter, ОЧЕНЬ ВАЖНО: мы работаем не напрямую с гпт
             //Опен Роутер - это "лпатформа-посредник"
-            Token_Openrouter token_openrouter = new Token_Openrouter();
-            token_openrouter.load();
+            TokenOpenRouter tokenOpenRouter = new TokenOpenRouter();
+            tokenOpenRouter.load();
 
-            String apiKey = token_openrouter.get();
+            String apiKey = tokenOpenRouter.get();
 
             //оносительно бесполезная вещь
             if (apiKey == null || apiKey.isEmpty()) {

@@ -11,6 +11,11 @@ import java.util.*;
  */
 
 public class StartCommand {
+    private final TestHandler testHandler;
+
+    public StartCommand(TestHandler testHandler) {
+        this.testHandler = testHandler;
+    }
 
     private static final String START_MESSAGE = "Вас приветствует телеграмм бот GlobeTalk для изучения иностранных языков!\n\n" +
             "Перед началом обучения, пройдите короткий тестик для определения вашего уровня владения языка.\n\n" +
@@ -82,9 +87,9 @@ public class StartCommand {
                 //создаем экземпляр класса StartYesButton
                 StartYesButton testGeneration = new StartYesButton();
                 // генерация теста и возвращение его
-                String test = testGeneration.getGeneratedTest();
+                String test = testGeneration.generateTest();
 
-                return TestManager.generateTest(chatId, test);
+                return testHandler.generateTest(chatId, test);
 
             }
 
