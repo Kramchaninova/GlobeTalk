@@ -13,10 +13,11 @@ import java.util.regex.Pattern;
 public class TestManager {
 
     // Храним как строки тесты, ответы, индексы и баллы для каждого пользователя
-    private static final Map<Long, List<String>> currentTests = new HashMap<>();
-    private static final Map<Long, List<String>> correctAnswers = new HashMap<>();
-    private static final Map<Long, Integer> currentIndexes = new HashMap<>();
-    private static final Map<Long, Integer> totalScore = new HashMap<>();
+    private final Map<Long, List<String>> currentTests = new HashMap<>();
+    private final Map<Long, List<String>> correctAnswers = new HashMap<>();
+    private final Map<Long, Integer> currentIndexes = new HashMap<>();
+    private final Map<Long, Integer> totalScore = new HashMap<>();
+    private final Map<Long, List<Integer>> questionPoints = new HashMap<>(); //и храним поинтсы на каждый вопрос
 
     private static final String ANSWER_ERROR = "Не удалось распознать вопросы в тесте.";
     private static final String AGAIN_TEST= "Сначала начните тест командой /start.";
@@ -26,44 +27,52 @@ public class TestManager {
      * Инициализирует индекс текущего вопроса и общий счётчик баллов.
      * Возвращает текст первого вопроса для начала теста.
      */
-    public static String generateTest(long chatId, String test) {
+    public String generateTest(long chatId, String test) {
         Pattern pattern = Pattern.compile(
-                "(\\d+).?\\s*\\((\\d+)\\s*[points]*\\)\\s*\\n" +
-                        "(.+?)\\n" +
-                        "(A\\..+?)\\n" +
-                        "(B\\..+?)\\n" +
-                        "(C\\..+?)\\n" +
-                        "(D\\..+?)\\n" +
-                        "Answer:\\s*?([A-D])",
+                "(\\d+)\\s*\\(?(\\d+)\\)?\\s*\\n" +       // номер и баллы: "1 (1)"
+                        "(.+?)\\n" +                             // текст вопроса
+                        "(A\\..+?)\\n" +                         // вариант A
+                        "(B\\..+?)\\n" +                         // вариант B
+                        "(C\\..+?)\\n" +                         // вариант C
+                        "(D\\..+?)\\n" +                         // вариант D
+                        "Answer:\\s*([A-D])",
                 Pattern.DOTALL
         );
 
         Matcher matcher = pattern.matcher(test);
         List<String> questions = new ArrayList<>();
         List<String> answers = new ArrayList<>();
-
+        List<Integer> pointsList = new ArrayList<>();
+        int foundQuestions = 0;
         // Обрабатываем каждый вопрос из сгенерированного теста:
         // извлекаем номер, баллы, текст вопроса, варианты ответов и правильный ответ.
         while (matcher.find()) {
-            String number = matcher.group(1);
-            String points = matcher.group(2);
-            String question = matcher.group(3);
-            String answerA = matcher.group(4);
-            String answerB = matcher.group(5);
-            String answerC = matcher.group(6);
-            String answerD = matcher.group(7);
-            String correctAnswer = matcher.group(8).trim();
+            foundQuestions++;
+            try {
+                String number = matcher.group(1);
+                String points = matcher.group(2);
+                String question = matcher.group(3);
+                String answerA = matcher.group(4);
+                String answerB = matcher.group(5);
+                String answerC = matcher.group(6);
+                String answerD = matcher.group(7);
+                String correctAnswer = matcher.group(8).trim();
 
-            String questionText = number + " (" + points + " points)\n\n" +
-                    question + "\n\n" +
-                    answerA + "\n" +
-                    answerB + "\n" +
-                    answerC + "\n" +
-                    answerD;
+                String questionText =question + "\n\n" +
+                        answerA + "\n" +
+                        answerB + "\n" +
+                        answerC + "\n" +
+                        answerD;
 
-            questions.add(questionText);
-            answers.add(correctAnswer);
+                questions.add(questionText);
+                answers.add(correctAnswer);
+                pointsList.add(Integer.parseInt(points));
+                System.out.println(questionText+ "\n");
+            } catch (Exception e) {
+                System.out.println("Ошибка при обработке вопроса " + foundQuestions + ": " + e.getMessage());
+            }
         }
+
 
         if (questions.isEmpty()) {
             return ANSWER_ERROR;
@@ -73,6 +82,7 @@ public class TestManager {
         correctAnswers.put(chatId, answers);
         currentIndexes.put(chatId, 0);
         totalScore.put(chatId, 0);
+        questionPoints.put(chatId, pointsList);
 
         return questions.get(0);
     }
@@ -86,7 +96,7 @@ public class TestManager {
      * @param chatId
      * @return
      */
-    public static String handleAnswer(String callbackData, long chatId) {
+    public String handleAnswer(String callbackData, long chatId) {
         if (!currentTests.containsKey(chatId)) {
             return AGAIN_TEST;
         }
@@ -96,15 +106,7 @@ public class TestManager {
         int index = currentIndexes.get(chatId);
         List<String> correct = correctAnswers.get(chatId);
         int score = totalScore.get(chatId);
-
-        // Получаем количество баллов за этот вопрос из текста
-        String questionText = currentTests.get(chatId).get(index);
-        Pattern pointPattern = Pattern.compile("\\((\\d+)\\s*p?o?i?n?t?s?\\)");
-        Matcher pointMatcher = pointPattern.matcher(questionText);
-        int pointsForQuestion = 1;
-        if (pointMatcher.find()) {
-            pointsForQuestion = Integer.parseInt(pointMatcher.group(1));
-        }
+        int pointsForQuestion = questionPoints.get(chatId).get(index);
 
         // Проверяем ответ
         if (correct.get(index).equalsIgnoreCase(chosen)) {
@@ -118,14 +120,8 @@ public class TestManager {
 
         if (index >= questions.size()) {
             // Подсчёт общей суммы баллов
-            int totalPoints = 0;
-            Pattern totalPointPattern = Pattern.compile("\\((\\d+)\\s*[points]*\\)");
-            for (String q : questions) {
-                Matcher m = totalPointPattern.matcher(q);
-                if (m.find()) {
-                    totalPoints += Integer.parseInt(m.group(1));
-                }
-            }
+            int totalPoints = questionPoints.get(chatId).stream().mapToInt(Integer::intValue).sum();
+
 
             int earnedPoints = totalScore.get(chatId);
 
@@ -134,6 +130,7 @@ public class TestManager {
             currentIndexes.remove(chatId);
             correctAnswers.remove(chatId);
             totalScore.remove(chatId);
+            questionPoints.remove(chatId);
 
             String languageLevel;
             if (earnedPoints <= 6) {
@@ -156,7 +153,7 @@ public class TestManager {
 
 
 
-    public static boolean isTestActive(long chatId) {
+    public boolean isTestActive(long chatId) {
         return currentTests.containsKey(chatId) &&
                 currentIndexes.containsKey(chatId) &&
                 currentIndexes.get(chatId) < currentTests.get(chatId).size();

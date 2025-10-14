@@ -4,13 +4,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;
 
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+/**
+ * TelegramBotTest - юнит тесты для проверки логики бота.
+ * Здесь он проверяет комнады ("/"), правильную обработку сообщения и саму генерации от ии,
+ * проверка обработки кнопок, итогового сообщения (с финальными резуальтатими теста),
+ * проверка на праавильный подсчет баллов для определения уровня
+ */
 
 public class TelegramBotTest {
-    private final TelegramBot likeTelegramBot = new TelegramBot("test-token", "TestBot");
-    private final LogicBot logicBot = new LogicBot(likeTelegramBot);
+
+    private final LogicBot logicBot = new LogicBot();
     private final TestManager testManager = new TestManager();
 
     /**
@@ -64,7 +67,6 @@ public class TelegramBotTest {
 
     /**
      * Проверка генерации теста для последующих тестов
-     *
      */
     @BeforeEach
     void testGenerateTest() {
@@ -99,16 +101,14 @@ public class TelegramBotTest {
 
     /**
      * Проверка обработки кнопки.
-     *
      */
     @Test
     void testHandleCorrectAnswer() {
         // Отправляем правильный ответ (вопрос 1 - правильный B)
         String response = testManager.handleAnswer("B_button", 12345L);
 
-        // Проверяем, что возвращён следующий вопрос
-        assertNotNull(response);
-        assertTrue(response.contains("Which word is a verb?"), "Должен быть следующий вопрос");
+        String expectedQuestion = "Which word is a verb?\n\nA. Apple\nB. Run\nC. Table\nD. House";
+        Assertions.assertEquals(expectedQuestion, response);
     }
 
     /**
@@ -118,10 +118,8 @@ public class TelegramBotTest {
     void testHandleIncorrectAnswer() {
         // Отправляем неправильный ответ (вопрос 1 - правильный B, мы нажимаем A)
         String response = testManager.handleAnswer("A_button", 12345L);
-
-        // Проверяем, что мы всё равно перешли к следующему вопросу
-        assertNotNull(response);
-        assertTrue(response.contains("Which word is a verb?"));
+        String expectedQuestion = "Which word is a verb?\n\nA. Apple\nB. Run\nC. Table\nD. House";
+        Assertions.assertEquals(expectedQuestion, response);
     }
 
     /**
@@ -129,14 +127,46 @@ public class TelegramBotTest {
      */
     @Test
     void testFinalAnswer() {
-        // Ответы: B (правильно), B (правильно), B (правильно)
-        testManager.handleAnswer("B_button", 12345L);
-        testManager.handleAnswer("B_button", 12345L);
+        String customTestText = """
+        1 (6 points)
+        Test question?
+        A. Wrong
+        B. Correct
+        C. Wrong
+        D. Wrong
+        Answer: B
+        """;
+
+        testManager.generateTest(12345L, customTestText);
         String finalResponse = testManager.handleAnswer("B_button", 12345L);
 
-        // Проверяем, что тест завершён и подсчитаны баллы
-        assertNotNull(finalResponse);
-        assertTrue(finalResponse.contains("Тест завершён!"));
-        assertTrue(finalResponse.contains("Вы набрали"));
+        // 6 баллов - это верхняя граница A2
+        String expectedResponse = "Тест завершён!\n\n" +
+                "Вы набрали 6 баллов из 6 возможных.\n" +
+                "Ваш уровень владения языком A1-A2 (Начальный)\n\n" +
+                "Отличная работа!";
+
+        Assertions.assertEquals(expectedResponse, finalResponse,
+                "При 6 баллах должен определяться уровень A1-A2");
+    }
+
+
+    /**
+     * проверка на исправный подсчет баллов, при наихудшем варианте
+     */
+    @Test
+    void testScoreCalculation() {
+        // Ответы: A (неправильно), A (неправильно), A (неправильно)
+        testManager.handleAnswer("A_button", 12345L);
+        testManager.handleAnswer("A_button", 12345L);
+        String finalResponse = testManager.handleAnswer("A_button", 12345L);
+
+        String expectedResponse = "Тест завершён!\n\n" +
+                "Вы набрали 0 баллов из 6 возможных.\n" +
+                "Ваш уровень владения языком A1-A2 (Начальный)\n\n" +
+                "Отличная работа!";
+
+        Assertions.assertEquals(expectedResponse, finalResponse,
+                "При всех неправильных ответах должен быть 0 баллов и начальный уровень");
     }
 }

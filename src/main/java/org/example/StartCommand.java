@@ -5,7 +5,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 
 import java.util.*;
 
-/**StartBot.java - класс который обрабатывает команнду /start,
+/**StartСommand.java - класс который обрабатывает команнду /start,
  * а именно: высылает создает приветсвенное письмо и кнопки под ним,
  * ну и соответсвенно реакции на эти кнопки
  */
@@ -22,6 +22,12 @@ public class StartCommand {
             "Для списка команд нажмите /help.\n\n";
 
     private static final String UNKNOWN_CLICK = "Неизвестная команда";
+
+    private final TestManager testManager;
+    public StartCommand() {
+        this.testManager = new TestManager();
+    }
+
 
     /**
      * startTest - метод привествия, те после нажания команды /start сдоровается и высылает кнопками варианты ответов
@@ -84,7 +90,7 @@ public class StartCommand {
                 // генерация теста и возвращение его
                 String test = testGeneration.getGeneratedTest();
 
-                return TestManager.generateTest(chatId, test);
+                return testManager.generateTest(chatId, test);
 
             }
 

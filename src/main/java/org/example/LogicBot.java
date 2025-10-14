@@ -71,7 +71,7 @@ public class LogicBot {
     }
 
     /**
-     * методо обработки команд вручную введенных
+     * handleMessage - методод обработки команд вручную введенных
      * @param update
      * @param bot
      * @throws TelegramApiException
@@ -96,7 +96,7 @@ public class LogicBot {
     }
 
     /**
-     * Обработка ответов с кнопок
+     * processCallbackData - обработка ответов с кнопок
      * @param callbackData
      * @param chatId
      * @return
@@ -113,7 +113,7 @@ public class LogicBot {
     }
 
     /**
-     * Cоздание сообщений с нужными кнопками
+     * createMessageWithKeyboard - создание сообщений с нужными кнопками
      * @param chatId
      * @param text
      * @param callbackData
@@ -125,17 +125,14 @@ public class LogicBot {
                 .text(text)
                 .build();
 
-        if (callbackData.equals("yes_button")) {
-            message.setReplyMarkup(startCommand.createAnswerKeyboard());
-        } else if (callbackData.equals("A_button") ||
-                callbackData.equals("B_button") ||
-                callbackData.equals("C_button") ||
-                callbackData.equals("D_button")) {
-            if (TestManager.isTestActive(chatId)) {
-                message.setReplyMarkup(startCommand.createAnswerKeyboard());
+        switch (callbackData) {
+            case "yes_button" -> message.setReplyMarkup(startCommand.createAnswerKeyboard());
+            case "A_button", "B_button", "C_button", "D_button" -> {
+                if (testManager.isTestActive(chatId)) {
+                    message.setReplyMarkup(startCommand.createAnswerKeyboard());
+                }
             }
-        } else if (callbackData.equals("no_button")) {
-            message.setReplyMarkup(startCommand.createStartButton(chatId));
+            case "no_button" -> message.setReplyMarkup(startCommand.createStartButton(chatId));
         }
 
         return message;
