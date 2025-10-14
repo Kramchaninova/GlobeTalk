@@ -1,9 +1,5 @@
 package org.example;
 
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
-
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,7 +16,7 @@ public class TestManager {
     private static final Map<Long, List<String>> currentTests = new HashMap<>();
     private static final Map<Long, List<String>> correctAnswers = new HashMap<>();
     private static final Map<Long, Integer> currentIndexes = new HashMap<>();
-    private static final Map<Long, Integer> scoreMap = new HashMap<>();
+    private static final Map<Long, Integer> totalScore = new HashMap<>();
 
     private static final String ANSWER_ERROR = "Не удалось распознать вопросы в тесте.";
     private static final String AGAIN_TEST= "Сначала начните тест командой /start.";
@@ -29,13 +25,13 @@ public class TestManager {
      */
     public static String generateTest(long chatId, String test) {
         Pattern pattern = Pattern.compile(
-                "(\\d+)\\s*\\((\\d+)\\s*p?o?i?n?t?s?\\)\\s*\\n" +
+                "(\\d+).?\\s*\\((\\d+)\\s*[points]*\\)\\s*\\n" +
                         "(.+?)\\n" +
                         "(A\\..+?)\\n" +
                         "(B\\..+?)\\n" +
                         "(C\\..+?)\\n" +
                         "(D\\..+?)\\n" +
-                        "Answer:\\s+?([A-D])",
+                        "Answer:\\s*?([A-D])",
                 Pattern.DOTALL
         );
 
@@ -73,7 +69,7 @@ public class TestManager {
         currentTests.put(chatId, questions);
         correctAnswers.put(chatId, answers);
         currentIndexes.put(chatId, 0);
-        scoreMap.put(chatId, 0);
+        totalScore.put(chatId, 0);
 
         return questions.get(0);
     }
@@ -90,7 +86,7 @@ public class TestManager {
         String chosen = callbackData.substring(0, 1);
         int index = currentIndexes.get(chatId);
         List<String> correct = correctAnswers.get(chatId);
-        int score = scoreMap.get(chatId);
+        int score = totalScore.get(chatId);
 
         // Получаем количество баллов за этот вопрос из текста
         String questionText = currentTests.get(chatId).get(index);
@@ -104,7 +100,7 @@ public class TestManager {
         // Проверяем ответ
         if (correct.get(index).equalsIgnoreCase(chosen)) {
             score += pointsForQuestion;
-            scoreMap.put(chatId, score);
+            totalScore.put(chatId, score);
         }
 
         // Переход к следующему вопросу
@@ -114,7 +110,7 @@ public class TestManager {
         if (index >= questions.size()) {
             // Подсчёт общей суммы баллов
             int totalPoints = 0;
-            Pattern totalPointPattern = Pattern.compile("\\((\\d+)\\s*p?o?i?n?t?s?\\)");
+            Pattern totalPointPattern = Pattern.compile("\\((\\d+)\\s*[points]*\\)");
             for (String q : questions) {
                 Matcher m = totalPointPattern.matcher(q);
                 if (m.find()) {
@@ -122,50 +118,34 @@ public class TestManager {
                 }
             }
 
-            int earnedPoints = scoreMap.get(chatId);
+            int earnedPoints = totalScore.get(chatId);
 
             // Очищаем данные после завершения
             currentTests.remove(chatId);
             currentIndexes.remove(chatId);
             correctAnswers.remove(chatId);
-            scoreMap.remove(chatId);
+            totalScore.remove(chatId);
+
+            String languageLevel;
+            if (earnedPoints <= 6) {
+                languageLevel = "A1-A2 (Начальный)";
+            } else if (earnedPoints <= 12) {
+                languageLevel = "B1-B2 (Средний)";
+            } else {
+                languageLevel = "C1-C2 (Продвинутый)";
+            }
 
             return "Тест завершён!\n\n" +
-                            "Вы набрали " + earnedPoints + " баллов из " + totalPoints + " возможных.\n\n" +
-                            "Отличная работа!";
+                    "Вы набрали " + earnedPoints + " баллов из " + totalPoints + " возможных.\n" +
+                    "Ваш уровень владения языком " + languageLevel + "\n\n" +
+                    "Отличная работа!";
         }
 
         currentIndexes.put(chatId, index);
         return questions.get(index);
     }
 
-    /**
-     * Клавиатура с ответами A-D
-     */
-    private static InlineKeyboardMarkup createAnswerKeyboard() {
 
-        InlineKeyboardButton a = InlineKeyboardButton.builder()
-                .text("A")
-                .callbackData("A_button")
-                .build();
-        InlineKeyboardButton b = InlineKeyboardButton.builder()
-                .text("B")
-                .callbackData("B_button")
-                .build();
-        InlineKeyboardButton c = InlineKeyboardButton.builder()
-                .text("C")
-                .callbackData("C_button")
-                .build();
-        InlineKeyboardButton d = InlineKeyboardButton.builder()
-                .text("D")
-                .callbackData("D_button")
-                .build();
-
-        List<List<InlineKeyboardButton>> keyboard = List.of(List.of(a, b, c, d));
-        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        markup.setKeyboard(keyboard);
-        return markup;
-    }
 
     public static boolean isTestActive(long chatId) {
         return currentTests.containsKey(chatId) &&

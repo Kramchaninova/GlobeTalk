@@ -15,10 +15,12 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 public class LogicBot {
     private final Bot bot;
     private final StartBot startBot;
+    private final TestManager testManager;
 
     public LogicBot(Bot bot){
         this.bot = bot;
         this.startBot = new StartBot();
+        this.testManager = new TestManager();
     }
 
     private static final String COMMAND_HELP = "  **Список доступных команд:**\n\n" +
@@ -46,7 +48,17 @@ public class LogicBot {
                 String callbackData = update.getCallbackQuery().getData();
                 long chatId = update.getCallbackQuery().getMessage().getChatId();
 
-                String responseText = startBot.handleButtonClick(callbackData, chatId);
+                String responseText;
+
+                if (callbackData.equals("A_button") ||
+                        callbackData.equals("B_button") ||
+                        callbackData.equals("C_button") ||
+                        callbackData.equals("D_button")) {
+                    responseText = testManager.handleAnswer(callbackData, chatId);
+                } else {
+                    responseText = startBot.handleButtonClick(callbackData, chatId);
+                }
+
 
                 SendMessage message = SendMessage.builder()
                         .chatId(chatId)

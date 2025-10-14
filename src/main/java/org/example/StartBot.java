@@ -76,12 +76,6 @@ public class StartBot {
      */
     public String handleButtonClick(String callbackData, long chatId){
         switch (callbackData){
-            case "A_button":
-            case "B_button":
-            case "C_button":
-            case "D_button": {
-                return TestManager.handleAnswer(callbackData, chatId);
-            }
             case "yes_button": {
                 //ВНИАМНИЕ: тут класс создания и генерирования ответов
 
