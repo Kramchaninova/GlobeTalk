@@ -3,14 +3,14 @@ package org.example;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class BotTest {
-    private final Bot likeBot = new Bot("test-token", "TestBot");
-    private final LogicBot logicBot = new LogicBot(likeBot);
+public class TelegramBotTest {
+    private final TelegramBot likeTelegramBot = new TelegramBot("test-token", "TestBot");
+    private final LogicBot logicBot = new LogicBot(likeTelegramBot);
     private final TestManager testManager = new TestManager();
 
     /**

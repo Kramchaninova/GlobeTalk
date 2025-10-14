@@ -25,7 +25,7 @@ public class Main {
         try {
             // DefaultBotSession — это сессия для Long Polling, через которую бот получает обновления
             TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
-            botsApi.registerBot(new Bot(botToken, botUsername));
+            botsApi.registerBot(new TelegramBot(botToken, botUsername));
             System.out.println("бот работает");
         } catch (TelegramApiException e) {
             e.printStackTrace();

@@ -10,7 +10,7 @@ import java.util.*;
  * ну и соответсвенно реакции на эти кнопки
  */
 
-public class StartBot {
+public class StartCommand {
 
     private static final String START_MESSAGE = "Вас приветствует телеграмм бот GlobeTalk для изучения иностранных языков!\n\n" +
             "Перед началом обучения, пройдите короткий тестик для определения вашего уровня владения языка.\n\n" +
@@ -46,7 +46,7 @@ public class StartBot {
                 .build();
 
         InlineKeyboardButton no_button = InlineKeyboardButton.builder()
-                .text("Совневаюсь...")
+                .text("Назад")
                 .callbackData("no_button")
                 .build();
 

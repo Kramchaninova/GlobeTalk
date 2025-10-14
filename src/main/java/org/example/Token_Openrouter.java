@@ -10,7 +10,7 @@ import java.io.IOException;
  *
  */
 public class Token_Openrouter {
-    String token_openrouter = "";
+    private String token_openrouter = "";
 
     /**
      * Возвращает текущий токен бота
