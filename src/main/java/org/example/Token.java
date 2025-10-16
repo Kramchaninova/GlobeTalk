@@ -10,7 +10,7 @@ import java.io.IOException;
  *
  */
 public class Token {
-    String token = "";
+    private String token = "";
 
     /**
      * Возвращает текущий токен бота
