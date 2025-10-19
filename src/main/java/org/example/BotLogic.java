@@ -8,18 +8,20 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 
 /**
- * LogicBot - класс для обработки логики бота.
+ * BotLogic - класс для обработки логики бота.
  * обрабатывает входящие сообщения, команды и callback запросы от кнопок
  */
 
 
-public class LogicBot {
+public class BotLogic {
     private final StartCommand startCommand;
     private final TestHandler testHandler;
+    private final KeyboardService keyboardService;
 
-    public LogicBot(){
+    public BotLogic(){
         this.testHandler = new TestHandler();
         this.startCommand = new StartCommand(this.testHandler);
+        this.keyboardService = new KeyboardService();
     }
 
     private static final String COMMAND_HELP = "  **Список доступных команд:**\n\n" +
@@ -37,7 +39,6 @@ public class LogicBot {
 
     /**
      * processUpdate - метод обаботки входящий обновлений (сообщений)
-     * @param update
      */
     public void processUpdate(Update update, TelegramLongPollingBot bot) {
         try {
@@ -55,9 +56,6 @@ public class LogicBot {
 
     /**
      * handleCallbackQuery  - обработка нажатий кнопок
-     * @param update
-     * @param bot
-     * @throws TelegramApiException
      */
 
     public void handleCallbackQuery (Update update, TelegramLongPollingBot bot)  throws TelegramApiException{
@@ -72,9 +70,6 @@ public class LogicBot {
 
     /**
      * методо обработки команд вручную введенных
-     * @param update
-     * @param bot
-     * @throws TelegramApiException
      */
 
     private void handleMessage(Update update, TelegramLongPollingBot bot) throws TelegramApiException {
@@ -82,14 +77,15 @@ public class LogicBot {
         long chatId = update.getMessage().getChatId();
 
         if (messageText.startsWith("/")) {
-            String responseText = handleCommand(messageText, chatId);
+            String responseText = handleCommand(messageText);
             SendMessage response = SendMessage.builder()
                     .chatId(chatId)
                     .text(responseText)
                     .build();
 
-            if (messageText.equals("/start")) {
-                response.setReplyMarkup(startCommand.createStartButton(chatId));
+            var keyboard = keyboardService.getKeyboardForCommand(messageText, chatId);
+            if (keyboard != null) {
+                response.setReplyMarkup(keyboard);
             }
             bot.execute(response);
         }
@@ -97,9 +93,6 @@ public class LogicBot {
 
     /**
      * Обработка ответов с кнопок
-     * @param callbackData
-     * @param chatId
-     * @return
      */
     private String processCallbackData(String callbackData, long chatId) {
         if (callbackData.equals("A_button") ||
@@ -114,10 +107,6 @@ public class LogicBot {
 
     /**
      * Cоздание сообщений с нужными кнопками
-     * @param chatId
-     * @param text
-     * @param callbackData
-     * @return
      */
     private SendMessage createMessageWithKeyboard(long chatId, String text, String callbackData) {
         SendMessage message = SendMessage.builder()
@@ -125,17 +114,9 @@ public class LogicBot {
                 .text(text)
                 .build();
 
-        if (callbackData.equals("yes_button")) {
-            message.setReplyMarkup(startCommand.createAnswerKeyboard());
-        } else if (callbackData.equals("A_button") ||
-                callbackData.equals("B_button") ||
-                callbackData.equals("C_button") ||
-                callbackData.equals("D_button")) {
-            if (testHandler.isTestActive(chatId)) {
-                message.setReplyMarkup(startCommand.createAnswerKeyboard());
-            }
-        } else if (callbackData.equals("no_button")) {
-            message.setReplyMarkup(startCommand.createStartButton(chatId));
+        var keyboard = keyboardService.getKeyboardForCallback(callbackData, chatId, testHandler);
+        if (keyboard != null) {
+            message.setReplyMarkup(keyboard);
         }
 
         return message;
@@ -146,13 +127,11 @@ public class LogicBot {
      * Если в сообщении была команда, т.е. текст начинается с /, то обрабатываем ее
      *и высылаем текст, который привязан к командам
      */
-    public String handleCommand(String command, long chatId) {
+    public String handleCommand(String command) {
         switch (command) {
             case "/start":
-                /** StartBot - отельный класс для реализации старта бота
-                 * в дальнейшем логично было бы на каждую задачу выводить по классу
-                 */
-                return startCommand.startTest(chatId);
+                // StartCommand - отельный класс для реализации старта бота,в дальнейшем логично было бы на каждую задачу выводить по классу
+                return startCommand.startTest();
 
             case "/help":
                 return COMMAND_HELP;

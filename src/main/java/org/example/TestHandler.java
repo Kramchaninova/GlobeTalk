@@ -1,8 +1,5 @@
 package org.example;
 
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
-
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -31,9 +28,6 @@ public class TestHandler {
      * Сохраняет данные для конкретного пользователя и инициализирует индекс текущего вопроса
      * и общий счёт. Возвращает первый вопрос для отображения.
      *
-     * @param chatId
-     * @param test
-     * @return
      */
 
     public String generateTest(long chatId, String test) {
@@ -85,7 +79,7 @@ public class TestHandler {
         totalScore.put(chatId, 0);
         questionPoints.put(chatId, pointsList);
 
-        return questions.get(0);
+        return questions.getFirst();
     }
 
     /**
@@ -147,8 +141,6 @@ public class TestHandler {
     /**
      * Проверяет, активен ли тест для пользователя.
      *
-     * @param chatId
-     * @return
      */
 
     public boolean isTestActive(long chatId) {
@@ -157,33 +149,4 @@ public class TestHandler {
                 currentIndexes.get(chatId) < currentTests.get(chatId).size();
     }
 
-    /**
-     * Создаёт inline-клавиатуру для ответов на вопросы A/B/C/D.
-     *
-     * @return
-     */
-
-    public InlineKeyboardMarkup createAnswerKeyboard() {
-        InlineKeyboardButton a = InlineKeyboardButton.builder()
-                .text("A")
-                .callbackData("A_button")
-                .build();
-        InlineKeyboardButton b = InlineKeyboardButton.builder()
-                .text("B")
-                .callbackData("B_button")
-                .build();
-        InlineKeyboardButton c = InlineKeyboardButton.builder()
-                .text("C")
-                .callbackData("C_button")
-                .build();
-        InlineKeyboardButton d = InlineKeyboardButton.builder()
-                .text("D")
-                .callbackData("D_button")
-                .build();
-
-        List<List<InlineKeyboardButton>> keyboard = List.of(List.of(a, b, c, d));
-        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        markup.setKeyboard(keyboard);
-        return markup;
-    }
 }

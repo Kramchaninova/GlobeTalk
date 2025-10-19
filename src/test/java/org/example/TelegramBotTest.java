@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Assertions;
 
 
 public class TelegramBotTest {
-    private final LogicBot logicBot = new LogicBot();
+    private final BotLogic botLogic = new BotLogic();
     private final TestHandler testHandler = new TestHandler();
 
     /**
@@ -18,7 +18,7 @@ public class TelegramBotTest {
      */
     @Test
     void testStartCommand() {
-        String result = logicBot.handleCommand("/start", 12345L);
+        String result = botLogic.handleCommand("/start");
 
         Assertions.assertEquals("Вас приветствует телеграмм бот GlobeTalk для изучения иностранных языков!\n\n" +
                 "Перед началом обучения, пройдите короткий тестик для определения вашего уровня владения языка.\n\n" +
@@ -31,7 +31,7 @@ public class TelegramBotTest {
      */
     @Test
     void testHelpCommand() {
-        String result = logicBot.handleCommand("/help", 12345L);
+        String result = botLogic.handleCommand("/help");
 
         Assertions.assertEquals("  **Список доступных команд:**\n\n" +
                 "'/start' - начать работу с ботом\n" +
@@ -47,7 +47,7 @@ public class TelegramBotTest {
      */
     @Test
     void testUnknownCommand() {
-        String result = logicBot.handleCommand("/unknown", 12345L);
+        String result = botLogic.handleCommand("/unknown");
 
         Assertions.assertEquals("Неизвестная команда. Введите /help для списка доступных команд.", result);
     }
