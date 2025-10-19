@@ -1,11 +1,8 @@
 package org.example;
 
-import org.telegram.telegrambots.bots.TelegramLongPollingBot;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-
-
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * BotLogic - класс для обработки логики бота.
@@ -24,77 +21,35 @@ public class BotLogic {
         this.keyboardService = new KeyboardService();
     }
 
-    private static final String COMMAND_HELP = "  **Список доступных команд:**\n\n" +
-            "'/start' - начать работу с ботом\n" +
-            "'/help' - показать эту справку\n" +
-            "     **Как взаимодействовать с ботом:**\n" +
-            "Телеграмм бот работает по принципу ввода сообщение:\n" +
-            "- если сообщение начинается не '/' то он просто повторяет\n" +
-            "- если же начинается с '/' то он воспринимает это как команду";
+    private static final String COMMAND_HELP =  "🌍 *GlobeTalk - Изучение иностранных языков* 🌍\n\n" +
+
+            "📋 **Доступные команды:**\n\n" +
+            "• /start - Начать работу с ботом и пройти тестирование\n" +
+            "• /help - Показать эту справку\n" +
+
+            "🎯 **Как работает бот:**\n\n" +
+            "GlobeTalk поможет вам в изучении иностранных языков через:\n" +
+            "• 📝 Тестирование для определения вашего уровня\n\n" +
+
+            "🛠️ **В процессе разработки:****\n" +
+            "• 🎮 Интерактивные упражнения\n" +
+            "• 📊 Отслеживание прогресса\n\n" +
+
+            "💡 **Как взаимодействовать:**\n" +
+            "• Используйте команды из меню (слева)\n" +
+            "• Нажимайте на кнопки под сообщениями\n" +
+            "• Отвечайте на вопросы теста\n" +
+            "• Следите за своим прогрессом в профиле\n\n" +
+
+            "🚀 **Начните с команды /start чтобы определить ваш уровень!**";
 
 
     private static final String COMMAND_UNKNOWN = "Неизвестная команда. Введите /help для списка доступных команд.";
 
-
-
-    /**
-     * processUpdate - метод обаботки входящий обновлений (сообщений)
-     */
-    public void processUpdate(Update update, TelegramLongPollingBot bot) {
-        try {
-            //ДОБАВЛЕНО (относительно эхо бота)
-            //обаботка нажатий кнопок под текстом
-            if (update.hasCallbackQuery()) { //это грубо говоря проверка на нажатие кнопки
-                handleCallbackQuery(update, bot);
-            } else if (update.hasMessage() && update.getMessage().hasText()){
-                handleMessage(update, bot);
-            }
-        } catch (TelegramApiException e){
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * handleCallbackQuery  - обработка нажатий кнопок
-     */
-
-    public void handleCallbackQuery (Update update, TelegramLongPollingBot bot)  throws TelegramApiException{
-        String callbackData = update.getCallbackQuery().getData();
-        long chatId = update.getCallbackQuery().getMessage().getChatId();
-
-        String responseText = processCallbackData(callbackData, chatId);
-        SendMessage message = createMessageWithKeyboard(chatId, responseText, callbackData);
-
-        bot.execute(message);
-    }
-
-    /**
-     * методо обработки команд вручную введенных
-     */
-
-    private void handleMessage(Update update, TelegramLongPollingBot bot) throws TelegramApiException {
-        String messageText = update.getMessage().getText();
-        long chatId = update.getMessage().getChatId();
-
-        if (messageText.startsWith("/")) {
-            String responseText = handleCommand(messageText);
-            SendMessage response = SendMessage.builder()
-                    .chatId(chatId)
-                    .text(responseText)
-                    .build();
-
-            var keyboard = keyboardService.getKeyboardForCommand(messageText, chatId);
-            if (keyboard != null) {
-                response.setReplyMarkup(keyboard);
-            }
-            bot.execute(response);
-        }
-    }
-
     /**
      * Обработка ответов с кнопок
      */
-    private String processCallbackData(String callbackData, long chatId) {
+    public String processCallbackData(String callbackData, long chatId) {
         if (callbackData.equals("A_button") ||
                 callbackData.equals("B_button") ||
                 callbackData.equals("C_button") ||
@@ -104,24 +59,6 @@ public class BotLogic {
             return startCommand.handleButtonClick(callbackData, chatId);
         }
     }
-
-    /**
-     * Cоздание сообщений с нужными кнопками
-     */
-    private SendMessage createMessageWithKeyboard(long chatId, String text, String callbackData) {
-        SendMessage message = SendMessage.builder()
-                .chatId(chatId)
-                .text(text)
-                .build();
-
-        var keyboard = keyboardService.getKeyboardForCallback(callbackData, chatId, testHandler);
-        if (keyboard != null) {
-            message.setReplyMarkup(keyboard);
-        }
-
-        return message;
-    }
-
 
     /**
      * Если в сообщении была команда, т.е. текст начинается с /, то обрабатываем ее
@@ -140,5 +77,79 @@ public class BotLogic {
                 return COMMAND_UNKNOWN;
         }
 
+    }
+
+    /**
+     * handleCallbackQuery - собирает результаты обработки в список
+     */
+    public List<String> handleCallbackQuery(Update update) {
+        String callbackData = update.getCallbackQuery().getData();
+        long chatId = update.getCallbackQuery().getMessage().getChatId();
+
+        String responseText = processCallbackData(callbackData, chatId);
+        String keyboardType = getKeyboardForCallback(callbackData, chatId);
+
+        // возвращаем список: [chatId, responseText, keyboardType]
+        List<String> result = new ArrayList<>();
+        result.add(String.valueOf(chatId));
+        result.add(responseText);
+        result.add(keyboardType != null ? keyboardType : "");
+
+        return result;
+    }
+
+
+    // обработка всех входящих сообщений
+    public List<String> onUpdateReceived(Update update) {
+        List<String> result = new ArrayList<>();
+
+        // обработка нажатий кнопок
+        if (update.hasCallbackQuery()) {
+            return handleCallbackQuery(update);
+
+        //обработка сообщения или команды ( в нашем случае команды веденную с клавиатуры))
+        } else if (update.hasMessage() && update.getMessage().hasText()) {
+            String messageText = update.getMessage().getText();
+            long chatId = update.getMessage().getChatId();
+
+            // команда из бокового меню
+            if (messageText.startsWith("/")) {
+                String responseText = handleCommand(messageText);
+                String keyboardType = getKeyboardForCommand(messageText, chatId);
+
+                result.add(String.valueOf(chatId));
+                result.add(responseText);
+                result.add(keyboardType != null ? keyboardType : "");
+
+                System.out.println("обработана команда из бокового меню: " + messageText);
+            }
+        }
+        return result;
+    }
+
+
+    /**
+     *  метод определения ключа показываемого списка кнопок после нажатия
+     */
+    public String getKeyboardForCallback(String callbackData, long chatId) {
+        switch (callbackData) {
+            case "yes_button" -> { return "test_answers"; }
+            case "A_button", "B_button", "C_button", "D_button" -> {
+                if (testHandler.isTestActive(chatId)) { return "test_answers"; }
+            }
+            case "no_button" -> { return "start"; }
+        }
+        return null;
+    }
+
+    //логика определения типа команды в боковом меню
+    public String getKeyboardForCommand(String command, long chatId) {
+        if (command != null && command.equals("/start")) {
+            return "start";
+        }
+        return null;
+    }
+    public KeyboardService getKeyboardService() {
+        return keyboardService;
     }
 }
