@@ -8,6 +8,9 @@ package org.example;
 
 public class StartCommand {
     private final TestHandler testHandler;
+    public TestHandler getTestHandler() {
+        return testHandler;
+    }
 
     public StartCommand(TestHandler testHandler) {
         this.testHandler = testHandler;
