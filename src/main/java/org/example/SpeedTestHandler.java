@@ -102,7 +102,7 @@ public class SpeedTestHandler {
      */
     private String formatQuestionWithTimer(String question, int points) {
         int timeLimit = getTimeForPoints(points);
-        return question + "\n\n Время на ответ: " + timeLimit + " секунд";
+        return question + "\n\nВремя на ответ: " + timeLimit + " секунд";
     }
 
     /**
