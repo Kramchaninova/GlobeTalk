@@ -13,7 +13,7 @@ import java.util.List;
 
 
 /**
- * Bot.java - основной клёасс бота, реализующий интерфейс для получения обновлений
+ * Bot.java - основной класс бота, реализующий интерфейс для получения обновлений
  * Обрабатывает текстовые команды и кнопки, возвращая ответы пользователю.т
  */
 public class TelegramBot extends TelegramLongPollingBot  {
@@ -57,6 +57,7 @@ public class TelegramBot extends TelegramLongPollingBot  {
             // добавление команд (без символа '/', так как это формальный признак команды для бота)
             commands.add(new BotCommand("start", "начать работу с ботом"));
             commands.add(new BotCommand("help", "справка по командам"));
+            commands.add(new BotCommand("speed_test", "тест на скорость"));
 
             //esecute - способ отправки запроса к телеграм апи
             execute(SetMyCommands.builder()

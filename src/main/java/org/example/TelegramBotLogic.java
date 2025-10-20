@@ -66,7 +66,7 @@ public class TelegramBotLogic {
                     .build();
 
             // Используем основную логику из BotLogic
-            Object keyboard = botLogic.getKeyboardForCommand(messageText, chatId);
+            Object keyboard = botLogic.getKeyboardForCommand(messageText);
             if (keyboard != null) {
                 response.setReplyMarkup((InlineKeyboardMarkup) keyboard);
             }

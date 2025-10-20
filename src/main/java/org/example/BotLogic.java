@@ -5,12 +5,14 @@ public class BotLogic {
     private final TestHandler testHandler;
     private final KeyboardService keyboardService;
     private final SpeedTestCommand speedTestCommand; // добавили объект
+    private final SpeedTestHandler speedTestHandler;
 
     public BotLogic() {
         this.testHandler = new TestHandler();
+        this.speedTestHandler = new SpeedTestHandler();
         this.startCommand = new StartCommand(this.testHandler);
         this.keyboardService = new KeyboardService();
-        this.speedTestCommand = new SpeedTestCommand(this.testHandler); // передаем testHandler
+        this.speedTestCommand = new SpeedTestCommand(this.speedTestHandler);
     }
 
     private static final String COMMAND_HELP = "  **Список доступных команд:**\n\n" +
@@ -29,10 +31,24 @@ public class BotLogic {
                 callbackData.equals("B_button") ||
                 callbackData.equals("C_button") ||
                 callbackData.equals("D_button")) {
-            return testHandler.handleAnswer(callbackData, chatId);
+            if (testHandler.isTestActive(chatId)) {
+                return testHandler.handleAnswer(callbackData, chatId);
+            } else if (speedTestHandler.isTestActive(chatId)) {
+                var result = speedTestHandler.handleAnswerWithFeedback(callbackData, chatId);
+                return (String) result.get("feedback");
+            } else {
+                return "Сначала начните тест командой /start или /speed_test";
+            }
+
         } else if (callbackData.equals("speed_yes_button") ||
                 callbackData.equals("speed_no_button")) {
             return speedTestCommand.handleButtonClick(callbackData, chatId);
+        } else if (callbackData.equals("next_button")) {
+            if (speedTestHandler.isTestActive(chatId)) {
+                return speedTestHandler.moveToNextQuestion(chatId);
+            } else {
+                return "Тест не активен";
+            }
         } else {
             return startCommand.handleButtonClick(callbackData, chatId);
         }
@@ -52,13 +68,10 @@ public class BotLogic {
     }
 
     public Object getKeyboardForCallback(String callbackData, long chatId) {
-        return keyboardService.getKeyboardForCallback(callbackData, chatId, testHandler);
+        return keyboardService.getKeyboardForCallback(callbackData, chatId, testHandler, speedTestHandler);
     }
 
-    public Object getKeyboardForCommand(String command, long chatId) {
-        if (command.equals("/speed_test")) {
-            return keyboardService.getKeyboardForCommand("/speed_test", chatId);
-        }
-        return keyboardService.getKeyboardForCommand(command, chatId);
+    public Object getKeyboardForCommand(String command) {
+        return keyboardService.getKeyboardForCommand(command);
     }
 }

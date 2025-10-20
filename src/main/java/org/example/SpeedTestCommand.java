@@ -4,10 +4,11 @@ package org.example;
  * SpeedTestCommand - управление тестом на скорость
  * Наследует логику обычного теста через StartCommand
  */
-public class SpeedTestCommand extends StartCommand {
+public class SpeedTestCommand{
+    private final SpeedTestHandler speedTestHandler;
 
-    public SpeedTestCommand(TestHandler testHandler) {
-        super(testHandler); // наследуем TestHandler
+    public SpeedTestCommand(SpeedTestHandler speedTestHandler) {
+        this.speedTestHandler = speedTestHandler;
     }
 
     private static final String START_MESSAGE = "Вы выбрали тест на скорость!\n" +
@@ -18,7 +19,6 @@ public class SpeedTestCommand extends StartCommand {
     /**
      * startTest - возвращает приветственное сообщение и кнопки Да/Нет
      */
-    @Override
     public String startTest() {
         return START_MESSAGE;
     }
@@ -26,15 +26,12 @@ public class SpeedTestCommand extends StartCommand {
     /**
      * handleButtonClick - обрабатывает нажатия кнопок Да/Нет
      */
-    @Override
     public String handleButtonClick(String callbackData, long chatId) {
         switch (callbackData) {
             case "speed_yes_button": {
-                // Создаём тест через SpeedTestYesButton
                 SpeedTestYesButton generator = new SpeedTestYesButton();
                 String test = generator.generateTest();
-                // Используем getTestHandler() для генерации теста и получения первого вопроса
-                return super.getTestHandler().generateTest(chatId, test);
+                return speedTestHandler.generateTest(chatId, test);
             }
             case "speed_no_button":
                 return NO_BUTTON_CLICK;

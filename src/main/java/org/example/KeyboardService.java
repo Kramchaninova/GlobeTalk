@@ -14,7 +14,7 @@ public class KeyboardService {
     /**
      * Кнопки для стартовых сообщений (/start)
      */
-    public InlineKeyboardMarkup createStartButton(long chatId) {
+    public InlineKeyboardMarkup createStartButton() {
         InlineKeyboardButton yesButton = InlineKeyboardButton.builder()
                 .text("Конечно!")
                 .callbackData("yes_button")
@@ -40,7 +40,7 @@ public class KeyboardService {
     /**
      * Кнопки для команды /speed_test (Да/Нет)
      */
-    public InlineKeyboardMarkup createSpeedTestStartButton(long chatId) {
+    public InlineKeyboardMarkup createSpeedTestStartButton() {
         InlineKeyboardButton yesButton = InlineKeyboardButton.builder()
                 .text("Да")
                 .callbackData("speed_yes_button")
@@ -99,27 +99,60 @@ public class KeyboardService {
     }
 
     /**
+     * кнопка "Дальше" для speed теста
+     */
+    public InlineKeyboardMarkup createNextButtonKeyboard() {
+        InlineKeyboardButton nextButton = InlineKeyboardButton.builder()
+                .text("Дальше →")
+                .callbackData("next_button")
+                .build();
+
+        List<InlineKeyboardButton> row = new ArrayList<>();
+        row.add(nextButton);
+
+        List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
+        keyboard.add(row);
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        markup.setKeyboard(keyboard);
+        return markup;
+    }
+
+    /**
      * Метод определяет, какой набор кнопок показывать в зависимости от callback
      */
-    public InlineKeyboardMarkup getKeyboardForCallback(String callbackData, long chatId, TestHandler testHandler) {
+    public InlineKeyboardMarkup getKeyboardForCallback(String callbackData, long chatId, TestHandler testHandler, SpeedTestHandler speedTestHandler ) {
         switch (callbackData) {
+            //запуск тестов
             case "yes_button":
                 return createTestAnswerKeyboard();
+            case "speed_yes_button":
+                return createTestAnswerKeyboard();
+
+            //ответы
             case "A_button", "B_button", "C_button", "D_button":
                 if (testHandler.isTestActive(chatId)) {
+                    return createTestAnswerKeyboard();
+                } else if (speedTestHandler.isTestActive(chatId)) {
+                    //кнопка дальше между сообщениями на скорость
+                    return createNextButtonKeyboard();
+                }else {
+                    return null;
+                }
+
+            //проможуточная кнопка дальше
+            case "next_button":
+                if (speedTestHandler.isTestActive(chatId)) {
                     return createTestAnswerKeyboard();
                 } else {
                     return null;
                 }
+
+            //возврат к меню
             case "no_button":
-                return createStartButton(chatId);
-            case "speed_yes_button", "speed_no_button":
-                // если тест на скорость уже начат, показываем клавиатуру A/B/C/D
-                if (testHandler.isTestActive(chatId)) {
-                    return createTestAnswerKeyboard();
-                } else {
-                    return createSpeedTestStartButton(chatId);
-                }
+                return createStartButton();
+            case "speed_no_button":
+                return createSpeedTestStartButton();
         }
         return null;
     }
@@ -127,13 +160,13 @@ public class KeyboardService {
     /**
      * Определяет, нужна ли клавиатура для команды
      */
-    public InlineKeyboardMarkup getKeyboardForCommand(String command, long chatId) {
+    public InlineKeyboardMarkup getKeyboardForCommand(String command) {
         if (command != null) {
             switch (command) {
                 case "/start":
-                    return createStartButton(chatId);
+                    return createStartButton();
                 case "/speed_test":
-                    return createSpeedTestStartButton(chatId);
+                    return createSpeedTestStartButton();
             }
         }
         return null;
