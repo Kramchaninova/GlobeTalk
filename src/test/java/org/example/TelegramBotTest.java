@@ -232,7 +232,7 @@ public class TelegramBotTest {
                 """;
 
         testHandler.generateTest(99999L, testText); // ДРУГОЙ chatId чтобы не конфликтовать
-        testHandler.handleAnswer("B_button", 99999L);//вкрный ответ
+        testHandler.handleAnswer("B_button", 99999L);//вкрный ответ (+6 баллов)
         testHandler.handleAnswer("A_button", 99999L); //неверный ответ
         String finalResponse = testHandler.handleAnswer("B_button", 99999L);//верный ответ
 
@@ -249,9 +249,8 @@ public class TelegramBotTest {
 
     //              ТЕСТЫ НА КНОПКИ
 
-
     /**
-     * Тест на наличие всех кнопок в стартовом списке кнопок
+     * Тест на наличие всех кнопок в стартовом словаре кнопок
      */
     @Test
     void testStartKeyboardButtons() {
@@ -267,7 +266,7 @@ public class TelegramBotTest {
         Assertions.assertEquals(2, startButtons.size());
     }
     /**
-     * Тест на наличие всех кнопок в тестовом списке кнопок
+     * Тест на наличие всех кнопок в тестовом словаре кнопок
      */
     @Test
     void testAnswerKeyboardButtons() {

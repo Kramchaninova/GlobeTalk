@@ -12,13 +12,13 @@ import java.util.HashMap;
  */
 public class KeyboardService {
 
-    // храним название кнопки и callback для старта
+    // храним название кнопки и callback для старта в виде словаря
     private final Map<String, String> startButtons = Map.of(
             "Конечно!", "yes_button",
             "Назад", "no_button"
     );
 
-    // храним название кнопки и callback для ответов на тесты
+    // храним название кнопки и callback для ответов на тесты в виде словаря
     private final Map<String, String> testAnswerButtons = Map.of(
             "A", "A_button",
             "B", "B_button",

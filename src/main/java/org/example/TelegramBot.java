@@ -60,7 +60,7 @@ public class TelegramBot extends TelegramLongPollingBot  {
     }
 
     /**
-     * создание наборов кнопок из map
+     * создание наборов кнопок из map словарей
      * @return готовый набор уже сформированных кнопок для сообщения
      */
     private InlineKeyboardMarkup createKeyboardFromMap(Map<String, String> buttonConfigs, int buttonsPerRow) {

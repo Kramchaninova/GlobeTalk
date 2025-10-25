@@ -115,7 +115,7 @@ public class BotLogic {
             // команда из бокового меню
             if (messageText.startsWith("/")) {
                 String responseText = handleCommand(messageText);
-                String keyboardType = getKeyboardForCommand(messageText, chatId);
+                String keyboardType = getKeyboardForCommand(messageText);
 
                 result.add(String.valueOf(chatId));
                 result.add(responseText);
@@ -143,7 +143,7 @@ public class BotLogic {
     }
 
     //логика определения типа команды в боковом меню
-    public String getKeyboardForCommand(String command, long chatId) {
+    public String getKeyboardForCommand(String command) {
         if (command != null && command.equals("/start")) {
             return "start";
         }
