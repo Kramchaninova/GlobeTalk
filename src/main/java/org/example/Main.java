@@ -28,6 +28,7 @@ public class Main {
             botsApi.registerBot(new TelegramBot(botToken, botUsername));
             System.out.println("бот работает");
         } catch (TelegramApiException e) {
+            System.err.println("ошибка запуска бота: " + e.getMessage());
             e.printStackTrace();
         }
     }

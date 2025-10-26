@@ -29,6 +29,7 @@ public class TokenOpenRouter {
             tokenOpenRouter = reader.readLine();
             System.out.println("Токен Openrouter загружен");
         } catch (IOException e) {
+            System.err.println("Ошибка загрузки токена OpenRouter: " + e.getMessage());
             e.printStackTrace();
         }
     }
