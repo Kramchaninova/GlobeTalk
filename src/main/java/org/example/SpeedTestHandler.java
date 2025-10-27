@@ -295,18 +295,25 @@ public class SpeedTestHandler {
         String performanceMessage;
 
         if (earnedPoints >= 18 && earnedPoints <= 24) {
-            performanceMessage = "Отличный результат!";
+            performanceMessage = "🎉 *Отличный результат!* 🎉";
         } else if (earnedPoints >= 12 && earnedPoints <= 17) {
-            performanceMessage = "Хороший результат!";
+            performanceMessage = "👍 *Хороший результат!* 👍";
         } else {
-            performanceMessage = "Стоит поработать!";
+            performanceMessage = "💪 *Есть над чем поработать!* 💪";
         }
 
         double percentage = totalPoints > 0 ? (double) earnedPoints / totalPoints * 100 : 0;
 
         return performanceMessage + "\n\n" +
-                "Вы набрали " + earnedPoints + " баллов из " + totalPoints + " возможных.\n" +
-                "Процент выполнения: " + String.format("%.1f", percentage) + "%";
+                "📊 **Результаты тестирования:**\n" +
+                "🏆 Набрано баллов: " + earnedPoints + " из " + totalPoints + " возможных\n" +
+                "📈 Процент выполнения: " + String.format("%.1f", percentage) + "%\n\n" +
+
+                "✨ **Продолжайте в том же духе!** ✨\n\n" +
+                "Для продолжения работы используйте команды:\n" +
+                "• /start - пройти тест заново\n" +
+                "• /speed_test - тест на скорость\n" +
+                "• /help - все доступные команды\n\n";
     }
 
     /**
