@@ -161,18 +161,14 @@ public class BotLogic {
                     return "test_answers";
                 }else if (speedTestHandler.isTestActive(chatId)){
                     return "speed_test_next";
-                } else {
-                    return "start";
                 }
             }
             case "speed_yes_button" -> {return "test_answers";}
-            case "speed_no_button" -> {return  "start";}
             case "next_button" -> {
                 if (speedTestHandler.isTestActive(chatId)) {
                     return "test_answers";
                 }
             }
-            case "no_button" -> { return "start";}
         }
         return null;
     }
