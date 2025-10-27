@@ -1,6 +1,5 @@
 package org.example;
 
-import org.telegram.telegrambots.meta.api.objects.Update;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -82,10 +81,7 @@ public class BotLogic {
     /**
      * handleCallbackQuery - собирает результаты обработки в список
      */
-    public List<String> handleCallbackQuery(Update update) {
-        String callbackData = update.getCallbackQuery().getData();
-        long chatId = update.getCallbackQuery().getMessage().getChatId();
-
+    public List<String> handleCallbackQuery(String callbackData, long chatId) {
         String responseText = processCallbackData(callbackData, chatId);
         String keyboardType = getKeyboardForCallback(callbackData, chatId);
 
@@ -100,18 +96,8 @@ public class BotLogic {
 
 
     // обработка всех входящих сообщений
-    public List<String> onUpdateReceived(Update update) {
+    public List<String> handleTextMessage(long chatId, String messageText) {
         List<String> result = new ArrayList<>();
-
-        // обработка нажатий кнопок
-        if (update.hasCallbackQuery()) {
-            return handleCallbackQuery(update);
-
-        //обработка сообщения или команды ( в нашем случае команды веденную с клавиатуры))
-        } else if (update.hasMessage() && update.getMessage().hasText()) {
-            String messageText = update.getMessage().getText();
-            long chatId = update.getMessage().getChatId();
-
             // команда из бокового меню
             if (messageText.startsWith("/")) {
                 String responseText = handleCommand(messageText);
@@ -123,8 +109,19 @@ public class BotLogic {
 
                 System.out.println("обработана команда из бокового меню: " + messageText);
             }
-        }
         return result;
+    }
+    /**
+     * метод для распределения входящих данных на кнопки и текст
+     */
+    public List<String> processInput(String inputType, long chatId, String data) {
+        if ("callback".equals(inputType)) {
+            return handleCallbackQuery(data, chatId);
+        } else if ("message".equals(inputType)) {
+            return handleTextMessage(chatId, data);
+        }
+
+        return new ArrayList<>();
     }
 
 

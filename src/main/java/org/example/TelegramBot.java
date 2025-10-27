@@ -94,7 +94,20 @@ public class TelegramBot extends TelegramLongPollingBot  {
     public void onUpdateReceived(Update update){
         try {
             // передаем обновление в BotLogic для обработки
-            List<String> result = botLogic.onUpdateReceived(update);
+            List<String> result;
+            //если нажатие на кнопку произошло
+            if (update.hasCallbackQuery()) {
+                String callbackData = update.getCallbackQuery().getData();
+                long chatId = update.getCallbackQuery().getMessage().getChatId();
+                result = botLogic.processInput("callback", chatId, callbackData);
+                //если сообщение
+            } else if (update.hasMessage() && update.getMessage().hasText()) {
+                String messageText = update.getMessage().getText();
+                long chatId = update.getMessage().getChatId();
+                result = botLogic.processInput("message", chatId, messageText);
+            } else {
+                return;
+            }
 
             // если есть результат, создаем и отправляем сообщение
             if (!result.isEmpty()) {
