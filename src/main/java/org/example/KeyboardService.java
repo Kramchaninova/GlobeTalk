@@ -26,14 +26,23 @@ public class KeyboardService {
             "D", "D_button"
     );
 
+    //храним название кнопок и callback для старта в спид тесте
+    private final Map<String, String> speedTestStartButton = Map.of(
+            "Да", "speed_yes_button",
+            "Нет", "speed_no_button"
+    );
+
+    //храним название кнопок и callback для кнопки дальше
+    private final Map<String, String> speedNextButton = Map.of(
+            "Дальше", "next_button"
+    );
+
     //гетеры возвращающие копию map коллекции
     //@return map где ключ - текст кнопки, значение - callback данные
-    public Map<String, String> getStartButtonConfigs() {
-        return new HashMap<>(startButtons);
-    }
-    public Map<String, String> getTestAnswerConfigs() {
-        return new HashMap<>(testAnswerButtons);
-    }
+    public Map<String, String> getStartButtonConfigs() {return new HashMap<>(startButtons);}
+    public Map<String, String> getTestAnswerConfigs() {return new HashMap<>(testAnswerButtons);}
+    public Map<String, String> getSpeedTestStartButton() {return new HashMap<>(speedTestStartButton);}
+    public Map<String, String> getSpeedTestNextButton() {return new HashMap<>(speedNextButton);}
 
     /**
      * хранит команды для бокового меню
@@ -45,6 +54,8 @@ public class KeyboardService {
         // добавление команд (без символа '/', так как это формальный признак команды для бота)
         commands.add(new BotCommand("start", "начать работу с ботом"));
         commands.add(new BotCommand("help", "справка по командам"));
+        commands.add(new BotCommand("speed_test", "тест на скорость"));
+
 
         System.out.println("команды зарегестрированы в боковом меню");
         return commands;
