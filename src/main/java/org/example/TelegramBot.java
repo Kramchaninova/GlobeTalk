@@ -150,10 +150,6 @@ public class TelegramBot extends TelegramLongPollingBot  {
                 botLogic.getKeyboardService().getStartButtonConfigs(), 2));
         keyboardCache.put("test_answers", createKeyboardFromMap(
                 botLogic.getKeyboardService().getTestAnswerConfigs(), 4));
-        keyboardCache.put("speed_test_next", createKeyboardFromMap(
-                botLogic.getKeyboardService().getSpeedTestNextButton(), 1));
-        keyboardCache.put("speed_test_start", createKeyboardFromMap(
-                botLogic.getKeyboardService().getSpeedTestStartButton(), 2));
         System.out.println("Клавиатуры инициализированы");
     }
 

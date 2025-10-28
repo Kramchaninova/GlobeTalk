@@ -13,7 +13,6 @@ public class TelegramBotTest {
     private final BotLogic botLogic = new BotLogic();
     private final TestHandler testHandler = new TestHandler();
     public final KeyboardService keyboardService = new KeyboardService();
-    public final SpeedTestHandler speedTestHandler = new SpeedTestHandler();
 
     /**
      * Проверка команды /start
@@ -39,20 +38,17 @@ public class TelegramBotTest {
 
         Assertions.assertEquals("🌍 *GlobeTalk - Изучение иностранных языков* 🌍\n\n" +
 
-                "📋 **Доступные команды:**\n" +
+                "📋 **Доступные команды:**\n\n" +
                 "• /start - Начать работу с ботом и пройти тестирование\n" +
                 "• /help - Показать эту справку\n" +
-                "• /speed_test - пройти тест на скорость\n\n" +
 
-                "🎯 **Как работает бот:**\n" +
+                "🎯 **Как работает бот:**\n\n" +
                 "GlobeTalk поможет вам в изучении иностранных языков через:\n" +
-                "• 📝 Тестирование для определения вашего уровня\n" +
-                "• 🎮 Интерактивные упражнения\n\n" +
+                "• 📝 Тестирование для определения вашего уровня\n\n" +
 
                 "🛠️ **В процессе разработки:****\n" +
-                "• 📊 Отслеживание прогресса\n" +
-                "• 📚Словарь и словарный запас**\n\n"+
-
+                "• 🎮 Интерактивные упражнения\n" +
+                "• 📊 Отслеживание прогресса\n\n" +
 
                 "💡 **Как взаимодействовать:**\n" +
                 "• Используйте команды из меню (слева)\n" +
@@ -251,295 +247,6 @@ public class TelegramBotTest {
         Assertions.assertEquals(expectedResponse, finalResponse);
     }
 
-    //     ТЕСТ НА SPEED_TEST
-    /**
-     * Тест обработки правильного ответа в speed тесте
-     */
-    @Test
-    void testSpeedTestCorrectAnswer() {
-        SpeedTestHandler speedTestHandler = new SpeedTestHandler();
-        speedTestHandler.generateTest(99999L, testText);
-
-        Map<String, Object> result = speedTestHandler.handleAnswerWithFeedback("B_button", 99999L);
-
-        Assertions.assertEquals("Правильно!", result.get("feedback"));
-        Assertions.assertEquals(true, result.get("isCorrect"));
-        Assertions.assertEquals("B", result.get("correctAnswer"));
-    }
-    /**
-     * Тест обработки неправильного ответа в speed тесте
-     */
-    @Test
-    void testSpeedTestIncorrectAnswer() {
-        SpeedTestHandler speedTestHandler = new SpeedTestHandler();
-        speedTestHandler.generateTest(99998L, testText);
-
-        Map<String, Object> result = speedTestHandler.handleAnswerWithFeedback("A_button", 99998L);
-
-        Assertions.assertEquals("Вы ошиблись, правильный ответ: B", result.get("feedback"));
-        Assertions.assertEquals(false, result.get("isCorrect"));
-        Assertions.assertEquals("B", result.get("correctAnswer"));
-    }
-
-    /**
-     * Тест времени для разных вопросов по баллам
-     */
-    @Test
-    void testQuestionTimeLimits() {
-        SpeedTestHandler speedTestHandler = new SpeedTestHandler();
-        speedTestHandler.generateTest(10002L, testText);
-
-        // проверяем первый вопрос (1 балл = 5 секунд)
-        int points1 = speedTestHandler.getCurrentQuestionPoints(10002L);
-        Assertions.assertEquals(1, points1);
-
-        // отвечаем и переходим ко второму вопросу (2 балла = 10 секунд)
-        speedTestHandler.handleAnswerWithFeedback("B_button", 10002L);
-        String question2 = speedTestHandler.moveToNextQuestion(10002L);
-        int points2 = speedTestHandler.getCurrentQuestionPoints(10002L);
-        Assertions.assertEquals(2, points2);
-
-        // отвечаем и переходим к третьему вопросу (3 балла = 20 секунд)
-        speedTestHandler.handleAnswerWithFeedback("B_button", 10002L);
-        String question3 = speedTestHandler.moveToNextQuestion(10002L);
-        int points3 = speedTestHandler.getCurrentQuestionPoints(10002L);
-        Assertions.assertEquals(3, points3);
-    }
-
-
-
-    /**
-     * Тест на очень низкий результат (меньше 30%)
-     */
-    @Test
-    void testVeryLowResult() {
-
-        String lowScoreTest = """
-        1 (3 points)
-        Question 1?
-        A. Wrong
-        B. Correct
-        C. Wrong
-        D. Wrong
-        Answer: B
-        
-        2 (3 points)
-        Question 2?
-        A. Wrong
-        B. Correct
-        C. Wrong
-        D. Wrong
-        Answer: B
-        
-        3 (3 points)
-        Question 3?
-        A. Wrong
-        B. Correct
-        C. Wrong
-        D. Wrong
-        Answer: B
-        
-        4 (3 points)
-        Question 4?
-        A. Wrong
-        B. Correct
-        C. Wrong
-        D. Wrong
-        Answer: B
-        """;
-
-        speedTestHandler.generateTest(20009L, lowScoreTest);
-
-        // только 1 правильный ответ из 4 (3 балла из 12 = 25%)
-        speedTestHandler.handleAnswerWithFeedback("B_button", 20009L); // +3
-        speedTestHandler.moveToNextQuestion(20009L);
-        speedTestHandler.handleAnswerWithFeedback("A_button", 20009L); // +0
-        speedTestHandler.moveToNextQuestion(20009L);
-        speedTestHandler.handleAnswerWithFeedback("A_button", 20009L); // +0
-        speedTestHandler.moveToNextQuestion(20009L);
-        speedTestHandler.handleAnswerWithFeedback("A_button", 20009L); // +0
-
-        String finalMessage = speedTestHandler.moveToNextQuestion(20009L);
-        //фраза менятеся от баллов, а не от процента
-        Assertions.assertEquals("💪 *Есть над чем поработать!* 💪\n\n" +
-                "📊 **Результаты тестирования:**\n" +
-                "🏆 Набрано баллов: 3 из 12 возможных\n" +
-                "📈 Процент выполнения: 25,0%\n\n" +
-                "✨ **Продолжайте в том же духе!** ✨\n\n" +
-                "Для продолжения работы используйте команды:\n" +
-                "• /start - пройти тест заново\n" +
-                "• /speed_test - тест на скорость\n" +
-                "• /help - все доступные команды\n\n", finalMessage);
-    }
-    /**
-     * Тест итогового сообщения со средним результатом (граница между категориями)
-     */
-    @Test
-    void testFinalMessageAverageResult() {
-
-        String testForAverage = """
-        1 (2 points)
-        Question 1?
-        A. Wrong
-        B. Correct
-        C. Wrong
-        D. Wrong
-        Answer: B
-        
-        2 (2 points)
-        Question 2?
-        A. Wrong
-        B. Correct
-        C. Wrong
-        D. Wrong
-        Answer: B
-        
-        3 (2 points)
-        Question 3?
-        A. Wrong
-        B. Correct
-        C. Wrong
-        D. Wrong
-        Answer: B
-        
-        4 (2 points)
-        Question 4?
-        A. Wrong
-        B. Correct
-        C. Wrong
-        D. Wrong
-        Answer: B
-        
-        5 (2 points)
-        Question 5?
-        A. Wrong
-        B. Correct
-        C. Wrong
-        D. Wrong
-        Answer: B
-        
-        6 (2 points)
-        Question 6?
-        A. Wrong
-        B. Correct
-        C. Wrong
-        D. Wrong
-        Answer: B
-        """;
-
-        speedTestHandler.generateTest(20004L, testForAverage);
-
-        // граница между "Есть над чем поработать" и "Хороший результат"
-        speedTestHandler.handleAnswerWithFeedback("B_button", 20004L); // +2
-        speedTestHandler.moveToNextQuestion(20004L);
-        speedTestHandler.handleAnswerWithFeedback("B_button", 20004L); // +2
-        speedTestHandler.moveToNextQuestion(20004L);
-        speedTestHandler.handleAnswerWithFeedback("B_button", 20004L); // +2
-        speedTestHandler.moveToNextQuestion(20004L);
-        speedTestHandler.handleAnswerWithFeedback("B_button", 20004L); // +2
-        speedTestHandler.moveToNextQuestion(20004L);
-        speedTestHandler.handleAnswerWithFeedback("B_button", 20004L); // +2
-        speedTestHandler.moveToNextQuestion(20004L);
-        speedTestHandler.handleAnswerWithFeedback("B_button", 20004L); // +2
-
-        String finalMessage = speedTestHandler.moveToNextQuestion(20004L);
-        //фраза менятеся от баллов, а не от процента
-        Assertions.assertEquals("👍 *Хороший результат!* 👍\n\n" +
-                "📊 **Результаты тестирования:**\n" +
-                "🏆 Набрано баллов: 12 из 12 возможных\n" +
-                "📈 Процент выполнения: 100,0%\n\n" +
-                "✨ **Продолжайте в том же духе!** ✨\n\n" +
-                "Для продолжения работы используйте команды:\n" +
-                "• /start - пройти тест заново\n" +
-                "• /speed_test - тест на скорость\n" +
-                "• /help - все доступные команды\n\n", finalMessage);
-    }
-
-    /**
-     * Тест итогового сообщения с результатом на границе хорошего и отличного
-     */
-    @Test
-    void testFinalMessageGoodToExcellentBoundary() {
-
-        String boundaryTest = """
-        1 (3 points)
-        Question 1?
-        A. Wrong
-        B. Correct
-        C. Wrong
-        D. Wrong
-        Answer: B
-        
-        2 (3 points)
-        Question 2?
-        A. Wrong
-        B. Correct
-        C. Wrong
-        D. Wrong
-        Answer: B
-        
-        3 (3 points)
-        Question 3?
-        A. Wrong
-        B. Correct
-        C. Wrong
-        D. Wrong
-        Answer: B
-        
-        4 (3 points)
-        Question 4?
-        A. Wrong
-        B. Correct
-        C. Wrong
-        D. Wrong
-        Answer: B
-        
-        5 (3 points)
-        Question 5?
-        A. Wrong
-        B. Correct
-        C. Wrong
-        D. Wrong
-        Answer: B
-        
-        6 (3 points)
-        Question 6?
-        A. Wrong
-        B. Correct
-        C. Wrong
-        D. Wrong
-        Answer: B
-        """;
-
-        speedTestHandler.generateTest(20005L, boundaryTest);
-
-        // 18 баллов из 24 - граница между "Хороший результат" и "Отличный результат"
-        speedTestHandler.handleAnswerWithFeedback("B_button", 20005L); // +3
-        speedTestHandler.moveToNextQuestion(20005L);
-        speedTestHandler.handleAnswerWithFeedback("B_button", 20005L); // +3
-        speedTestHandler.moveToNextQuestion(20005L);
-        speedTestHandler.handleAnswerWithFeedback("B_button", 20005L); // +3
-        speedTestHandler.moveToNextQuestion(20005L);
-        speedTestHandler.handleAnswerWithFeedback("B_button", 20005L); // +3
-        speedTestHandler.moveToNextQuestion(20005L);
-        speedTestHandler.handleAnswerWithFeedback("B_button", 20005L); // +3
-        speedTestHandler.moveToNextQuestion(20005L);
-        speedTestHandler.handleAnswerWithFeedback("B_button", 20005L); // +3
-
-        String finalMessage = speedTestHandler.moveToNextQuestion(20005L);
-        //фраза менятеся от баллов, а не от процента
-        Assertions.assertEquals("🎉 *Отличный результат!* 🎉\n\n" +
-                "📊 **Результаты тестирования:**\n" +
-                "🏆 Набрано баллов: 18 из 18 возможных\n" +
-                "📈 Процент выполнения: 100,0%\n\n" +
-                "✨ **Продолжайте в том же духе!** ✨\n\n" +
-                "Для продолжения работы используйте команды:\n" +
-                "• /start - пройти тест заново\n" +
-                "• /speed_test - тест на скорость\n" +
-                "• /help - все доступные команды\n\n", finalMessage);
-    }
-
-
     //              ТЕСТЫ НА КНОПКИ
 
     /**
@@ -577,31 +284,10 @@ public class TelegramBotTest {
     }
 
     /**
-     * Тест на наличие всех кнопок в стартовом словаре теста на сколрость
-     */
-    @Test
-    void testSpeedKeyboardButtons() {
-        Map<String, String> startButtons = keyboardService.getSpeedTestStartButton();
-        Assertions.assertEquals("speed_yes_button", startButtons.get("Да"));
-        Assertions.assertEquals("speed_no_button", startButtons.get("Нет"));
-        Assertions.assertEquals(2, startButtons.size());
-    }
-
-    /**
-     * Тест на наличие кнопки дальше в словаре
-     */
-    @Test
-    void testSpeedNextKeyboardButtons() {
-        Map<String, String> startButtons = keyboardService.getSpeedTestNextButton();
-        Assertions.assertEquals("next_button", startButtons.get("Дальше"));
-        Assertions.assertEquals(1, startButtons.size());
-    }
-
-    /**
      * Тест на обработку кнопки "Назад" (no_button)
      */
     @Test
-    void testStartNoButtonProcessing() {
+    void testNoButtonProcessing() {
         String response = botLogic.processCallbackData("no_button", 12345L);
 
         String expectedResponse =
@@ -614,8 +300,7 @@ public class TelegramBotTest {
 
         // проверяем, что для no_button возвращается правильный тип кнопок
         String keyboardType = botLogic.getKeyboardForCallback("no_button", 12345L);
-        Assertions.assertEquals(null, keyboardType);
+        Assertions.assertEquals("start", keyboardType);
     }
-
 
 }

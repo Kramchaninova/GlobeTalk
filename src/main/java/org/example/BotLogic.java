@@ -11,35 +11,28 @@ import java.util.List;
 
 public class BotLogic {
     private final StartCommand startCommand;
-    private final SpeedTestCommand speedTestCommand;
     private final TestHandler testHandler;
     private final KeyboardService keyboardService;
-    private final SpeedTestHandler speedTestHandler;
 
     public BotLogic(){
         this.testHandler = new TestHandler();
-        this.speedTestHandler = new SpeedTestHandler();
         this.startCommand = new StartCommand(this.testHandler);
-        this.speedTestCommand = new SpeedTestCommand(this.speedTestHandler);
         this.keyboardService = new KeyboardService();
     }
 
     private static final String COMMAND_HELP =  "🌍 *GlobeTalk - Изучение иностранных языков* 🌍\n\n" +
 
-            "📋 **Доступные команды:**\n" +
+            "📋 **Доступные команды:**\n\n" +
             "• /start - Начать работу с ботом и пройти тестирование\n" +
             "• /help - Показать эту справку\n" +
-            "• /speed_test - пройти тест на скорость\n\n" +
 
-            "🎯 **Как работает бот:**\n" +
+            "🎯 **Как работает бот:**\n\n" +
             "GlobeTalk поможет вам в изучении иностранных языков через:\n" +
-            "• 📝 Тестирование для определения вашего уровня\n" +
-            "• 🎮 Интерактивные упражнения\n\n" +
+            "• 📝 Тестирование для определения вашего уровня\n\n" +
 
             "🛠️ **В процессе разработки:****\n" +
-            "• 📊 Отслеживание прогресса\n" +
-            "• 📚Словарь и словарный запас**\n\n"+
-
+            "• 🎮 Интерактивные упражнения\n" +
+            "• 📊 Отслеживание прогресса\n\n" +
 
             "💡 **Как взаимодействовать:**\n" +
             "• Используйте команды из меню (слева)\n" +
@@ -60,24 +53,7 @@ public class BotLogic {
                 callbackData.equals("B_button") ||
                 callbackData.equals("C_button") ||
                 callbackData.equals("D_button")) {
-            if (testHandler.isTestActive(chatId)) {
-                return testHandler.handleAnswer(callbackData, chatId);
-            } else if (speedTestHandler.isTestActive(chatId)) {
-                var result = speedTestHandler.handleAnswerWithFeedback(callbackData, chatId);
-                return (String) result.get("feedback");
-            } else {
-                return "Сначала начните тест командой /start или /speed_test";
-            }
-
-        } else if (callbackData.equals("speed_yes_button") ||
-                callbackData.equals("speed_no_button")) {
-            return speedTestCommand.handleButtonClick(callbackData, chatId);
-        } else if (callbackData.equals("next_button")) {
-            if (speedTestHandler.isTestActive(chatId)) {
-                return speedTestHandler.moveToNextQuestion(chatId);
-            } else {
-                return "Тест не активен";
-            }
+            return testHandler.handleAnswer(callbackData, chatId);
         } else {
             return startCommand.handleButtonClick(callbackData, chatId);
         }
@@ -92,8 +68,7 @@ public class BotLogic {
             case "/start":
                 // StartCommand - отельный класс для реализации старта бота,в дальнейшем логично было бы на каждую задачу выводить по классу
                 return startCommand.startTest();
-            case "/speed_test":
-                return speedTestCommand.startTest();
+
             case "/help":
                 return COMMAND_HELP;
 
@@ -132,7 +107,7 @@ public class BotLogic {
                 result.add(responseText);
                 result.add(keyboardType != null ? keyboardType : "");
 
-                System.out.println("Обработана команда из бокового меню: " + messageText);
+                System.out.println("обработана команда из бокового меню: " + messageText);
             }
         return result;
     }
@@ -157,33 +132,17 @@ public class BotLogic {
         switch (callbackData) {
             case "yes_button" -> { return "test_answers"; }
             case "A_button", "B_button", "C_button", "D_button" -> {
-                if (testHandler.isTestActive(chatId)) {
-                    return "test_answers";
-                }else if (speedTestHandler.isTestActive(chatId)){
-                    return "speed_test_next";
-                }
+                if (testHandler.isTestActive(chatId)) { return "test_answers"; }
             }
-            case "speed_yes_button" -> {return "test_answers";}
-            case "next_button" -> {
-                if (speedTestHandler.isTestActive(chatId)) {
-                    return "test_answers";
-                }
-            }
+            case "no_button" -> { return "start"; }
         }
         return null;
     }
 
     //логика определения типа команды в боковом меню
     public String getKeyboardForCommand(String command) {
-        if (command != null) {
-            switch (command) {
-                case "/start":
-                    return "start";
-                case "/speed_test":
-                    return "speed_test_start";
-                default:
-                    return null;
-            }
+        if (command != null && command.equals("/start")) {
+            return "start";
         }
         return null;
     }
