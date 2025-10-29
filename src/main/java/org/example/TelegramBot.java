@@ -42,8 +42,9 @@ public class TelegramBot extends TelegramLongPollingBot {
     //registerBotCommands - формирует из списка метода getBotCommands и вызывает в команды
     public void registerBotCommands() {
         try {
-            //список команд из класса для хранения кнопок и команд
-            List<BotCommand> commands = keyboardService.getBotCommands();
+            List<BotCommand> commands = new ArrayList<>();
+            commands.add(new BotCommand("start", "начать работу с ботом"));
+            commands.add(new BotCommand("help", "справка по командам"));
 
             execute(SetMyCommands.builder()
                     .commands(commands)
@@ -142,9 +143,9 @@ public class TelegramBot extends TelegramLongPollingBot {
      */
     private void initializeKeyboards() {
         keyboardCache.put("start", createKeyboardFromMap(
-                botLogic.getKeyboardService().getStartButtonConfigs(), 2));
+                botLogic.getStartButtonConfigs(), 2));
         keyboardCache.put("test_answers", createKeyboardFromMap(
-                botLogic.getKeyboardService().getTestAnswerConfigs(), 4));
+                botLogic.getTestAnswerConfigs(), 4));
         System.out.println("Клавиатуры инициализированы");
     }
 

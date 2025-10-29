@@ -146,7 +146,12 @@ public class BotLogic {
         return null;
     }
 
-    public KeyboardService getKeyboardService() {
-        return keyboardService;
+    public Map<String, String> getStartButtonConfigs() {
+        return keyboardService.getStartButtonConfigs();
     }
+
+    public Map<String, String> getTestAnswerConfigs() {
+        return keyboardService.getTestAnswerConfigs();
+    }
+
 }
