@@ -1,13 +1,12 @@
 package org.example;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * BotLogic - класс для обработки логики бота.
  * обрабатывает входящие сообщения, команды и callback запросы от кнопок
  */
-
 
 public class BotLogic {
     private final StartCommand startCommand;
@@ -61,7 +60,7 @@ public class BotLogic {
 
     /**
      * Если в сообщении была команда, т.е. текст начинается с /, то обрабатываем ее
-     *и высылаем текст, который привязан к командам
+     * и высылаем текст, который привязан к командам
      */
     public String handleCommand(String command) {
         switch (command) {
@@ -79,51 +78,49 @@ public class BotLogic {
     }
 
     /**
-     * handleCallbackQuery - собирает результаты обработки в список
+     * handleCallbackQuery - собирает результаты обработки в Map
      */
-    public List<String> handleCallbackQuery(String callbackData, long chatId) {
+    public Map<String, String> handleCallbackQuery(String callbackData, long chatId) {
         String responseText = processCallbackData(callbackData, chatId);
         String keyboardType = getKeyboardForCallback(callbackData, chatId);
 
-        // возвращаем список: [chatId, responseText, keyboardType]
-        List<String> result = new ArrayList<>();
-        result.add(String.valueOf(chatId));
-        result.add(responseText);
-        result.add(keyboardType != null ? keyboardType : "");
+        Map<String, String> result = new HashMap<>();
+        result.put("chatId", String.valueOf(chatId));
+        result.put("text", responseText);
+        result.put("keyboardType", keyboardType != null ? keyboardType : "");
 
         return result;
     }
-
 
     // обработка всех входящих сообщений
-    public List<String> handleTextMessage(long chatId, String messageText) {
-        List<String> result = new ArrayList<>();
-            // команда из бокового меню
-            if (messageText.startsWith("/")) {
-                String responseText = handleCommand(messageText);
-                String keyboardType = getKeyboardForCommand(messageText);
+    public Map<String, String> handleTextMessage(long chatId, String messageText) {
+        Map<String, String> result = new HashMap<>();
+        // команда из бокового меню
+        if (messageText.startsWith("/")) {
+            String responseText = handleCommand(messageText);
+            String keyboardType = getKeyboardForCommand(messageText);
 
-                result.add(String.valueOf(chatId));
-                result.add(responseText);
-                result.add(keyboardType != null ? keyboardType : "");
+            result.put("chatId", String.valueOf(chatId));
+            result.put("text", responseText);
+            result.put("keyboardType", keyboardType != null ? keyboardType : "");
 
-                System.out.println("обработана команда из бокового меню: " + messageText);
-            }
+            System.out.println("Обработана команда из бокового меню: " + messageText);
+        }
+
         return result;
     }
+
     /**
      * метод для распределения входящих данных на кнопки и текст
      */
-    public List<String> processInput(String inputType, long chatId, String data) {
+    public Map<String, String> processInput(String inputType, long chatId, String data) {
         if ("callback".equals(inputType)) {
             return handleCallbackQuery(data, chatId);
         } else if ("message".equals(inputType)) {
             return handleTextMessage(chatId, data);
         }
-
-        return new ArrayList<>();
+        return new HashMap<>();
     }
-
 
     /**
      *  метод определения ключа показываемого списка кнопок после нажатия
@@ -139,13 +136,16 @@ public class BotLogic {
         return null;
     }
 
-    //логика определения типа команды в боковом меню
+    /**
+     * логика определения типа команды в боковом меню
+     */
     public String getKeyboardForCommand(String command) {
         if (command != null && command.equals("/start")) {
             return "start";
         }
         return null;
     }
+
     public KeyboardService getKeyboardService() {
         return keyboardService;
     }

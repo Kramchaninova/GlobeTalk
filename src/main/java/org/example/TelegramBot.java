@@ -10,16 +10,13 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Bot.java - основной класс бота, реализующий интерфейс для получения обновлений
  * Формирует текстовые (в боковом меню) команды и кнопки
  */
-public class TelegramBot extends TelegramLongPollingBot  {
+public class TelegramBot extends TelegramLongPollingBot {
 
     private final String botUsername;
     private final BotLogic botLogic;
@@ -93,9 +90,7 @@ public class TelegramBot extends TelegramLongPollingBot  {
     @Override
     public void onUpdateReceived(Update update){
         try {
-            // передаем обновление в BotLogic для обработки
-            List<String> result;
-            //если нажатие на кнопку произошло
+            Map<String, String> result;
             if (update.hasCallbackQuery()) {
                 String callbackData = update.getCallbackQuery().getData();
                 long chatId = update.getCallbackQuery().getMessage().getChatId();
@@ -111,9 +106,9 @@ public class TelegramBot extends TelegramLongPollingBot  {
 
             // если есть результат, создаем и отправляем сообщение
             if (!result.isEmpty()) {
-                long chatId = Long.parseLong(result.get(0));
-                String responseText = result.get(1);
-                String keyboardType = result.get(2);
+                long chatId = Long.parseLong(result.get("chatId"));
+                String responseText = result.get("text");
+                String keyboardType = result.get("keyboardType");
 
                 SendMessage message = createMessage(chatId, responseText, keyboardType);
                 execute(message);
