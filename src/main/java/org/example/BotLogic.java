@@ -2,7 +2,6 @@ package org.example;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * BotLogic - класс для обработки логики бота.
@@ -82,36 +81,47 @@ public class BotLogic {
     /**
      * handleCallbackQuery - собирает результаты обработки в список
      */
-    public BotResponse handleCallbackQuery(String callbackData, long chatId) {
+    public List<String> handleCallbackQuery(String callbackData, long chatId) {
         String responseText = processCallbackData(callbackData, chatId);
         String keyboardType = getKeyboardForCallback(callbackData, chatId);
-        return new BotResponse(chatId, responseText, keyboardType);
+
+        // возвращаем список: [chatId, responseText, keyboardType]
+        List<String> result = new ArrayList<>();
+        result.add(String.valueOf(chatId));
+        result.add(responseText);
+        result.add(keyboardType != null ? keyboardType : "");
+
+        return result;
     }
 
 
     // обработка всех входящих сообщений
-    public BotResponse handleTextMessage(long chatId, String messageText) {
-        // команда из бокового меню
-        if (messageText.startsWith("/")) {
-            String responseText = handleCommand(messageText);
-            String keyboardType = getKeyboardForCommand(messageText);
+    public List<String> handleTextMessage(long chatId, String messageText) {
+        List<String> result = new ArrayList<>();
+            // команда из бокового меню
+            if (messageText.startsWith("/")) {
+                String responseText = handleCommand(messageText);
+                String keyboardType = getKeyboardForCommand(messageText);
 
-            System.out.println("обработана команда из бокового меню: " + messageText);
-            return new BotResponse(chatId, responseText, keyboardType);
+                result.add(String.valueOf(chatId));
+                result.add(responseText);
+                result.add(keyboardType != null ? keyboardType : "");
+
+                System.out.println("обработана команда из бокового меню: " + messageText);
             }
-        return null;
+        return result;
     }
     /**
      * метод для распределения входящих данных на кнопки и текст
      */
-    public BotResponse processInput(String inputType, long chatId, String data) {
+    public List<String> processInput(String inputType, long chatId, String data) {
         if ("callback".equals(inputType)) {
             return handleCallbackQuery(data, chatId);
         } else if ("message".equals(inputType)) {
             return handleTextMessage(chatId, data);
         }
 
-        return null;
+        return new ArrayList<>();
     }
 
 
@@ -136,11 +146,7 @@ public class BotLogic {
         }
         return null;
     }
-    public Map<String, String> getStartButtonConfigs() {
-        return keyboardService.getStartButtonConfigs();
-    }
-
-    public Map<String, String> getTestAnswerConfigs() {
-        return keyboardService.getTestAnswerConfigs();
+    public KeyboardService getKeyboardService() {
+        return keyboardService;
     }
 }
