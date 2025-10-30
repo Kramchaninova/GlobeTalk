@@ -1,9 +1,5 @@
 package org.example;
 
-import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
-
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -33,22 +29,6 @@ public class KeyboardService {
     }
     public Map<String, String> getTestAnswerConfigs() {
         return new HashMap<>(testAnswerButtons);
-    }
-
-    /**
-     * хранит команды для бокового меню
-     * @return список команд бота для бокового меню
-     */
-    public List<BotCommand> getBotCommands() {
-        List<BotCommand> commands = new ArrayList<>();
-
-        // добавление команд (без символа '/', так как это формальный признак команды для бота)
-        commands.add(new BotCommand("start", "начать работу с ботом"));
-        commands.add(new BotCommand("help", "справка по командам"));
-
-        System.out.println("команды зарегестрированы в боковом меню");
-        return commands;
-
     }
 
 }

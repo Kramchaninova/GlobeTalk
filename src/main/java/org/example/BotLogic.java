@@ -1,14 +1,12 @@
 package org.example;
 
-import org.telegram.telegrambots.meta.api.objects.Update;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * BotLogic - класс для обработки логики бота.
  * обрабатывает входящие сообщения, команды и callback запросы от кнопок
  */
-
 
 public class BotLogic {
     private final StartCommand startCommand;
@@ -62,7 +60,7 @@ public class BotLogic {
 
     /**
      * Если в сообщении была команда, т.е. текст начинается с /, то обрабатываем ее
-     *и высылаем текст, который привязан к командам
+     * и высылаем текст, который привязан к командам
      */
     public String handleCommand(String command) {
         switch (command) {
@@ -80,53 +78,49 @@ public class BotLogic {
     }
 
     /**
-     * handleCallbackQuery - собирает результаты обработки в список
+     * handleCallbackQuery - собирает результаты обработки в Map
      */
-    public List<String> handleCallbackQuery(Update update) {
-        String callbackData = update.getCallbackQuery().getData();
-        long chatId = update.getCallbackQuery().getMessage().getChatId();
-
+    public Map<String, String> handleCallbackQuery(String callbackData, long chatId) {
         String responseText = processCallbackData(callbackData, chatId);
         String keyboardType = getKeyboardForCallback(callbackData, chatId);
 
-        // возвращаем список: [chatId, responseText, keyboardType]
-        List<String> result = new ArrayList<>();
-        result.add(String.valueOf(chatId));
-        result.add(responseText);
-        result.add(keyboardType != null ? keyboardType : "");
+        Map<String, String> result = new HashMap<>();
+        result.put("chatId", String.valueOf(chatId));
+        result.put("text", responseText);
+        result.put("keyboardType", keyboardType != null ? keyboardType : "");
 
         return result;
     }
-
 
     // обработка всех входящих сообщений
-    public List<String> onUpdateReceived(Update update) {
-        List<String> result = new ArrayList<>();
+    public Map<String, String> handleTextMessage(long chatId, String messageText) {
+        Map<String, String> result = new HashMap<>();
+        // команда из бокового меню
+        if (messageText.startsWith("/")) {
+            String responseText = handleCommand(messageText);
+            String keyboardType = getKeyboardForCommand(messageText);
 
-        // обработка нажатий кнопок
-        if (update.hasCallbackQuery()) {
-            return handleCallbackQuery(update);
+            result.put("chatId", String.valueOf(chatId));
+            result.put("text", responseText);
+            result.put("keyboardType", keyboardType != null ? keyboardType : "");
 
-        //обработка сообщения или команды ( в нашем случае команды веденную с клавиатуры))
-        } else if (update.hasMessage() && update.getMessage().hasText()) {
-            String messageText = update.getMessage().getText();
-            long chatId = update.getMessage().getChatId();
-
-            // команда из бокового меню
-            if (messageText.startsWith("/")) {
-                String responseText = handleCommand(messageText);
-                String keyboardType = getKeyboardForCommand(messageText);
-
-                result.add(String.valueOf(chatId));
-                result.add(responseText);
-                result.add(keyboardType != null ? keyboardType : "");
-
-                System.out.println("обработана команда из бокового меню: " + messageText);
-            }
+            System.out.println("Обработана команда из бокового меню: " + messageText);
         }
+
         return result;
     }
 
+    /**
+     * метод для распределения входящих данных на кнопки и текст
+     */
+    public Map<String, String> processInput(String inputType, long chatId, String data) {
+        if ("callback".equals(inputType)) {
+            return handleCallbackQuery(data, chatId);
+        } else if ("message".equals(inputType)) {
+            return handleTextMessage(chatId, data);
+        }
+        return new HashMap<>();
+    }
 
     /**
      *  метод определения ключа показываемого списка кнопок после нажатия
@@ -137,19 +131,27 @@ public class BotLogic {
             case "A_button", "B_button", "C_button", "D_button" -> {
                 if (testHandler.isTestActive(chatId)) { return "test_answers"; }
             }
-            case "no_button" -> { return "start"; }
+            case "no_button" -> {}
         }
         return null;
     }
 
-    //логика определения типа команды в боковом меню
+    /**
+     * логика определения типа команды в боковом меню
+     */
     public String getKeyboardForCommand(String command) {
         if (command != null && command.equals("/start")) {
             return "start";
         }
         return null;
     }
-    public KeyboardService getKeyboardService() {
-        return keyboardService;
+
+    public Map<String, String> getStartButtonConfigs() {
+        return keyboardService.getStartButtonConfigs();
     }
+
+    public Map<String, String> getTestAnswerConfigs() {
+        return keyboardService.getTestAnswerConfigs();
+    }
+
 }

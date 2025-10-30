@@ -10,20 +10,16 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Bot.java - основной класс бота, реализующий интерфейс для получения обновлений
  * Формирует текстовые (в боковом меню) команды и кнопки
  */
-public class TelegramBot extends TelegramLongPollingBot  {
+public class TelegramBot extends TelegramLongPollingBot {
 
     private final String botUsername;
     private final BotLogic botLogic;
-    private final KeyboardService keyboardService;
 
     private final Map<String, InlineKeyboardMarkup> keyboardCache = new HashMap<>();
 
@@ -31,7 +27,6 @@ public class TelegramBot extends TelegramLongPollingBot  {
         super(botToken); //супер вызывает конструктор родительского класс лонгполинг (выше)
         this.botUsername = botUsername;
         this.botLogic = new BotLogic();
-        this.keyboardService = new KeyboardService();
         registerBotCommands();
         initializeKeyboards();
 
@@ -45,8 +40,9 @@ public class TelegramBot extends TelegramLongPollingBot  {
     //registerBotCommands - формирует из списка метода getBotCommands и вызывает в команды
     public void registerBotCommands() {
         try {
-            //список команд из класса для хранения кнопок и команд
-            List<BotCommand> commands = keyboardService.getBotCommands();
+            List<BotCommand> commands = new ArrayList<>();
+            commands.add(new BotCommand("start", "начать работу с ботом"));
+            commands.add(new BotCommand("help", "справка по командам"));
 
             execute(SetMyCommands.builder()
                     .commands(commands)
@@ -93,14 +89,25 @@ public class TelegramBot extends TelegramLongPollingBot  {
     @Override
     public void onUpdateReceived(Update update){
         try {
-            // передаем обновление в BotLogic для обработки
-            List<String> result = botLogic.onUpdateReceived(update);
+            Map<String, String> result;
+            if (update.hasCallbackQuery()) {
+                String callbackData = update.getCallbackQuery().getData();
+                long chatId = update.getCallbackQuery().getMessage().getChatId();
+                result = botLogic.processInput("callback", chatId, callbackData);
+                //если сообщение
+            } else if (update.hasMessage() && update.getMessage().hasText()) {
+                String messageText = update.getMessage().getText();
+                long chatId = update.getMessage().getChatId();
+                result = botLogic.processInput("message", chatId, messageText);
+            } else {
+                return;
+            }
 
             // если есть результат, создаем и отправляем сообщение
             if (!result.isEmpty()) {
-                long chatId = Long.parseLong(result.get(0));
-                String responseText = result.get(1);
-                String keyboardType = result.get(2);
+                long chatId = Long.parseLong(result.get("chatId"));
+                String responseText = result.get("text");
+                String keyboardType = result.get("keyboardType");
 
                 SendMessage message = createMessage(chatId, responseText, keyboardType);
                 execute(message);
@@ -134,9 +141,9 @@ public class TelegramBot extends TelegramLongPollingBot  {
      */
     private void initializeKeyboards() {
         keyboardCache.put("start", createKeyboardFromMap(
-                botLogic.getKeyboardService().getStartButtonConfigs(), 2));
+                botLogic.getStartButtonConfigs(), 2));
         keyboardCache.put("test_answers", createKeyboardFromMap(
-                botLogic.getKeyboardService().getTestAnswerConfigs(), 4));
+                botLogic.getTestAnswerConfigs(), 4));
         System.out.println("Клавиатуры инициализированы");
     }
 
