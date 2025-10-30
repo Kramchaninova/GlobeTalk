@@ -10,7 +10,7 @@ import java.io.IOException;
  *
  */
 public class Token {
-    String token = "";
+    private String token = "";
 
     /**
      * Возвращает текущий токен бота
@@ -29,6 +29,7 @@ public class Token {
             token = reader.readLine();
             System.out.println("Токен загружен TG");
         } catch (IOException e) {
+            System.err.println("Ошибка загрузки токена для Telegram: " + e.getMessage());
             e.printStackTrace();
         }
     }

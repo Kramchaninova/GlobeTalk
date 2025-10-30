@@ -9,14 +9,14 @@ import java.io.IOException;
  * Обеспечивает безопасное чтение токена из текстового файла.
  *
  */
-public class Token_Openrouter {
-    String token_openrouter = "";
+public class TokenOpenRouter {
+    private String tokenOpenRouter = "";
 
     /**
      * Возвращает текущий токен бота
      */
     public String get() {
-        return token_openrouter ;
+        return tokenOpenRouter;
     }
 
     /**
@@ -26,9 +26,10 @@ public class Token_Openrouter {
         String fileName = "src/main/resources/TOKEN_OPENROUTER.txt";
 
         try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
-            token_openrouter  = reader.readLine();
+            tokenOpenRouter = reader.readLine();
             System.out.println("Токен Openrouter загружен");
         } catch (IOException e) {
+            System.err.println("Ошибка загрузки токена OpenRouter: " + e.getMessage());
             e.printStackTrace();
         }
     }
