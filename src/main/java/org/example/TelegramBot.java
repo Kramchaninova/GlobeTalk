@@ -20,7 +20,6 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     private final String botUsername;
     private final BotLogic botLogic;
-    private final KeyboardService keyboardService;
 
     private final Map<String, InlineKeyboardMarkup> keyboardCache = new HashMap<>();
 
@@ -28,7 +27,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         super(botToken); //супер вызывает конструктор родительского класс лонгполинг (выше)
         this.botUsername = botUsername;
         this.botLogic = new BotLogic();
-        this.keyboardService = new KeyboardService();
         registerBotCommands();
         initializeKeyboards();
 

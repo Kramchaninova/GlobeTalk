@@ -131,7 +131,7 @@ public class BotLogic {
             case "A_button", "B_button", "C_button", "D_button" -> {
                 if (testHandler.isTestActive(chatId)) { return "test_answers"; }
             }
-            case "no_button" -> { return "start"; }
+            case "no_button" -> {}
         }
         return null;
     }

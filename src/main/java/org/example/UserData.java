@@ -3,6 +3,15 @@ package org.example;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Представляет состояние прохождения теста конкретным пользователем.
+ * Содержит:
+ * список вопросов текущего теста,
+ * список правильных ответов,
+ * текущий индекс вопроса,
+ * текущий набор баллов пользователя,
+ * количество баллов за каждый вопрос.
+ */
 public class UserData {
     private List<String> currentTest = new ArrayList<>();
     private List<String> correctAnswers = new ArrayList<>();
