@@ -4,6 +4,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/**
+ * TestTestHandler - тестирует логику обработки тестов.
+ * Проверяет генерацию тестов, подсчет баллов и определение уровня языка.
+ */
+
 public class TestTestHandler {
 
     private final TestHandler testHandler = new TestHandler();

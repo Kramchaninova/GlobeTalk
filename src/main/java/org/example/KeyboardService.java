@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.HashMap;
 
 /**
- * KeyboardService - класс для работы с меню слева и кнопками
+ * KeyboardService - класс хранения кнопок под сообщениями
  */
 public class KeyboardService {
 
