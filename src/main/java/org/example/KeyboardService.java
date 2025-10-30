@@ -22,6 +22,11 @@ public class KeyboardService {
             "D", "D_button"
     );
 
+    //храним кнопку на главнуб (у нас главная будет - help, потому что вся содержательная информацяи там)
+    private final Map<String, String> mainButtonCallBack = Map.of(
+            "На Главную", "main_button"
+    );
+
     //гетеры возвращающие копию map коллекции
     //@return map где ключ - текст кнопки, значение - callback данные
     public Map<String, String> getStartButtonConfigs() {
@@ -30,5 +35,6 @@ public class KeyboardService {
     public Map<String, String> getTestAnswerConfigs() {
         return new HashMap<>(testAnswerButtons);
     }
+    public Map<String, String> getMainButtonCallBack(){ return  new HashMap<>(mainButtonCallBack);}
 
 }
