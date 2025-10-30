@@ -131,7 +131,8 @@ public class BotLogic {
             case "A_button", "B_button", "C_button", "D_button" -> {
                 if (testHandler.isTestActive(chatId)) { return "test_answers"; }
             }
-            case "no_button" -> {}
+            case "no_button" -> {return  "main";}
+            case "main_button" -> {}
         }
         return null;
     }
@@ -149,9 +150,9 @@ public class BotLogic {
     public Map<String, String> getStartButtonConfigs() {
         return keyboardService.getStartButtonConfigs();
     }
-
     public Map<String, String> getTestAnswerConfigs() {
         return keyboardService.getTestAnswerConfigs();
     }
+    public Map<String, String> getMainButtonCallBack() {return keyboardService.getMainButtonCallBack();}
 
 }
