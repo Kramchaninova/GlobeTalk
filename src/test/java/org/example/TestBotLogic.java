@@ -3,6 +3,11 @@ package org.example;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+/**
+ * TestBotLogic - тестирует обработку текстовых команд бота.
+ * Проверяет правильность ответов на команды /start, /help и неизвестные команды.
+ */
+
 public class TestBotLogic {
 
     private final BotLogic botLogic = new BotLogic();
