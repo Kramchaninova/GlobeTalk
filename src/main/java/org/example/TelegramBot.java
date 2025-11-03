@@ -89,25 +89,24 @@ public class TelegramBot extends TelegramLongPollingBot {
     @Override
     public void onUpdateReceived(Update update){
         try {
-            Map<String, String> result;
+            Map<String, String> result = Collections.emptyMap();
+
             if (update.hasCallbackQuery()) {
                 String callbackData = update.getCallbackQuery().getData();
                 long chatId = update.getCallbackQuery().getMessage().getChatId();
                 result = botLogic.processInput("callback", chatId, callbackData);
-                //если сообщение
             } else if (update.hasMessage() && update.getMessage().hasText()) {
                 String messageText = update.getMessage().getText();
                 long chatId = update.getMessage().getChatId();
                 result = botLogic.processInput("message", chatId, messageText);
-            } else {
-                return;
             }
 
-            // если есть результат, создаем и отправляем сообщение
-            if (!result.isEmpty()) {
+            // проверка на пустоту и наличие обязательных полей, те ключей
+            if (!result.isEmpty() && result.containsKey("chatId") && result.containsKey("text")) {
+
                 long chatId = Long.parseLong(result.get("chatId"));
                 String responseText = result.get("text");
-                String keyboardType = result.get("keyboardType");
+                String keyboardType = result.getOrDefault("keyboardType", "");
 
                 SendMessage message = createMessage(chatId, responseText, keyboardType);
                 execute(message);
