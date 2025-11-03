@@ -4,19 +4,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Представляет состояние прохождения теста конкретным пользователем.
- * Содержит:
- * список вопросов текущего теста,
- * список правильных ответов,
- * текущий индекс вопроса,
- * текущий набор баллов пользователя,
- * количество баллов за каждый вопрос.
+ * Класс хранит состояние прохождения теста для конкретного пользователя.
+ * Отвечает за управление прогрессом пользователя во время тестирования.
  */
 public class UserData {
+    /** Список вопросов текущего теста */
     private List<String> currentTest = new ArrayList<>();
+    /** Список правильных ответов на вопросы теста */
     private List<String> correctAnswers = new ArrayList<>();
+    /** Текущий индекс вопроса в тесте */
     private int currentIndex = 0;
+    /** Общее количество набранных баллов */
     private int totalScore = 0;
+    /** Количество баллов за каждый вопрос теста */
     private List<Integer> questionPoints = new ArrayList<>();
 
     public List<String> getCurrentTest() {

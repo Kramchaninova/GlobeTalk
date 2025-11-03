@@ -3,6 +3,8 @@ package org.example;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
+
 /**
  * TestBotLogic - тестирует обработку текстовых команд бота.
  * Проверяет правильность ответов на команды /start, /help и неизвестные команды.
@@ -65,5 +67,188 @@ public class TestBotLogic {
         String result = botLogic.handleCommand("/unknown");
 
         Assertions.assertEquals("Неизвестная команда. Введите /help для списка доступных команд.", result);
+    }
+    /**
+     * Тест на обработку кнопки "Назад" (no_button)
+     */
+    @Test
+    void testNoButtonProcessing() {
+        String response = botLogic.processCallbackData("no_button", 12345L);
+
+        String expectedResponse =
+                "💪 *Не сомневайтесь в своих силах!* 💪\n\n" +
+                        "📖 Тест займет всего несколько минут и поможет определить ваш текущий уровень\n\n" +
+                        "🕐 Когда будете готовы - просто нажмите /start\n\n" +
+                        "🔍 Все команды доступны по /help";
+
+        Assertions.assertEquals(expectedResponse, response);
+    }
+    /**
+     * Тест на обработку кнопки "На Главную" (main_button) (по факту она выбает справку)
+     */
+    @Test
+    void testMainButton() {
+        String response = botLogic.processCallbackData("main_button", 12345L);
+
+        String expectedResponse =
+                "🌍 *GlobeTalk - Изучение иностранных языков* 🌍\n\n" +
+
+                        "📋 **Доступные команды:**\n\n" +
+                        "• /start - Начать работу с ботом и пройти тестирование\n" +
+                        "• /help - Показать эту справку\n" +
+
+                        "🎯 **Как работает бот:**\n\n" +
+                        "GlobeTalk поможет вам в изучении иностранных языков через:\n" +
+                        "• 📝 Тестирование для определения вашего уровня\n\n" +
+
+                        "🛠️ **В процессе разработки:****\n" +
+                        "• 🎮 Интерактивные упражнения\n" +
+                        "• 📊 Отслеживание прогресса\n\n" +
+
+                        "💡 **Как взаимодействовать:**\n" +
+                        "• Используйте команды из меню (слева)\n" +
+                        "• Нажимайте на кнопки под сообщениями\n" +
+                        "• Отвечайте на вопросы теста\n" +
+                        "• Следите за своим прогрессом в профиле\n\n" +
+
+                        "🚀 **Начните с команды /start чтобы определить ваш уровень!**";
+
+        Assertions.assertEquals(expectedResponse, response);
+    }
+    /**
+     * Тест на обработку неизвестной кнопки
+     */
+    @Test
+    void testUnknownButtonProcessing() {
+        String response = botLogic.processCallbackData("unknown_button", 12345L);
+        Assertions.assertEquals("Неизвестная команда", response);
+    }
+
+    /**
+     * Тест на определение типа клавиатуры для разных callback данных
+     * мы не рассматриваем кнопки A/B/C/D тк они зависимы от интернета и по этому если делать
+     * проверку, то оно при выключенном интернете даст null
+     */
+    @Test
+    void testGetKeyboardForCallback() {
+
+        // Для yes_button должна возвращаться test_answers
+        Assertions.assertEquals("test_answers", botLogic.getKeyboardForCallback("yes_button", 12345L));
+
+        // Для no_button должна возвращаться main
+        Assertions.assertEquals("main", botLogic.getKeyboardForCallback("no_button", 12345L));
+
+        // Для неизвестной кнопки - null
+        Assertions.assertNull(botLogic.getKeyboardForCallback("unknown_button", 12345L));
+    }
+
+    /**
+     * Тест на обработку текстовых сообщений
+     */
+    @Test
+    void testHandleTextMessage() {
+
+        /**Вот так это выгляит формально
+         * result = {
+         * "chatId": "12345",
+         * "text": "какойто текст",
+         * "keyboardType": "start"
+         }
+         */
+
+        // Обработка команды /start
+        Map<String, String> result = botLogic.handleTextMessage(12345L, "/start");
+        Assertions.assertEquals("12345", result.get("chatId"));
+        Assertions.assertNotNull(result.get("text")); //Проверка на то что "text" не хранит null
+        Assertions.assertEquals("start", result.get("keyboardType"));
+
+        // Обработка обычного текста (не команды) - должен вернуть пустой результат
+        Map<String, String> emptyResult = botLogic.handleTextMessage(12345L, "обычный текст");
+        Assertions.assertTrue(emptyResult.isEmpty());
+
+        // Обработка команды /help
+        Map<String, String> helpResult = botLogic.handleTextMessage(12345L, "/help");
+        Assertions.assertEquals("12345", helpResult.get("chatId"));
+        Assertions.assertNotNull(helpResult.get("text"));
+    }
+
+    /**
+     * Тест на распределение (маршрутизаию) входящих данных
+     * Проверяет текстовое сообщение или кнопку от пользователя
+     */
+    @Test
+    void testProcessInput() {
+
+        // обработка callback
+        Map<String, String> callbackResult = botLogic.processInput("callback", 12345L, "no_button");
+        Assertions.assertEquals("12345", callbackResult.get("chatId")); //Проверка id, что совпадают
+
+        // обработка message
+        Map<String, String> messageResult = botLogic.processInput("message", 12345L, "/start");
+        Assertions.assertEquals("12345", messageResult.get("chatId"));
+
+        // неизвестный тип ввода
+        Map<String, String> unknownResult = botLogic.processInput("unknown", 12345L, "data");
+        Assertions.assertTrue(unknownResult.isEmpty()); //проверка на пустой результат
+    }
+
+    /**
+     * Тест конфигурации стартовых кнопок
+     */
+    @Test
+    void testStartButtonConfigs() {
+        Map<String, String> configs = botLogic.getStartButtonConfigs();
+        Assertions.assertFalse(configs.isEmpty());
+        Assertions.assertTrue(configs.containsKey("Конечно!"));
+        Assertions.assertEquals("yes_button", configs.get("Конечно!"));
+    }
+
+    /**
+     * Тест конфигурации кнопок ответов теста
+     */
+    @Test
+    void testTestAnswerConfigs() {
+        Map<String, String> configs = botLogic.getTestAnswerConfigs();
+        Assertions.assertEquals(4, configs.size());
+        Assertions.assertEquals("A_button", configs.get("A"));
+        Assertions.assertEquals("B_button", configs.get("B"));
+        Assertions.assertEquals("C_button", configs.get("C"));
+        Assertions.assertEquals("D_button", configs.get("D"));
+    }
+
+    /**
+     * Тест конфигурации кнопки возврата на главную
+     */
+    @Test
+    void testMainButtonCallback() {
+        Map<String, String> configs = botLogic.getMainButtonCallBack();
+        Assertions.assertEquals(1, configs.size());
+        Assertions.assertEquals("main_button", configs.get("На Главную"));
+    }
+
+    /**
+     * Тест обработки кнопок A/B/C/D при активном тесте
+     */
+    @Test
+    void testAnswerButtonsWithActiveTest() {
+        // Этот тест требует мокирования testHandler.isTestActive()
+        // Пока просто проверяем, что метод не падает
+        String response = botLogic.processCallbackData("A_button", 12345L);
+        Assertions.assertNotNull(response);
+    }
+
+    /**
+     * Тест определения клавиатуры для команды
+     */
+    @Test
+    void testGetKeyboardForCommand() {
+        // для команды /start
+        Assertions.assertEquals("start", botLogic.getKeyboardForCommand("/start"));
+
+        // для неизвестной команды
+        Assertions.assertNull(botLogic.getKeyboardForCommand("/unknown"));
+
+        // для null команды
+        Assertions.assertNull(botLogic.getKeyboardForCommand(null));
     }
 }

@@ -92,7 +92,11 @@ public class BotLogic {
         return result;
     }
 
-    // обработка всех входящих сообщений
+    /**
+     * обрабатывает входящие текстовые сообщения от пользователя.
+     * определяет тип сообщения (команда/текст) и формирует ответ.
+     * @return Map с данными для ответа: chatId, text, keyboardType
+     */
     public Map<String, String> handleTextMessage(long chatId, String messageText) {
         Map<String, String> result = new HashMap<>();
         // команда из бокового меню
@@ -123,7 +127,8 @@ public class BotLogic {
     }
 
     /**
-     *  метод определения ключа показываемого списка кнопок после нажатия
+     * определяет тип клавиатуры для отображения после нажатия callback-кнопки.
+     * @return тип клавиатуры для отображения или null, если клавиатура не требуется
      */
     public String getKeyboardForCallback(String callbackData, long chatId) {
         switch (callbackData) {
@@ -141,18 +146,35 @@ public class BotLogic {
      * логика определения типа команды в боковом меню
      */
     public String getKeyboardForCommand(String command) {
-        if (command != null && command.equals("/start")) {
-            return "start";
+        if (command == null) {
+            return null;
         }
-        return null;
+        switch (command) {
+            case "/start":
+                return "start";
+            default:
+                return null;
+        }
     }
 
+    /**
+     * возвращает конфигурацию кнопок для стартового меню.
+     * @return Map где ключ - текст кнопки, значение - callback данные
+     */
     public Map<String, String> getStartButtonConfigs() {
         return keyboardService.getStartButtonConfigs();
     }
+    /**
+     * возвращает конфигурацию кнопок с вариантами ответов для тестов.
+     * @return Map где ключ - текст кнопки (A/B/C/D), значение - callback данные
+     */
     public Map<String, String> getTestAnswerConfigs() {
         return keyboardService.getTestAnswerConfigs();
     }
+    /**
+     * возвращает конфигурацию кнопки для возврата на главную страницу.
+     * @return Map где ключ - текст кнопки, значение - callback данные
+     */
     public Map<String, String> getMainButtonCallBack() {return keyboardService.getMainButtonCallBack();}
 
 }
