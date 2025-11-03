@@ -12,8 +12,6 @@ import java.util.Map;
  */
 
 public class TestKeyboardService {
-
-    private final BotLogic botLogic = new BotLogic();
     private final KeyboardService keyboardService = new KeyboardService();
 
     /**
