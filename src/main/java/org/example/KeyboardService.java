@@ -37,12 +37,53 @@ public class KeyboardService {
             "Дальше", "next_button"
     );
 
+
+    //словарь кнопок дял словаря (главной словаря)
+    private final Map<String, String> dictionaryMainButton = Map.of(
+            "Добавить", "dictionary_add_button",
+            "Редактировать", "dictionary_edit_button",
+            "Удалить", "dictionary_delete_button",
+            "Назад", "main_button"
+    );
+
+    //набор кнопок для повторного добавления в словарь
+    private final Map<String, String> dictionaryAddAgainButton = Map.of(
+            "Да", "dictionary_add_yes_button",
+            "Нет", "dictionary_add_no_button"
+    );
+
+    //набор кнопко подтверждение на удаление
+    private  final Map<String, String> dictionaryDeleteButton = Map.of(
+            "Подтвердить", "dictionary_delete_confirm_button",
+            "Отменить",  "dictionary_delete_cancel_button"
+    );
+
+    // нобор кнопок в случае отказа от удаления
+    private final Map<String, String> dictionaryDeleteCancelButton = Map.of(
+            "Продлолжить", "dictionary_delete_resume_button",
+            "На главную", "main_button",
+            "Словарь", "dictionary_button"
+    );
+
+    //для окончаний каких то команд, чтобы было логическое завершение набор
+    private final  Map<String, String> dictionaryFinalButton = Map.of(
+            "Словарь", "dictionary_button",
+            "На главную", "main_button"
+    );
+
+
+
     //гетеры возвращающие копию map коллекции
     //@return map где ключ - текст кнопки, значение - callback данные
     public Map<String, String> getStartButtonConfigs() {return new HashMap<>(startButtons);}
     public Map<String, String> getTestAnswerConfigs() {return new HashMap<>(testAnswerButtons);}
     public Map<String, String> getSpeedTestStartButton() {return new HashMap<>(speedTestStartButton);}
     public Map<String, String> getSpeedTestNextButton() {return new HashMap<>(speedNextButton);}
+    public Map<String, String> getDictionaryMainButton(){return  new HashMap<>(dictionaryMainButton);}
+    public Map<String, String> getDictionaryAddAgainButton(){return new HashMap<>(dictionaryAddAgainButton);}
+    public Map<String, String> getDictionaryDeleteButton(){return new HashMap<>(dictionaryDeleteButton);}
+    public Map<String, String> getDictionaryDeleteCancelButton(){return new HashMap<>(dictionaryDeleteCancelButton);}
+    public Map<String, String> getDictionaryFinalButton() {return new HashMap<>(dictionaryFinalButton);}
 
     /**
      * хранит команды для бокового меню
@@ -55,6 +96,7 @@ public class KeyboardService {
         commands.add(new BotCommand("start", "начать работу с ботом"));
         commands.add(new BotCommand("help", "справка по командам"));
         commands.add(new BotCommand("speed_test", "тест на скорость"));
+        commands.add(new BotCommand("dictionary", "ваш словарь"));
 
 
         System.out.println("команды зарегестрированы в боковом меню");

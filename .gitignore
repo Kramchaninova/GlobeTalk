@@ -4,6 +4,7 @@ target/
 !**/src/test/**/target/
 .kotlin
 src/main/resources
+dictionary.db
 
 ### IntelliJ IDEA ###
 *.iws

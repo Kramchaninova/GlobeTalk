@@ -1,5 +1,7 @@
 package org.example;
 
+import org.example.SpeedTest.SpeedTestHandler;
+import org.example.StartTest.TestHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;

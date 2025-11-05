@@ -1,4 +1,4 @@
-package org.example;
+package org.example.StartTest;
 
 
 /**StartBot.java - класс который обрабатывает команнду /start,
