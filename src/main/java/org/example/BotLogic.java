@@ -1,6 +1,5 @@
 package org.example;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -23,13 +22,13 @@ public class BotLogic {
 
             "📋 **Доступные команды:**\n\n" +
             "• /start - Начать работу с ботом и пройти тестирование\n" +
-            "• /help - Показать эту справку\n" +
+            "• /help - Показать эту справку\n\n" +
 
             "🎯 **Как работает бот:**\n\n" +
             "GlobeTalk поможет вам в изучении иностранных языков через:\n" +
             "• 📝 Тестирование для определения вашего уровня\n\n" +
 
-            "🛠️ **В процессе разработки:****\n" +
+            "🛠️ **В процессе разработки:**\n" +
             "• 🎮 Интерактивные упражнения\n" +
             "• 📊 Отслеживание прогресса\n\n" +
 
@@ -45,9 +44,49 @@ public class BotLogic {
     private static final String COMMAND_UNKNOWN = "Неизвестная команда. Введите /help для списка доступных команд.";
 
     /**
-     * Обработка ответов с кнопок
+     * Обрабатывает callback запросы от кнопок.
      */
-    public String processCallbackData(String callbackData, long chatId) {
+    public BotResponse processCallback(String callbackData, long chatId) {
+        String responseText = processCallbackData(callbackData, chatId);
+        String keyboardType = getKeyboardForCallback(callbackData, chatId);
+
+        return new BotResponse(chatId, responseText, keyboardType);
+    }
+    /**
+     * Обрабатывает текстовые сообщения (в нашем случае только команды) от пользователя.
+     */
+    public BotResponse processMessage(String messageText, long chatId) {
+        if (messageText.startsWith("/")) {
+            return handleCommand(messageText, chatId);
+        }
+        return new BotResponse(chatId, "Сообщение получено");
+    }
+
+    /**
+     * Обрабатывает команды из бокового меню.
+     */
+    BotResponse handleCommand(String command, long chatId) {
+        String responseText;
+        String keyboardType = null;
+
+        switch (command) {
+            case "/start":
+                responseText = startCommand.startTest();
+                keyboardType = "start";
+                break;
+            case "/help":
+                responseText = COMMAND_HELP;
+                break;
+            default:
+                responseText = COMMAND_UNKNOWN;
+        }
+
+        return new BotResponse(chatId, responseText, keyboardType);
+    }
+    /**
+     * Обрабатывает данные callback запросов.
+     */
+    String processCallbackData(String callbackData, long chatId) {
         if (callbackData.equals("A_button") ||
                 callbackData.equals("B_button") ||
                 callbackData.equals("C_button") ||
@@ -56,74 +95,6 @@ public class BotLogic {
         } else {
             return startCommand.handleButtonClick(callbackData, chatId);
         }
-    }
-
-    /**
-     * Если в сообщении была команда, т.е. текст начинается с /, то обрабатываем ее
-     * и высылаем текст, который привязан к командам
-     */
-    public String handleCommand(String command) {
-        switch (command) {
-            case "/start":
-                // StartCommand - отельный класс для реализации старта бота,в дальнейшем логично было бы на каждую задачу выводить по классу
-                return startCommand.startTest();
-
-            case "/help":
-                return COMMAND_HELP;
-
-            default:
-                return COMMAND_UNKNOWN;
-        }
-
-    }
-
-    /**
-     * handleCallbackQuery - собирает результаты обработки в Map
-     */
-    public Map<String, String> handleCallbackQuery(String callbackData, long chatId) {
-        String responseText = processCallbackData(callbackData, chatId);
-        String keyboardType = getKeyboardForCallback(callbackData, chatId);
-
-        Map<String, String> result = new HashMap<>();
-        result.put("chatId", String.valueOf(chatId));
-        result.put("text", responseText);
-        result.put("keyboardType", keyboardType != null ? keyboardType : "");
-
-        return result;
-    }
-
-    /**
-     * обрабатывает входящие текстовые сообщения от пользователя.
-     * определяет тип сообщения (команда/текст) и формирует ответ.
-     * @return Map с данными для ответа: chatId, text, keyboardType
-     */
-    public Map<String, String> handleTextMessage(long chatId, String messageText) {
-        Map<String, String> result = new HashMap<>();
-        // команда из бокового меню
-        if (messageText.startsWith("/")) {
-            String responseText = handleCommand(messageText);
-            String keyboardType = getKeyboardForCommand(messageText);
-
-            result.put("chatId", String.valueOf(chatId));
-            result.put("text", responseText);
-            result.put("keyboardType", keyboardType != null ? keyboardType : "");
-
-            System.out.println("Обработана команда из бокового меню: " + messageText);
-        }
-
-        return result;
-    }
-
-    /**
-     * метод для распределения входящих данных на кнопки и текст
-     */
-    public Map<String, String> processInput(String inputType, long chatId, String data) {
-        if ("callback".equals(inputType)) {
-            return handleCallbackQuery(data, chatId);
-        } else if ("message".equals(inputType)) {
-            return handleTextMessage(chatId, data);
-        }
-        return new HashMap<>();
     }
 
     /**
@@ -137,7 +108,6 @@ public class BotLogic {
                 if (testHandler.isTestActive(chatId)) { return "test_answers"; }
             }
             case "no_button" -> {return  "main";}
-            case "main_button" -> {}
         }
         return null;
     }

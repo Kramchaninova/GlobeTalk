@@ -87,32 +87,26 @@ public class TelegramBot extends TelegramLongPollingBot {
      * onUpdateReceived - получает обновления из телеграма и передает в BotLogic
      */
     @Override
-    public void onUpdateReceived(Update update){
+    public void onUpdateReceived(Update update) {
         try {
-            Map<String, String> result = Collections.emptyMap();
+            BotResponse response = null;
 
             if (update.hasCallbackQuery()) {
                 String callbackData = update.getCallbackQuery().getData();
                 long chatId = update.getCallbackQuery().getMessage().getChatId();
-                result = botLogic.processInput("callback", chatId, callbackData);
+                response = botLogic.processCallback(callbackData, chatId);
             } else if (update.hasMessage() && update.getMessage().hasText()) {
                 String messageText = update.getMessage().getText();
                 long chatId = update.getMessage().getChatId();
-                result = botLogic.processInput("message", chatId, messageText);
+                response = botLogic.processMessage(messageText, chatId);
             }
 
-            // проверка на пустоту и наличие обязательных полей, те ключей
-            if (!result.isEmpty() && result.containsKey("chatId") && result.containsKey("text")) {
-
-                long chatId = Long.parseLong(result.get("chatId"));
-                String responseText = result.get("text");
-                String keyboardType = result.getOrDefault("keyboardType", "");
-
-                SendMessage message = createMessage(chatId, responseText, keyboardType);
+            if (response != null && response.isValid()) {
+                SendMessage message = createMessage(response);
                 execute(message);
             }
-        } catch (TelegramApiException e){
-            System.err.println("Ошибки Telegram API: нет соединения, невалидный токен, и тд." + e.getMessage());
+        } catch (TelegramApiException e) {
+            System.err.println("Ошибка Telegram API: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -122,14 +116,14 @@ public class TelegramBot extends TelegramLongPollingBot {
      * создание сообщения с кнопками
      * @return cooбщение для отправки
      */
-    private SendMessage createMessage(long chatId, String text, String keyboardType) {
+    private SendMessage createMessage(BotResponse response) {
         SendMessage message = SendMessage.builder()
-                .chatId(String.valueOf(chatId))
-                .text(text)
+                .chatId(String.valueOf(response.getChatId()))
+                .text(response.getText())
                 .build();
 
-        if (keyboardType != null && !keyboardType.isEmpty() && keyboardCache.containsKey(keyboardType)) {
-            message.setReplyMarkup(keyboardCache.get(keyboardType));
+        if (response.hasKeyboard() && keyboardCache.containsKey(response.getKeyboardType())) {
+            message.setReplyMarkup(keyboardCache.get(response.getKeyboardType()));
         }
 
         return message;
