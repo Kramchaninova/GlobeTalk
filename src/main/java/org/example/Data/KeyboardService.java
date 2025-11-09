@@ -1,4 +1,4 @@
-package org.example;
+package org.example.Data;
 
 import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
 
@@ -71,6 +71,10 @@ public class KeyboardService {
             "На главную", "main_button"
     );
 
+    private final Map<String,String> mainButtonCallBack  = Map.of(
+      "На главную", "main_button"
+    );
+
 
 
     //гетеры возвращающие копию map коллекции
@@ -84,24 +88,6 @@ public class KeyboardService {
     public Map<String, String> getDictionaryDeleteButton(){return new HashMap<>(dictionaryDeleteButton);}
     public Map<String, String> getDictionaryDeleteCancelButton(){return new HashMap<>(dictionaryDeleteCancelButton);}
     public Map<String, String> getDictionaryFinalButton() {return new HashMap<>(dictionaryFinalButton);}
-
-    /**
-     * хранит команды для бокового меню
-     * @return список команд бота для бокового меню
-     */
-    public List<BotCommand> getBotCommands() {
-        List<BotCommand> commands = new ArrayList<>();
-
-        // добавление команд (без символа '/', так как это формальный признак команды для бота)
-        commands.add(new BotCommand("start", "начать работу с ботом"));
-        commands.add(new BotCommand("help", "справка по командам"));
-        commands.add(new BotCommand("speed_test", "тест на скорость"));
-        commands.add(new BotCommand("dictionary", "ваш словарь"));
-
-
-        System.out.println("команды зарегестрированы в боковом меню");
-        return commands;
-
-    }
+    public Map<String,String> getMainButtonCallBack() {return new HashMap<>(mainButtonCallBack );}
 
 }
