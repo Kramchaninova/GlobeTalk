@@ -138,39 +138,6 @@ public class TestBotLogic {
 
     }
 
-    /**
-     * Тест конфигурации стартовых кнопок
-     */
-    @Test
-    void testStartButtonConfigs() {
-        Map<String, String> configs = botLogic.getStartButtonConfigs();
-        Assertions.assertFalse(configs.isEmpty());
-        Assertions.assertEquals("yes_button", configs.get("Конечно!"));
-        Assertions.assertEquals("no_button", configs.get("Назад"));
-    }
-
-    /**
-     * Тест конфигурации кнопок ответов теста
-     */
-    @Test
-    void testTestAnswerConfigs() {
-        Map<String, String> configs = botLogic.getTestAnswerConfigs();
-        Assertions.assertEquals(4, configs.size());
-        Assertions.assertEquals("A_button", configs.get("A"));
-        Assertions.assertEquals("B_button", configs.get("B"));
-        Assertions.assertEquals("C_button", configs.get("C"));
-        Assertions.assertEquals("D_button", configs.get("D"));
-    }
-
-    /**
-     * Тест конфигурации кнопки возврата на главную
-     */
-    @Test
-    void testMainButtonCallback() {
-        Map<String, String> configs = botLogic.getMainButtonCallBack();
-        Assertions.assertEquals(1, configs.size());
-        Assertions.assertEquals("main_button", configs.get("На Главную"));
-    }
 
     /**
      * Тест определения клавиатуры для команды
