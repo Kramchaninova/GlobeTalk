@@ -134,10 +134,10 @@ public class TelegramBot extends TelegramLongPollingBot {
      */
     private void initializeKeyboards() {
         keyboardCache.put("start", createKeyboardFromMap(
-                botLogic.getStartButtonConfigs(), 2));
+                botLogic.getKeyboardService().getStartButtonConfigs(), 2));
         keyboardCache.put("test_answers", createKeyboardFromMap(
-                botLogic.getTestAnswerConfigs(), 4));
-        keyboardCache.put("main", createKeyboardFromMap(botLogic.getMainButtonCallBack(), 1));
+                botLogic.getKeyboardService().getTestAnswerConfigs(), 4));
+        keyboardCache.put("main", createKeyboardFromMap(botLogic.getKeyboardService().getMainButtonCallBack(), 1));
         System.out.println("Клавиатуры инициализированы");
     }
 

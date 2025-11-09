@@ -106,6 +106,7 @@ public class BotLogic {
             case "yes_button" -> { return "test_answers"; }
             case "A_button", "B_button", "C_button", "D_button" -> {
                 if (testHandler.isTestActive(chatId)) { return "test_answers"; }
+                else{return "main";}
             }
             case "no_button" -> {return  "main";}
         }
@@ -126,25 +127,8 @@ public class BotLogic {
                 return null;
         }
     }
-
-    /**
-     * возвращает конфигурацию кнопок для стартового меню.
-     * @return Map где ключ - текст кнопки, значение - callback данные
-     */
-    public Map<String, String> getStartButtonConfigs() {
-        return keyboardService.getStartButtonConfigs();
+    public KeyboardService getKeyboardService() {
+        return keyboardService;
     }
-    /**
-     * возвращает конфигурацию кнопок с вариантами ответов для тестов.
-     * @return Map где ключ - текст кнопки (A/B/C/D), значение - callback данные
-     */
-    public Map<String, String> getTestAnswerConfigs() {
-        return keyboardService.getTestAnswerConfigs();
-    }
-    /**
-     * возвращает конфигурацию кнопки для возврата на главную страницу.
-     * @return Map где ключ - текст кнопки, значение - callback данные
-     */
-    public Map<String, String> getMainButtonCallBack() {return keyboardService.getMainButtonCallBack();}
 
 }
