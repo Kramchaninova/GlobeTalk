@@ -1,4 +1,4 @@
-package org.example;
+package org.example.SpeedTest;
 
 /**
  * SpeedTestCommand - управление тестом на скорость

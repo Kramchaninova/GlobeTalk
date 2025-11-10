@@ -1,4 +1,7 @@
-package org.example;
+package org.example.SpeedTest;
+
+import org.example.OpenRouter.OpenRouterClient;
+import org.example.Tokens.TokenOpenRouter;
 
 import java.io.IOException;
 

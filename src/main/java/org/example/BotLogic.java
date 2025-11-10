@@ -1,13 +1,18 @@
 package org.example;
 
-import java.util.ArrayList;
-import java.util.List;
+import org.example.Data.BotResponse;
+import org.example.Data.KeyboardService;
+import org.example.SpeedTest.SpeedTestCommand;
+import org.example.SpeedTest.SpeedTestHandler;
+import org.example.StartTest.StartCommand;
+import org.example.StartTest.TestHandler;
+import org.example.Dictionary.DictionaryCommand;
+import org.example.Dictionary.DictionaryServiceImpl;
 
 /**
  * BotLogic - класс для обработки логики бота.
  * обрабатывает входящие сообщения, команды и callback запросы от кнопок
  */
-
 
 public class BotLogic {
     private final StartCommand startCommand;
@@ -15,31 +20,36 @@ public class BotLogic {
     private final TestHandler testHandler;
     private final KeyboardService keyboardService;
     private final SpeedTestHandler speedTestHandler;
+    private final DictionaryCommand dictionaryCommand;
 
-    public BotLogic(){
+    public BotLogic() {
         this.testHandler = new TestHandler();
         this.speedTestHandler = new SpeedTestHandler();
         this.startCommand = new StartCommand(this.testHandler);
         this.speedTestCommand = new SpeedTestCommand(this.speedTestHandler);
         this.keyboardService = new KeyboardService();
+
+        DictionaryServiceImpl dictionaryService = new DictionaryServiceImpl();
+        this.dictionaryCommand = new DictionaryCommand(dictionaryService);
     }
 
-    private static final String COMMAND_HELP =  "🌍 *GlobeTalk - Изучение иностранных языков* 🌍\n\n" +
+    // ИСПРАВЛЕНО: убраны лишние форматирующие символы и исправлены опечатки
+    public static final String COMMAND_HELP = "🌍 *GlobeTalk - Изучение иностранных языков* 🌍\n\n" +
 
             "📋 **Доступные команды:**\n" +
             "• /start - Начать работу с ботом и пройти тестирование\n" +
             "• /help - Показать эту справку\n" +
-            "• /speed_test - пройти тест на скорость\n\n" +
+            "• /dictionary - Работа со словарем\n" +
+            "• /speed_test - Пройти тест на скорость\n\n" +
 
             "🎯 **Как работает бот:**\n" +
             "GlobeTalk поможет вам в изучении иностранных языков через:\n" +
             "• 📝 Тестирование для определения вашего уровня\n" +
             "• 🎮 Интерактивные упражнения\n\n" +
 
-            "🛠️ **В процессе разработки:****\n" +
+            "🛠️ **В процессе разработки:**\n" +
             "• 📊 Отслеживание прогресса\n" +
-            "• 📚Словарь и словарный запас**\n\n"+
-
+            "• 📚 Словарь и словарный запас\n\n"+
 
             "💡 **Как взаимодействовать:**\n" +
             "• Используйте команды из меню (слева)\n" +
@@ -49,14 +59,16 @@ public class BotLogic {
 
             "🚀 **Начните с команды /start чтобы определить ваш уровень!**";
 
-
     private static final String COMMAND_UNKNOWN = "Неизвестная команда. Введите /help для списка доступных команд.";
 
     /**
      * Обработка ответов с кнопок
      */
     public String processCallbackData(String callbackData, long chatId) {
-        if (callbackData.equals("A_button") ||
+        if (callbackData.equals("main_button")) {
+            return COMMAND_HELP;
+        }
+        else if (callbackData.equals("A_button") ||
                 callbackData.equals("B_button") ||
                 callbackData.equals("C_button") ||
                 callbackData.equals("D_button")) {
@@ -68,7 +80,6 @@ public class BotLogic {
             } else {
                 return "Сначала начните тест командой /start или /speed_test";
             }
-
         } else if (callbackData.equals("speed_yes_button") ||
                 callbackData.equals("speed_no_button")) {
             return speedTestCommand.handleButtonClick(callbackData, chatId);
@@ -78,102 +89,146 @@ public class BotLogic {
             } else {
                 return "Тест не активен";
             }
-        } else {
+        } else if (callbackData.startsWith("dictionary_")) {
+            return dictionaryCommand.handleButtonClick(callbackData, chatId);
+        }
+        // Обработка остальных кнопок
+        else {
             return startCommand.handleButtonClick(callbackData, chatId);
         }
     }
 
     /**
      * Если в сообщении была команда, т.е. текст начинается с /, то обрабатываем ее
-     *и высылаем текст, который привязан к командам
+     * и высылаем текст, который привязан к командам
      */
-    public String handleCommand(String command) {
+    // ИСПРАВЛЕНО: метод теперь возвращает BotResponse вместо String
+    BotResponse handleCommand(String command, long chatId) {
+        String responseText;
+        String keyboardType = null;
+
         switch (command) {
             case "/start":
-                // StartCommand - отельный класс для реализации старта бота,в дальнейшем логично было бы на каждую задачу выводить по классу
-                return startCommand.startTest();
+                responseText = startCommand.startTest();
+                keyboardType = "start";
+                break;
             case "/speed_test":
-                return speedTestCommand.startTest();
+                responseText = speedTestCommand.startTest();
+                keyboardType = "speed_test_start";
+                break;
+            case "/dictionary":
+                responseText = dictionaryCommand.showDictionary(chatId);
+                keyboardType = "dictionary";
+                break;
             case "/help":
-                return COMMAND_HELP;
-
+                responseText = COMMAND_HELP;
+                break;
             default:
-                return COMMAND_UNKNOWN;
+                responseText = COMMAND_UNKNOWN;
         }
 
+        return new BotResponse(chatId, responseText, keyboardType);
     }
 
     /**
-     * handleCallbackQuery - собирает результаты обработки в список
+     * Обрабатывает callback запросы от кнопок.
      */
-    public List<String> handleCallbackQuery(String callbackData, long chatId) {
+    public BotResponse processCallback(String callbackData, long chatId) {
         String responseText = processCallbackData(callbackData, chatId);
         String keyboardType = getKeyboardForCallback(callbackData, chatId);
 
-        // возвращаем список: [chatId, responseText, keyboardType]
-        List<String> result = new ArrayList<>();
-        result.add(String.valueOf(chatId));
-        result.add(responseText);
-        result.add(keyboardType != null ? keyboardType : "");
-
-        return result;
+        return new BotResponse(chatId, responseText, keyboardType);
     }
 
-
-    // обработка всех входящих сообщений
-    public List<String> handleTextMessage(long chatId, String messageText) {
-        List<String> result = new ArrayList<>();
-            // команда из бокового меню
-            if (messageText.startsWith("/")) {
-                String responseText = handleCommand(messageText);
-                String keyboardType = getKeyboardForCommand(messageText);
-
-                result.add(String.valueOf(chatId));
-                result.add(responseText);
-                result.add(keyboardType != null ? keyboardType : "");
-
-                System.out.println("Обработана команда из бокового меню: " + messageText);
-            }
-        return result;
-    }
     /**
-     * метод для распределения входящих данных на кнопки и текст
+     * Обрабатывает текстовые сообщения от пользователя.
      */
-    public List<String> processInput(String inputType, long chatId, String data) {
-        if ("callback".equals(inputType)) {
-            return handleCallbackQuery(data, chatId);
-        } else if ("message".equals(inputType)) {
-            return handleTextMessage(chatId, data);
+    public BotResponse processMessage(String messageText, long chatId) {
+        if (messageText.startsWith("/")) {
+            System.out.println("Обработана команда из бокового меню: " + messageText);
+            return handleCommand(messageText, chatId);
+        } else {
+            // обработка текстовых команд для словаря
+            String responseText = dictionaryCommand.handleTextCommand(messageText, chatId);
+            if (responseText != null && !responseText.isEmpty()) {
+                String keyboardType = determineKeyboardType(responseText);
+                return new BotResponse(chatId, responseText, keyboardType);
+            } else {
+                // Если не команда словаря, обрабатываем как обычное сообщение
+                return new BotResponse(chatId, "Не понимаю команду. Введите /help для справки.");
+            }
         }
-
-        return new ArrayList<>();
     }
 
+    /**
+     * Метод для определения типа клавиатуры на основе текста ответа
+     */
+    private String determineKeyboardType(String responseText) {
+        if (responseText.contains("✨ *Добро пожаловать в ваш личный словарь!* ✨")) {
+            return "dictionary";
+        }
+        // Если это успешное добавление слова - показываем кнопку add_again
+        else if (responseText.contains("Новое слово добавлено!") ||
+                responseText.contains("Пополнить еще словарь?")) {
+            return "add_again";
+        }
+        else if (responseText.contains("*Подтвердите удаление*")) {
+            return "delete";
+        }
+        else if (responseText.contains("Отлично! Перевод успешно обновлён ✅")) {
+            return "dictionary_final_button";
+        }
+        return "";
+    }
 
     /**
-     *  метод определения ключа показываемого списка кнопок после нажатия
+     * Метод определения ключа показываемого списка кнопок после нажатия
      */
     public String getKeyboardForCallback(String callbackData, long chatId) {
         switch (callbackData) {
-            case "yes_button" -> { return "test_answers"; }
+            case "yes_button" -> {
+                return "test_answers";
+            }
             case "A_button", "B_button", "C_button", "D_button" -> {
                 if (testHandler.isTestActive(chatId)) {
                     return "test_answers";
-                }else if (speedTestHandler.isTestActive(chatId)){
+                } else if (speedTestHandler.isTestActive(chatId)) {
                     return "speed_test_next";
+                } else {
+                    // Если тест завершен - показываем кнопку на главную
+                    return "main";
                 }
             }
-            case "speed_yes_button" -> {return "test_answers";}
+            case "no_button" -> {return "main";}
+            case "speed_yes_button" -> {
+                return "test_answers";
+            }
             case "next_button" -> {
                 if (speedTestHandler.isTestActive(chatId)) {
                     return "test_answers";
                 }
             }
+            case "dictionary_button"-> {
+                return "dictionary";
+            }
+            case "dictionary_add_no_button" -> {
+                return "dictionary";
+            }
+            case "dictionary_delete_cancel_button" -> {
+                return "delete_cancel";
+            }
+            case "dictionary_delete_confirm_button" -> {
+                return "dictionary_final_button";
+            }
         }
         return null;
     }
 
-    //логика определения типа команды в боковом меню
+    /** логика определения типа команды в боковом меню
+     *
+     * @param command
+     * @return
+     */
     public String getKeyboardForCommand(String command) {
         if (command != null) {
             switch (command) {
@@ -181,12 +236,15 @@ public class BotLogic {
                     return "start";
                 case "/speed_test":
                     return "speed_test_start";
+                case "/dictionary":
+                    return "dictionary";
                 default:
                     return null;
             }
         }
         return null;
     }
+
     public KeyboardService getKeyboardService() {
         return keyboardService;
     }
