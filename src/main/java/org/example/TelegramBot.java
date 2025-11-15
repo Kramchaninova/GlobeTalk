@@ -46,7 +46,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             List<BotCommand> commands = new ArrayList<>();
             commands.add(new BotCommand("start", "начать работу с ботом"));
             commands.add(new BotCommand("help", "справка по командам"));
-            commands.add(new BotCommand("speed_test", "тест на скорость"))
+            commands.add(new BotCommand("speed_test", "тест на скорость"));
 
             execute(SetMyCommands.builder()
                     .commands(commands)
