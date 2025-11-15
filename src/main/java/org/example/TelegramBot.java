@@ -10,7 +10,10 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Bot.java - основной класс бота, реализующий интерфейс для получения обновлений
@@ -43,6 +46,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             List<BotCommand> commands = new ArrayList<>();
             commands.add(new BotCommand("start", "начать работу с ботом"));
             commands.add(new BotCommand("help", "справка по командам"));
+            commands.add(new BotCommand("speed_test", "тест на скорость"))
 
             execute(SetMyCommands.builder()
                     .commands(commands)
@@ -138,6 +142,10 @@ public class TelegramBot extends TelegramLongPollingBot {
         keyboardCache.put("test_answers", createKeyboardFromMap(
                 botLogic.getKeyboardService().getTestAnswerConfigs(), 4));
         keyboardCache.put("main", createKeyboardFromMap(botLogic.getKeyboardService().getMainButtonCallBack(), 1));
+        keyboardCache.put("speed_test_next", createKeyboardFromMap(
+                botLogic.getKeyboardService().getSpeedTestNextButton(), 1));
+        keyboardCache.put("speed_test_start", createKeyboardFromMap(
+                botLogic.getKeyboardService().getSpeedTestStartButton(), 2));
         System.out.println("Клавиатуры инициализированы");
     }
 
