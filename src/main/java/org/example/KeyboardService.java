@@ -1,14 +1,10 @@
 package org.example;
 
-import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 /**
- * KeyboardService - класс для работы с меню слева и кнопками
+ * KeyboardService - класс хранения кнопок под сообщениями
  */
 public class KeyboardService {
 
@@ -26,6 +22,9 @@ public class KeyboardService {
             "D", "D_button"
     );
 
+    //храним кнопку на главнуб (у нас главная будет - help, потому что вся содержательная информацяи там)
+    private final Map<String, String> mainButtonCallBack = Map.of(
+            "На Главную", "main_button"
     //храним название кнопок и callback для старта в спид тесте
     private final Map<String, String> speedTestStartButton = Map.of(
             "Да", "speed_yes_button",
@@ -43,23 +42,6 @@ public class KeyboardService {
     public Map<String, String> getTestAnswerConfigs() {return new HashMap<>(testAnswerButtons);}
     public Map<String, String> getSpeedTestStartButton() {return new HashMap<>(speedTestStartButton);}
     public Map<String, String> getSpeedTestNextButton() {return new HashMap<>(speedNextButton);}
-
-    /**
-     * хранит команды для бокового меню
-     * @return список команд бота для бокового меню
-     */
-    public List<BotCommand> getBotCommands() {
-        List<BotCommand> commands = new ArrayList<>();
-
-        // добавление команд (без символа '/', так как это формальный признак команды для бота)
-        commands.add(new BotCommand("start", "начать работу с ботом"));
-        commands.add(new BotCommand("help", "справка по командам"));
-        commands.add(new BotCommand("speed_test", "тест на скорость"));
-
-
-        System.out.println("команды зарегестрированы в боковом меню");
-        return commands;
-
-    }
+    public Map<String, String> getMainButtonCallBack(){ return  new HashMap<>(mainButtonCallBack);}
 
 }
