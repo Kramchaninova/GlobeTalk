@@ -1,0 +1,134 @@
+package org.example;
+
+import java.util.Map;
+
+/**
+ * BotLogic - класс для обработки логики бота.
+ * обрабатывает входящие сообщения, команды и callback запросы от кнопок
+ */
+
+public class BotLogic {
+    private final StartCommand startCommand;
+    private final TestHandler testHandler;
+    private final KeyboardService keyboardService;
+
+    public BotLogic(){
+        this.testHandler = new TestHandler();
+        this.startCommand = new StartCommand(this.testHandler);
+        this.keyboardService = new KeyboardService();
+    }
+
+    private static final String COMMAND_HELP =  "🌍 *GlobeTalk - Изучение иностранных языков* 🌍\n\n" +
+
+            "📋 **Доступные команды:**\n\n" +
+            "• /start - Начать работу с ботом и пройти тестирование\n" +
+            "• /help - Показать эту справку\n\n" +
+
+            "🎯 **Как работает бот:**\n\n" +
+            "GlobeTalk поможет вам в изучении иностранных языков через:\n" +
+            "• 📝 Тестирование для определения вашего уровня\n\n" +
+
+            "🛠️ **В процессе разработки:**\n" +
+            "• 🎮 Интерактивные упражнения\n" +
+            "• 📊 Отслеживание прогресса\n\n" +
+
+            "💡 **Как взаимодействовать:**\n" +
+            "• Используйте команды из меню (слева)\n" +
+            "• Нажимайте на кнопки под сообщениями\n" +
+            "• Отвечайте на вопросы теста\n" +
+            "• Следите за своим прогрессом в профиле\n\n" +
+
+            "🚀 **Начните с команды /start чтобы определить ваш уровень!**";
+
+
+    private static final String COMMAND_UNKNOWN = "Неизвестная команда. Введите /help для списка доступных команд.";
+
+    /**
+     * Обрабатывает callback запросы от кнопок.
+     */
+    public BotResponse processCallback(String callbackData, long chatId) {
+        String responseText = processCallbackData(callbackData, chatId);
+        String keyboardType = getKeyboardForCallback(callbackData, chatId);
+
+        return new BotResponse(chatId, responseText, keyboardType);
+    }
+    /**
+     * Обрабатывает текстовые сообщения (в нашем случае только команды) от пользователя.
+     */
+    public BotResponse processMessage(String messageText, long chatId) {
+        if (messageText.startsWith("/")) {
+            return handleCommand(messageText, chatId);
+        }
+        return new BotResponse(chatId, "Сообщение получено");
+    }
+
+    /**
+     * Обрабатывает команды из бокового меню.
+     */
+    BotResponse handleCommand(String command, long chatId) {
+        String responseText;
+        String keyboardType = null;
+
+        switch (command) {
+            case "/start":
+                responseText = startCommand.startTest();
+                keyboardType = "start";
+                break;
+            case "/help":
+                responseText = COMMAND_HELP;
+                break;
+            default:
+                responseText = COMMAND_UNKNOWN;
+        }
+
+        return new BotResponse(chatId, responseText, keyboardType);
+    }
+    /**
+     * Обрабатывает данные callback запросов.
+     */
+    String processCallbackData(String callbackData, long chatId) {
+        if (callbackData.equals("A_button") ||
+                callbackData.equals("B_button") ||
+                callbackData.equals("C_button") ||
+                callbackData.equals("D_button")) {
+            return testHandler.handleAnswer(callbackData, chatId);
+        } else {
+            return startCommand.handleButtonClick(callbackData, chatId);
+        }
+    }
+
+    /**
+     * определяет тип клавиатуры для отображения после нажатия callback-кнопки.
+     * @return тип клавиатуры для отображения или null, если клавиатура не требуется
+     */
+    public String getKeyboardForCallback(String callbackData, long chatId) {
+        switch (callbackData) {
+            case "yes_button" -> { return "test_answers"; }
+            case "A_button", "B_button", "C_button", "D_button" -> {
+                if (testHandler.isTestActive(chatId)) { return "test_answers"; }
+                else{return "main";}
+            }
+            case "no_button" -> {return  "main";}
+        }
+        return null;
+    }
+
+    /**
+     * логика определения типа команды в боковом меню
+     */
+    public String getKeyboardForCommand(String command) {
+        if (command == null) {
+            return null;
+        }
+        switch (command) {
+            case "/start":
+                return "start";
+            default:
+                return null;
+        }
+    }
+    public KeyboardService getKeyboardService() {
+        return keyboardService;
+    }
+
+}
