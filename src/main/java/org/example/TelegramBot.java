@@ -19,11 +19,10 @@ import java.util.Map;
  * Bot.java - основной класс бота, реализующий интерфейс для получения обновлений
  * Формирует текстовые (в боковом меню) команды и кнопки
  */
-public class TelegramBot extends TelegramLongPollingBot  {
+public class TelegramBot extends TelegramLongPollingBot {
 
     private final String botUsername;
     private final BotLogic botLogic;
-    private final KeyboardService keyboardService;
 
     private final Map<String, InlineKeyboardMarkup> keyboardCache = new HashMap<>();
 
@@ -31,7 +30,6 @@ public class TelegramBot extends TelegramLongPollingBot  {
         super(botToken); //супер вызывает конструктор родительского класс лонгполинг (выше)
         this.botUsername = botUsername;
         this.botLogic = new BotLogic();
-        this.keyboardService = new KeyboardService();
         registerBotCommands();
         initializeKeyboards();
 
@@ -45,8 +43,10 @@ public class TelegramBot extends TelegramLongPollingBot  {
     //registerBotCommands - формирует из списка метода getBotCommands и вызывает в команды
     public void registerBotCommands() {
         try {
-            //список команд из класса для хранения кнопок и команд
-            List<BotCommand> commands = keyboardService.getBotCommands();
+            List<BotCommand> commands = new ArrayList<>();
+            commands.add(new BotCommand("start", "начать работу с ботом"));
+            commands.add(new BotCommand("help", "справка по командам"));
+            commands.add(new BotCommand("speed_test", "тест на скорость"))
 
             execute(SetMyCommands.builder()
                     .commands(commands)
@@ -91,35 +91,26 @@ public class TelegramBot extends TelegramLongPollingBot  {
      * onUpdateReceived - получает обновления из телеграма и передает в BotLogic
      */
     @Override
-    public void onUpdateReceived(Update update){
+    public void onUpdateReceived(Update update) {
         try {
-            // передаем обновление в BotLogic для обработки
-            List<String> result;
-            //если нажатие на кнопку произошло
+            BotResponse response = null;
+
             if (update.hasCallbackQuery()) {
                 String callbackData = update.getCallbackQuery().getData();
                 long chatId = update.getCallbackQuery().getMessage().getChatId();
-                result = botLogic.processInput("callback", chatId, callbackData);
-                //если сообщение
+                response = botLogic.processCallback(callbackData, chatId);
             } else if (update.hasMessage() && update.getMessage().hasText()) {
                 String messageText = update.getMessage().getText();
                 long chatId = update.getMessage().getChatId();
-                result = botLogic.processInput("message", chatId, messageText);
-            } else {
-                return;
+                response = botLogic.processMessage(messageText, chatId);
             }
 
-            // если есть результат, создаем и отправляем сообщение
-            if (!result.isEmpty()) {
-                long chatId = Long.parseLong(result.get(0));
-                String responseText = result.get(1);
-                String keyboardType = result.get(2);
-
-                SendMessage message = createMessage(chatId, responseText, keyboardType);
+            if (response != null && response.isValid()) {
+                SendMessage message = createMessage(response);
                 execute(message);
             }
-        } catch (TelegramApiException e){
-            System.err.println("Ошибки Telegram API: нет соединения, невалидный токен, и тд." + e.getMessage());
+        } catch (TelegramApiException e) {
+            System.err.println("Ошибка Telegram API: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -129,14 +120,14 @@ public class TelegramBot extends TelegramLongPollingBot  {
      * создание сообщения с кнопками
      * @return cooбщение для отправки
      */
-    private SendMessage createMessage(long chatId, String text, String keyboardType) {
+    private SendMessage createMessage(BotResponse response) {
         SendMessage message = SendMessage.builder()
-                .chatId(String.valueOf(chatId))
-                .text(text)
+                .chatId(String.valueOf(response.getChatId()))
+                .text(response.getText())
                 .build();
 
-        if (keyboardType != null && !keyboardType.isEmpty() && keyboardCache.containsKey(keyboardType)) {
-            message.setReplyMarkup(keyboardCache.get(keyboardType));
+        if (response.hasKeyboard() && keyboardCache.containsKey(response.getKeyboardType())) {
+            message.setReplyMarkup(keyboardCache.get(response.getKeyboardType()));
         }
 
         return message;
@@ -150,6 +141,7 @@ public class TelegramBot extends TelegramLongPollingBot  {
                 botLogic.getKeyboardService().getStartButtonConfigs(), 2));
         keyboardCache.put("test_answers", createKeyboardFromMap(
                 botLogic.getKeyboardService().getTestAnswerConfigs(), 4));
+        keyboardCache.put("main", createKeyboardFromMap(botLogic.getKeyboardService().getMainButtonCallBack(), 1));
         keyboardCache.put("speed_test_next", createKeyboardFromMap(
                 botLogic.getKeyboardService().getSpeedTestNextButton(), 1));
         keyboardCache.put("speed_test_start", createKeyboardFromMap(

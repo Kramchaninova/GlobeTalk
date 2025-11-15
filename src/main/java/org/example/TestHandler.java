@@ -1,9 +1,6 @@
 package org.example;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,11 +14,7 @@ import java.util.regex.Pattern;
 public class TestHandler {
 
     // Храним данные для каждого пользователя
-    private final Map<Long, List<String>> currentTests = new HashMap<>();
-    private final Map<Long, List<String>> correctAnswers = new HashMap<>();
-    private final Map<Long, Integer> currentIndexes = new HashMap<>();
-    private final Map<Long, Integer> totalScore = new HashMap<>();
-    private final Map<Long, List<Integer>> questionPoints = new HashMap<>();
+    private final Map<Long, UserData> users = new HashMap<>();
 
     private static final String ANSWER_ERROR = "Не удалось распознать вопросы в тесте.";
     private static final String AGAIN_TEST = "Сначала начните тест командой /start.";
@@ -76,11 +69,14 @@ public class TestHandler {
             return ANSWER_ERROR;
         }
 
-        currentTests.put(chatId, questions);
-        correctAnswers.put(chatId, answers);
-        currentIndexes.put(chatId, 0);
-        totalScore.put(chatId, 0);
-        questionPoints.put(chatId, pointsList);
+        UserData userData = new UserData();
+        userData.setCurrentTest(questions);
+        userData.setCorrectAnswers(answers);
+        userData.setQuestionPoints(pointsList);
+        userData.setCurrentIndex(0);
+        userData.setTotalScore(0);
+
+        users.put(chatId, userData);
 
         return questions.getFirst();
     }
@@ -92,35 +88,30 @@ public class TestHandler {
      */
 
     public String handleAnswer(String callbackData, long chatId) {
-        if (!currentTests.containsKey(chatId)) {
+        UserData userData = users.get(chatId);
+
+        if (userData == null) {
             return AGAIN_TEST;
         }
 
         String chosen = callbackData.substring(0, 1);
-        int index = currentIndexes.get(chatId);
-        List<String> correct = correctAnswers.get(chatId);
-        int score = totalScore.get(chatId);
-        List<Integer> pointsList = questionPoints.get(chatId);
 
-        // Проверяем ответ и начисляем баллы
-        if (correct.get(index).equalsIgnoreCase(chosen)) {
-            score += pointsList.get(index);
-            totalScore.put(chatId, score);
+        int index = userData.getCurrentIndex();
+        List<String> correctAnswers = userData.getCorrectAnswers();
+        List<Integer> pointsList = userData.getQuestionPoints();
+
+        if (correctAnswers.get(index).equalsIgnoreCase(chosen)) {
+            userData.setTotalScore(userData.getTotalScore() + pointsList.get(index));
         }
 
-        index++;
-        List<String> questions = currentTests.get(chatId);
+        userData.setCurrentIndex(index + 1);
 
-        if (index >= questions.size()) {
+        if (userData.getCurrentIndex() >= userData.getCurrentTest().size()) {
+
             int totalPoints = pointsList.stream().mapToInt(Integer::intValue).sum();
-            int earnedPoints = totalScore.get(chatId);
+            int earnedPoints = userData.getTotalScore();
 
-            // Очищаем данные пользователя
-            currentTests.remove(chatId);
-            currentIndexes.remove(chatId);
-            correctAnswers.remove(chatId);
-            totalScore.remove(chatId);
-            questionPoints.remove(chatId);
+            users.remove(chatId); // очищаем полностью
 
             String languageLevel;
             if (earnedPoints <= 6) {
@@ -140,19 +131,17 @@ public class TestHandler {
                     "✨ **Отличная работа!** ✨\n\n";
         }
 
-        currentIndexes.put(chatId, index);
-        return questions.get(index);
+        return userData.getCurrentTest().get(userData.getCurrentIndex());
     }
 
     /**
      * Проверяет, активен ли тест для пользователя.
-     *
      */
 
     public boolean isTestActive(long chatId) {
-        return currentTests.containsKey(chatId) &&
-                currentIndexes.containsKey(chatId) &&
-                currentIndexes.get(chatId) < currentTests.get(chatId).size();
+        UserData userData = users.get(chatId);
+        return userData != null &&
+                userData.getCurrentIndex() < userData.getCurrentTest().size();
     }
 
 }
