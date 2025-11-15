@@ -33,7 +33,6 @@ public class BotLogic {
         this.dictionaryCommand = new DictionaryCommand(dictionaryService);
     }
 
-    // ИСПРАВЛЕНО: убраны лишние форматирующие символы и исправлены опечатки
     public static final String COMMAND_HELP = "🌍 *GlobeTalk - Изучение иностранных языков* 🌍\n\n" +
 
             "📋 **Доступные команды:**\n" +
@@ -102,7 +101,6 @@ public class BotLogic {
      * Если в сообщении была команда, т.е. текст начинается с /, то обрабатываем ее
      * и высылаем текст, который привязан к командам
      */
-    // ИСПРАВЛЕНО: метод теперь возвращает BotResponse вместо String
     BotResponse handleCommand(String command, long chatId) {
         String responseText;
         String keyboardType = null;
