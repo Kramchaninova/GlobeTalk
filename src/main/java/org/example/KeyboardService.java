@@ -25,16 +25,23 @@ public class KeyboardService {
     //храним кнопку на главнуб (у нас главная будет - help, потому что вся содержательная информацяи там)
     private final Map<String, String> mainButtonCallBack = Map.of(
             "На Главную", "main_button"
+    //храним название кнопок и callback для старта в спид тесте
+    private final Map<String, String> speedTestStartButton = Map.of(
+            "Да", "speed_yes_button",
+            "Нет", "speed_no_button"
+    );
+
+    //храним название кнопок и callback для кнопки дальше
+    private final Map<String, String> speedNextButton = Map.of(
+            "Дальше", "next_button"
     );
 
     //гетеры возвращающие копию map коллекции
     //@return map где ключ - текст кнопки, значение - callback данные
-    public Map<String, String> getStartButtonConfigs() {
-        return new HashMap<>(startButtons);
-    }
-    public Map<String, String> getTestAnswerConfigs() {
-        return new HashMap<>(testAnswerButtons);
-    }
+    public Map<String, String> getStartButtonConfigs() {return new HashMap<>(startButtons);}
+    public Map<String, String> getTestAnswerConfigs() {return new HashMap<>(testAnswerButtons);}
+    public Map<String, String> getSpeedTestStartButton() {return new HashMap<>(speedTestStartButton);}
+    public Map<String, String> getSpeedTestNextButton() {return new HashMap<>(speedNextButton);}
     public Map<String, String> getMainButtonCallBack(){ return  new HashMap<>(mainButtonCallBack);}
 
 }
