@@ -1,10 +1,6 @@
 package org.example.Data;
 
-import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
-
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
