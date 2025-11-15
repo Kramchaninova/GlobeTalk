@@ -1,7 +1,6 @@
 package org.example;
 
 import org.example.Data.BotResponse;
-import org.example.Data.KeyboardService;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -25,7 +24,6 @@ public class TelegramBot extends TelegramLongPollingBot  {
 
     private final String botUsername;
     private final BotLogic botLogic;
-    private final KeyboardService keyboardService;
 
     private final Map<String, InlineKeyboardMarkup> keyboardCache = new HashMap<>();
 
@@ -33,7 +31,6 @@ public class TelegramBot extends TelegramLongPollingBot  {
         super(botToken); //супер вызывает конструктор родительского класс лонгполинг (выше)
         this.botUsername = botUsername;
         this.botLogic = new BotLogic();
-        this.keyboardService = new KeyboardService();
         registerBotCommands();
         initializeKeyboards();
 
