@@ -1,5 +1,6 @@
-package org.example;
+package org.example.Bots;
 
+import org.example.BotLogic;
 import org.example.Data.BotResponse;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
