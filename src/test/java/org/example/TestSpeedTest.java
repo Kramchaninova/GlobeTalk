@@ -6,8 +6,6 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 
 public class TestSpeedTest {
-    SpeedTestHandler speedTestHandler = new SpeedTestHandler();
-
     private String testText = """
             1 (1 points)
             Question 1?
