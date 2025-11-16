@@ -28,16 +28,16 @@ public class AuthServiceImpl implements AuthService {
             connection = DriverManager.getConnection("jdbc:sqlite:bot_auth.db");
 
             String createTableSQL = """
-                CREATE TABLE IF NOT EXISTS users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    original_username TEXT UNIQUE NOT NULL,
-                    current_username TEXT UNIQUE NOT NULL,
-                    password_hash TEXT NOT NULL,
-                    telegram_chat_id INTEGER,
-                    discord_channel_id INTEGER,
-                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-                )
-                """;
+                    CREATE TABLE IF NOT EXISTS users (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        original_username TEXT UNIQUE NOT NULL,
+                        current_username TEXT UNIQUE NOT NULL,
+                        password_hash TEXT NOT NULL,
+                        telegram_chat_id INTEGER,
+                        discord_channel_id INTEGER,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """;
 
             try (Statement stmt = connection.createStatement()) {
                 stmt.execute(createTableSQL);
@@ -52,6 +52,9 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * Отвязывает текущий чат от пользователя
+     *
+     * @param chatId идентификатор чата для отвязки
+     * @return true если чат был отвязан, false если чат не был найден
      */
     @Override
     public boolean unlinkCurrentChat(long chatId) {
@@ -96,6 +99,10 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * Регистрирует нового пользователя
+     *
+     * @param username логин пользователя
+     * @param password пароль пользователя
+     * @return true если регистрация успешна, false если логин уже занят
      */
     @Override
     public boolean registerUser(String username, String password) {
@@ -133,6 +140,10 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * Аутентифицирует пользователя по логину и паролю
+     *
+     * @param username логин пользователя
+     * @param password пароль пользователя
+     * @return true если аутентификация успешна, false если неверный логин или пароль
      */
     @Override
     public boolean authenticate(String username, String password) {
@@ -165,6 +176,10 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * Сбрасывает пароль пользователя
+     *
+     * @param username логин пользователя
+     * @param newPassword новый пароль
+     * @return true если пароль изменен, false если пользователь не найден
      */
     @Override
     public boolean resetPassword(String username, String newPassword) {
@@ -197,6 +212,10 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * Изменяет логин пользователя
+     *
+     * @param oldUsername текущий логин пользователя
+     * @param newUsername новый логин пользователя
+     * @return true если логин изменен, false если новый логин уже занят
      */
     @Override
     public boolean changeUsername(String oldUsername, String newUsername) {
@@ -231,6 +250,9 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * Получает оригинальный (первый) логин пользователя
+     *
+     * @param currentUsername текущий логин пользователя
+     * @return оригинальный логин пользователя или null если пользователь не найден
      */
     @Override
     public String getOriginalUsername(String currentUsername) {
@@ -249,6 +271,10 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * Привязывает Telegram chat ID к учетной записи
+     *
+     * @param username логин пользователя
+     * @param telegramChatId идентификатор Telegram чата
+     * @return true если привязка успешна, false если пользователь не найден
      */
     @Override
     public boolean linkTelegramChat(String username, long telegramChatId) {
@@ -271,6 +297,10 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * Привязывает Discord channel ID к учетной записи
+     *
+     * @param username логин пользователя
+     * @param discordChannelId идентификатор Discord канала
+     * @return true если привязка успешна, false если пользователь не найден
      */
     @Override
     public boolean linkDiscordChannel(String username, long discordChannelId) {
@@ -293,6 +323,9 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * Проверяет авторизацию пользователя по Telegram chat ID
+     *
+     * @param telegramChatId идентификатор Telegram чата
+     * @return true если пользователь авторизован, false если нет
      */
     @Override
     public boolean isTelegramUserAuthorized(long telegramChatId) {
@@ -311,6 +344,9 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * Проверяет авторизацию пользователя по Discord channel ID
+     *
+     * @param discordChannelId идентификатор Discord канала
+     * @return true если пользователь авторизован, false если нет
      */
     @Override
     public boolean isDiscordUserAuthorized(long discordChannelId) {
@@ -329,6 +365,9 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * Получает логин пользователя по Telegram chat ID
+     *
+     * @param telegramChatId идентификатор Telegram чата
+     * @return логин пользователя или null если не найден
      */
     @Override
     public String getUsernameByTelegramChatId(long telegramChatId) {
@@ -347,6 +386,9 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * Получает логин пользователя по Discord channel ID
+     *
+     * @param discordChannelId идентификатор Discord канала
+     * @return логин пользователя или null если не найден
      */
     @Override
     public String getUsernameByDiscordChannelId(long discordChannelId) {
@@ -365,6 +407,9 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * Генерирует соль на основе имени пользователя
+     *
+     * @param username логин пользователя
+     * @return соль в формате Base64
      */
     private String generateSaltFromUsername(String username) {
         try {
@@ -383,6 +428,10 @@ public class AuthServiceImpl implements AuthService {
 
     /**
      * Хеширует пароль с солью
+     *
+     * @param password пароль пользователя
+     * @param salt     соль для хеширования
+     * @return хеш пароля в формате Base64
      */
     private String hashPassword(String password, String salt) {
         try {

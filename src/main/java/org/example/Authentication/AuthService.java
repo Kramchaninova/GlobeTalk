@@ -64,5 +64,5 @@ public interface AuthService {
     /**
      * Отвязка текущего чата от пользователя при выходе
      */
-    boolean unlinkCurrentChat(long chatId); // ДОБАВЛЕН НОВЫЙ МЕТОД
+    boolean unlinkCurrentChat(long chatId);
 }

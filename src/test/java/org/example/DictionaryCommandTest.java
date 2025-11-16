@@ -6,14 +6,15 @@ import org.example.Dictionary.Word;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.sql.SQLException;
 import java.util.*;
 
-/**Проверяет функциональность работы со словарем: добавление, удаление,
+/**
+ * Проверяет функциональность работы со словарем: добавление, удаление,
  * редактирование слов и отображение словаря.
  * Использует in-memory реализацию для изоляции тестов.
- *
  */
-
 public class DictionaryCommandTest {
 
     /**
@@ -101,8 +102,16 @@ public class DictionaryCommandTest {
             list.removeIf(w -> w.id == wordId && w.userId == userId);
         }
 
+        @Override
+        public long getUserIdByChatId(long chatId) throws SQLException {
+            return chatId; // В тестах используем chatId как userId
+        }
+
         /**
          * Вспомогательный метод для получения внутреннего ID слова по индексу.
+         * @param userId идентификатор пользователя
+         * @param index индекс слова в списке
+         * @return ID слова или null если индекс неверный
          */
         public Integer getWordIdByIndex(long userId, int index) {
             List<DictionaryWord> list = storage.getOrDefault(userId, Collections.emptyList());
@@ -112,6 +121,8 @@ public class DictionaryCommandTest {
 
         /**
          * Вспомогательный метод для получения количества слов пользователя.
+         * @param userId идентификатор пользователя
+         * @return количество слов пользователя
          */
         public int getWordCount(long userId) {
             return storage.getOrDefault(userId, Collections.emptyList()).size();
@@ -362,7 +373,7 @@ public class DictionaryCommandTest {
         String result = dictionaryCommand.handleTextCommand("singleword", userId);
 
         // Проверяем, что система возвращает сообщение об ошибке
-        Assertions.assertEquals("❌Неправильный ввод или команда", result);
+        Assertions.assertEquals("❌ Неправильный ввод или команда", result);
 
         // Проверяем, что слово не было добавлено в базу данных
         Assertions.assertEquals(0, mock.getWordCount(userId));
