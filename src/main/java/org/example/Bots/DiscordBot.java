@@ -24,7 +24,7 @@ import java.util.Map;
  */
 public class DiscordBot extends ListenerAdapter {
     private final BotLogic botLogic;
-    private final Map<String, List<Button>> buttonCache = new HashMap<>();
+    private final Map<String, List<Button>> keyboardCache = new HashMap<>();
 
     public DiscordBot() {
         this.botLogic = new BotLogic();
@@ -56,6 +56,7 @@ public class DiscordBot extends ListenerAdapter {
     private void registerBotCommands(JDA jda) {
         jda.updateCommands().addCommands(
                 Commands.slash("start", "начать работу с ботом"),
+                Commands.slash("start_test", "начальный тест на уровень знаний"),
                 Commands.slash("help", "справка по командам"),
                 Commands.slash("speed_test", "тест на скорость"),
                 Commands.slash("dictionary", "ваш словарь")
@@ -113,21 +114,21 @@ public class DiscordBot extends ListenerAdapter {
      */
     private void sendMessage(GenericEvent event, BotResponse response) {
         if (event instanceof SlashCommandInteractionEvent slashEvent) {
-            if (response.hasKeyboard() && buttonCache.containsKey(response.getKeyboardType())) {
-                slashEvent.reply(response.getText()).addActionRow(buttonCache.get(response.getKeyboardType())).queue();
+            if (response.hasKeyboard() && keyboardCache.containsKey(response.getKeyboardType())) {
+                slashEvent.reply(response.getText()).addActionRow(keyboardCache.get(response.getKeyboardType())).queue();
             } else {
                 slashEvent.reply(response.getText()).queue();
             }
         } else if (event instanceof ButtonInteractionEvent buttonEvent) {
-            if (response.hasKeyboard() && buttonCache.containsKey(response.getKeyboardType())) {
-                buttonEvent.reply(response.getText()).addActionRow(buttonCache.get(response.getKeyboardType())).queue();
+            if (response.hasKeyboard() && keyboardCache.containsKey(response.getKeyboardType())) {
+                buttonEvent.reply(response.getText()).addActionRow(keyboardCache.get(response.getKeyboardType())).queue();
             } else {
                 buttonEvent.reply(response.getText()).queue();
             }
         } else if (event instanceof MessageReceivedEvent messageEvent) {
-            if (response.hasKeyboard() && buttonCache.containsKey(response.getKeyboardType())) {
+            if (response.hasKeyboard() && keyboardCache.containsKey(response.getKeyboardType())) {
                 messageEvent.getChannel().sendMessage(response.getText())
-                        .addActionRow(buttonCache.get(response.getKeyboardType()))
+                        .addActionRow(keyboardCache.get(response.getKeyboardType()))
                         .queue();
             } else {
                 messageEvent.getChannel().sendMessage(response.getText()).queue();
@@ -139,16 +140,24 @@ public class DiscordBot extends ListenerAdapter {
      * создание клавиатур (набор) кнопок под определенными ключами
      */
     private void initializeButtons() {
-        buttonCache.put("start", createButtonsFromMap(botLogic.getKeyboardService().getStartButtonConfigs()));
-        buttonCache.put("test_answers", createButtonsFromMap(botLogic.getKeyboardService().getTestAnswerConfigs()));
-        buttonCache.put("speed_test_next", createButtonsFromMap(botLogic.getKeyboardService().getSpeedTestNextButton()));
-        buttonCache.put("speed_test_start", createButtonsFromMap(botLogic.getKeyboardService().getSpeedTestStartButton()));
-        buttonCache.put("dictionary", createButtonsFromMap(botLogic.getKeyboardService().getDictionaryMainButton()));
-        buttonCache.put("add_again", createButtonsFromMap(botLogic.getKeyboardService().getDictionaryAddAgainButton()));
-        buttonCache.put("delete", createButtonsFromMap(botLogic.getKeyboardService().getDictionaryDeleteButton()));
-        buttonCache.put("delete_cancel", createButtonsFromMap(botLogic.getKeyboardService().getDictionaryDeleteCancelButton()));
-        buttonCache.put("dictionary_final_button", createButtonsFromMap(botLogic.getKeyboardService().getDictionaryFinalButton()));
-        buttonCache.put("main", createButtonsFromMap(botLogic.getKeyboardService().getMainButtonCallBack()));
+        keyboardCache.put("start", createButtonsFromMap(botLogic.getKeyboardService().getStartButtonConfigs()));
+        keyboardCache.put("test_answers", createButtonsFromMap(botLogic.getKeyboardService().getTestAnswerConfigs()));
+        keyboardCache.put("speed_test_next", createButtonsFromMap(botLogic.getKeyboardService().getSpeedTestNextButton()));
+        keyboardCache.put("speed_test_start", createButtonsFromMap(botLogic.getKeyboardService().getSpeedTestStartButton()));
+        keyboardCache.put("dictionary", createButtonsFromMap(botLogic.getKeyboardService().getDictionaryMainButton()));
+        keyboardCache.put("add_again", createButtonsFromMap(botLogic.getKeyboardService().getDictionaryAddAgainButton()));
+        keyboardCache.put("delete", createButtonsFromMap(botLogic.getKeyboardService().getDictionaryDeleteButton()));
+        keyboardCache.put("delete_cancel", createButtonsFromMap(botLogic.getKeyboardService().getDictionaryDeleteCancelButton()));
+        keyboardCache.put("dictionary_final_button", createButtonsFromMap(botLogic.getKeyboardService().getDictionaryFinalButton()));
+        keyboardCache.put("main", createButtonsFromMap(botLogic.getKeyboardService().getMainButtonCallBack()));
+        keyboardCache.put("sing_in_main", createButtonsFromMap(botLogic.getKeyboardService().getSingInMain()));
+        keyboardCache.put("sing_in_end", createButtonsFromMap(botLogic.getKeyboardService().getSingInEnd()));
+        keyboardCache.put("login_error", createButtonsFromMap(botLogic.getKeyboardService().getLoginError()));
+        keyboardCache.put("my_profile", createButtonsFromMap(botLogic.getKeyboardService().getMyProfile()));
+        keyboardCache.put("login_password_edit_end", createButtonsFromMap(botLogic.getKeyboardService().getLoginPasswordEditEnd()));
+        keyboardCache.put("log_out_confirm", createButtonsFromMap(botLogic.getKeyboardService().getLogOutConfirmation()));
+
+        System.out.println("Клавиатуры Discord инициализированы");
     }
 
 }

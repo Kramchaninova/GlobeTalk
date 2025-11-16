@@ -8,6 +8,9 @@ import org.example.StartTest.StartCommand;
 import org.example.StartTest.TestHandler;
 import org.example.Dictionary.DictionaryCommand;
 import org.example.Dictionary.DictionaryServiceImpl;
+import org.example.Authentication.AuthCommand;
+import org.example.Authentication.AuthService;
+import org.example.Authentication.AuthServiceImpl;
 
 /**
  * BotLogic - класс для обработки логики бота.
@@ -21,6 +24,8 @@ public class BotLogic {
     private final KeyboardService keyboardService;
     private final SpeedTestHandler speedTestHandler;
     private final DictionaryCommand dictionaryCommand;
+    private final AuthCommand authCommand;
+    private final AuthService authService;
 
     public BotLogic() {
         this.testHandler = new TestHandler();
@@ -31,13 +36,16 @@ public class BotLogic {
 
         DictionaryServiceImpl dictionaryService = new DictionaryServiceImpl();
         this.dictionaryCommand = new DictionaryCommand(dictionaryService);
+
+        this.authService = new AuthServiceImpl();
+        this.authCommand = new AuthCommand(authService);
     }
 
-    // ИСПРАВЛЕНО: убраны лишние форматирующие символы и исправлены опечатки
     public static final String COMMAND_HELP = "🌍 *GlobeTalk - Изучение иностранных языков* 🌍\n\n" +
 
             "📋 **Доступные команды:**\n" +
-            "• /start - Начать работу с ботом и пройти тестирование\n" +
+            "• /start- Начать работу с ботом\n" +
+            "• /start_test - Пройти тест на уровень языка\n" +
             "• /help - Показать эту справку\n" +
             "• /dictionary - Работа со словарем\n" +
             "• /speed_test - Пройти тест на скорость\n\n" +
@@ -57,16 +65,40 @@ public class BotLogic {
             "• Отвечайте на вопросы теста\n" +
             "• Следите за своим прогрессом в профиле\n\n" +
 
-            "🚀 **Начните с команды /start чтобы определить ваш уровень!**";
+            "🚀 **Начните с команды /start_test чтобы определить ваш уровень!**";
 
     private static final String COMMAND_UNKNOWN = "Неизвестная команда. Введите /help для списка доступных команд.";
+    private static final String NOT_AUTHORIZED_MESSAGE = "❌ **Доступ запрещен!**\n\n" +
+            "Для использования этой функции необходимо войти в аккаунт.\n\n" +
+            "🔐 Используйте команду /start для регистрации или входа.";
+
+    /**
+     * Проверяет авторизацию пользователя
+     */
+    private boolean isUserAuthorized(long chatId) {
+        // Проверяем и в Telegram и в Discord
+        return authService.isTelegramUserAuthorized(chatId) ||
+                authService.isDiscordUserAuthorized(chatId);
+    }
 
     /**
      * Обработка ответов с кнопок
      */
     public String processCallbackData(String callbackData, long chatId) {
+        // Кнопки аутентификации доступны без авторизации
         if (callbackData.equals("main_button")) {
             return COMMAND_HELP;
+        }
+        else if (callbackData.equals("sing_in_button") ||
+                callbackData.equals("reg_button") ||
+                callbackData.equals("login_again_button") ||
+                callbackData.equals("start_button") ||
+                callbackData.equals("log_out_cancel_button")) {
+            return authCommand.handleButtonClick(callbackData, chatId, true); // isTelegram = true для Telegram
+        }
+        // Все остальные функции требуют авторизации
+        else if (!isUserAuthorized(chatId)) {
+            return NOT_AUTHORIZED_MESSAGE;
         }
         else if (callbackData.equals("A_button") ||
                 callbackData.equals("B_button") ||
@@ -78,7 +110,7 @@ public class BotLogic {
                 var result = speedTestHandler.handleAnswerWithFeedback(callbackData, chatId);
                 return (String) result.get("feedback");
             } else {
-                return "Сначала начните тест командой /start или /speed_test";
+                return "Сначала начните тест командой /start_test или /speed_test";
             }
         } else if (callbackData.equals("speed_yes_button") ||
                 callbackData.equals("speed_no_button")) {
@@ -92,6 +124,14 @@ public class BotLogic {
         } else if (callbackData.startsWith("dictionary_")) {
             return dictionaryCommand.handleButtonClick(callbackData, chatId);
         }
+        // Кнопки профиля (требуют авторизации)
+        else if (callbackData.equals("login_edit_button") ||
+                callbackData.equals("password_edit_button") ||
+                callbackData.equals("log_out_button") ||
+                callbackData.equals("log_out_final_button")||
+                callbackData.equals("my_profile_button")) {
+            return authCommand.handleButtonClick(callbackData, chatId, true);
+        }
         // Обработка остальных кнопок
         else {
             return startCommand.handleButtonClick(callbackData, chatId);
@@ -102,23 +142,50 @@ public class BotLogic {
      * Если в сообщении была команда, т.е. текст начинается с /, то обрабатываем ее
      * и высылаем текст, который привязан к командам
      */
-    // ИСПРАВЛЕНО: метод теперь возвращает BotResponse вместо String
     BotResponse handleCommand(String command, long chatId) {
         String responseText;
         String keyboardType = null;
 
         switch (command) {
             case "/start":
-                responseText = startCommand.startTest();
-                keyboardType = "start";
+                responseText = authCommand.getStartMessage(chatId);
+                keyboardType = !isUserAuthorized(chatId) ? "sing_in_main" : null;
+                break;
+            case "/my_profile":
+                if (!isUserAuthorized(chatId)) {
+                    responseText = NOT_AUTHORIZED_MESSAGE;
+                    keyboardType = "sing_in_main";
+                } else {
+                    responseText = authCommand.getUserProfileMessage(chatId);
+                    keyboardType = "my_profile";
+                }
+                break;
+            case "/start_test":
+                if (!isUserAuthorized(chatId)) {
+                    responseText = NOT_AUTHORIZED_MESSAGE;
+                    keyboardType = "sing_in_main";
+                } else {
+                    responseText = startCommand.startTest();
+                    keyboardType = "start";
+                }
                 break;
             case "/speed_test":
-                responseText = speedTestCommand.startTest();
-                keyboardType = "speed_test_start";
+                if (!isUserAuthorized(chatId)) {
+                    responseText = NOT_AUTHORIZED_MESSAGE;
+                    keyboardType = "sing_in_main";
+                } else {
+                    responseText = speedTestCommand.startTest();
+                    keyboardType = "speed_test_start";
+                }
                 break;
             case "/dictionary":
-                responseText = dictionaryCommand.showDictionary(chatId);
-                keyboardType = "dictionary";
+                if (!isUserAuthorized(chatId)) {
+                    responseText = NOT_AUTHORIZED_MESSAGE;
+                    keyboardType = "sing_in_main";
+                } else {
+                    responseText = dictionaryCommand.showDictionary(chatId);
+                    keyboardType = "dictionary";
+                }
                 break;
             case "/help":
                 responseText = COMMAND_HELP;
@@ -148,16 +215,44 @@ public class BotLogic {
             System.out.println("Обработана команда из бокового меню: " + messageText);
             return handleCommand(messageText, chatId);
         } else {
-            // обработка текстовых команд для словаря
-            String responseText = dictionaryCommand.handleTextCommand(messageText, chatId);
-            if (responseText != null && !responseText.isEmpty()) {
-                String keyboardType = determineKeyboardType(responseText);
-                return new BotResponse(chatId, responseText, keyboardType);
-            } else {
-                // Если не команда словаря, обрабатываем как обычное сообщение
-                return new BotResponse(chatId, "Не понимаю команду. Введите /help для справки.");
+            // Обработка текстовых сообщений для аутентификации
+            String authResponse = authCommand.handleTextMessage(messageText, chatId, true);
+            if (!authResponse.equals(authCommand.getStartMessage())) {
+                // Если это ответ в процессе аутентификации
+                String keyboardType = determineAuthKeyboardType(authResponse);
+                return new BotResponse(chatId, authResponse, keyboardType);
             }
+
+            // Обработка текстовых команд для словаря (только для авторизованных)
+            if (isUserAuthorized(chatId)) {
+                String responseText = dictionaryCommand.handleTextCommand(messageText, chatId);
+                if (responseText != null && !responseText.isEmpty()) {
+                    String keyboardType = determineKeyboardType(responseText);
+                    return new BotResponse(chatId, responseText, keyboardType);
+                }
+            }
+
+            // Если не команда словаря и не аутентификация, обрабатываем как обычное сообщение
+            return new BotResponse(chatId, "Не понимаю команду. Введите /help для справки.");
         }
+    }
+
+    /**
+     * Метод для определения типа клавиатуры на основе текста ответа аутентификации
+     */
+    private String determineAuthKeyboardType(String responseText) {
+        if (responseText.contains("Регистрация в GlobeTalk")) {
+            return ""; // Без клавиатуры для регистрации
+        } else if (responseText.contains("Вход в аккаунт GlobeTalk")) {
+            return ""; // Без клавиатуры для входа
+        } else if (responseText.contains("Регистрация завершена")){
+            return "sing_in_end";
+        } else if (responseText.contains("Кажется, у нас проблемка")) {
+            return "login_error";
+        } else if (responseText.contains("**Логин изменен!**") || responseText.contains("**Пароль изменен!**")) {
+            return "login_password_edit_end";
+        }
+        return "";
     }
 
     /**
@@ -206,6 +301,9 @@ public class BotLogic {
             case "next_button" -> {
                 if (speedTestHandler.isTestActive(chatId)) {
                     return "test_answers";
+                } else {
+                    // Если тест завершен - показываем кнопку на главную
+                    return "main";
                 }
             }
             case "dictionary_button"-> {
@@ -220,6 +318,18 @@ public class BotLogic {
             case "dictionary_delete_confirm_button" -> {
                 return "dictionary_final_button";
             }
+            case "start_button" -> {
+                return "sing_in_main";
+            }
+            case "log_out_button" -> {
+                return "log_out_confirm";
+            }
+            case "log_out_final_button" -> {
+                return "sing_in_main";
+            }
+            case "my_profile_button" ->{
+                return "my_profile";
+            }
         }
         return null;
     }
@@ -233,11 +343,15 @@ public class BotLogic {
         if (command != null) {
             switch (command) {
                 case "/start":
+                    return "sing_in_main";
+                case "/start_test":
                     return "start";
                 case "/speed_test":
                     return "speed_test_start";
                 case "/dictionary":
                     return "dictionary";
+                case "/my_profile":
+                    return "my_profile";
                 default:
                     return null;
             }
