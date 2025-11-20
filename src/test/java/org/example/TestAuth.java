@@ -2,6 +2,7 @@ package org.example;
 
 import org.example.Authentication.AuthCommand;
 import org.example.Authentication.AuthService;
+import org.example.Data.BotResponse;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -168,17 +169,57 @@ public class TestAuth {
         public int getUserCount() {
             return users.size();
         }
+
+        /**
+         * Вспомогательный метод для авторизации пользователя в тестах BotLogic
+         */
+        public void authorizeUser(long chatId, String username, String password) {
+            registerUser(username, password);
+            linkTelegramChat(username, chatId);
+        }
+
+        /**
+         * Вспомогательный метод для деавторизации пользователя
+         */
+        public void deauthorizeUser(long chatId) {
+            telegramChats.remove(chatId);
+            discordChannels.remove(chatId);
+        }
     }
 
     private AuthCommand authCommand;
-    private MockAuthService mock;
+    private MockAuthService mockAuthService;
+    private BotLogic botLogic;
 
     @BeforeEach
     public void setUp() {
-        mock = new MockAuthService();
-        authCommand = new AuthCommand(mock);
+        mockAuthService = new MockAuthService();
+        authCommand = new AuthCommand(mockAuthService);
+
+        // Создаем BotLogic с нашим mockAuthService
+        botLogic = new BotLogic();
+
+        // Через рефлексию устанавливаем наш mockAuthService в BotLogic
+        try {
+            java.lang.reflect.Field authServiceField = BotLogic.class.getDeclaredField("authService");
+            authServiceField.setAccessible(true);
+            authServiceField.set(botLogic, mockAuthService);
+
+            // Также устанавливаем mockAuthService в authCommand внутри BotLogic
+            java.lang.reflect.Field authCommandField = BotLogic.class.getDeclaredField("authCommand");
+            authCommandField.setAccessible(true);
+            AuthCommand botLogicAuthCommand = (AuthCommand) authCommandField.get(botLogic);
+
+            java.lang.reflect.Field authCommandAuthServiceField = AuthCommand.class.getDeclaredField("authService");
+            authCommandAuthServiceField.setAccessible(true);
+            authCommandAuthServiceField.set(botLogicAuthCommand, mockAuthService);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Не удалось настроить BotLogic для тестов", e);
+        }
     }
 
+    // ТЕСТЫ АУТЕНТИФИКАЦИИ (AuthCommand и AuthService)
     /**
      * Тест: регистрация нового пользователя
      */
@@ -198,8 +239,8 @@ public class TestAuth {
         Assertions.assertEquals("✅ **Регистрация завершена!** 🎉\n\n**Ваши данные:**\n👤 Логин: testuser  \n🔑 Пароль: testpass\n\n**Теперь войдите в свой профиль** 🔐", passwordResponse);
 
         // Проверяем, что пользователь создан
-        Assertions.assertEquals(1, mock.getUserCount());
-        Assertions.assertEquals(true, mock.authenticate("testuser", "testpass"));
+        Assertions.assertEquals(1, mockAuthService.getUserCount());
+        Assertions.assertEquals(true, mockAuthService.authenticate("testuser", "testpass"));
     }
 
     /**
@@ -210,8 +251,8 @@ public class TestAuth {
         long chatId = 101L;
 
         // Сначала регистрируем пользователя
-        mock.registerUser("existinguser", "existingpass");
-        mock.linkTelegramChat("existinguser", chatId);
+        mockAuthService.registerUser("existinguser", "existingpass");
+        mockAuthService.linkTelegramChat("existinguser", chatId);
 
         // Начинаем процесс входа
         authCommand.handleButtonClick("sing_in_button", chatId, true);
@@ -222,7 +263,14 @@ public class TestAuth {
 
         // Вводим пароль
         String passwordResponse = authCommand.handleTextMessage("existingpass", chatId, true);
-        Assertions.assertEquals("🎉 **Отлично! Вход выполнен!**\n\nПривет, **existinguser**! ✨  \nGlobeTalk снова готов помочь тебе с языками!\n\n📚 **Выбери, чем хочешь заняться:**\n• Попрактиковать слова\n• Пройти тест\n• Пополнить словарь\n\nГотов учиться? 😊\n⬇️Все разделы сбоку", passwordResponse);
+        Assertions.assertEquals("🎉 **Отлично! Вход выполнен!**\n\nПривет, **existinguser**! ✨  \n" +
+                "GlobeTalk снова готов помочь тебе с языками!\n\n" +
+                "📚 **Выбери, чем хочешь заняться:**\n" +
+                "• Попрактиковать слова\n" +
+                "• Пройти тест\n" +
+                "• Пополнить словарь\n\n" +
+                "Готов учиться? 😊\n" +
+                "⬇️Все разделы сбоку", passwordResponse);
     }
 
     /**
@@ -233,7 +281,7 @@ public class TestAuth {
         long chatId = 102L;
 
         // Регистрируем пользователя
-        mock.registerUser("testuser", "correctpass");
+        mockAuthService.registerUser("testuser", "correctpass");
 
         // Начинаем процесс входа
         authCommand.handleButtonClick("sing_in_button", chatId, true);
@@ -241,7 +289,11 @@ public class TestAuth {
 
         // Вводим неверный пароль
         String response = authCommand.handleTextMessage("wrongpass", chatId, true);
-        Assertions.assertEquals("🔐 **Кажется, у нас проблемка...** 😕\n\nТо ли пароль неверный, то ли логин, \nа может, вы вообще не зарегистрировались?\n\n🔄 **Попробуйте еще раз** или \n📝 **зарегистрируйтесь**, если у вас еще нет аккаунта", response);
+        Assertions.assertEquals("🔐 **Кажется, у нас проблемка...** 😕\n\n" +
+                "То ли пароль неверный, то ли логин, \n" +
+                "а может, вы вообще не зарегистрировались?\n\n" +
+                "🔄 **Попробуйте еще раз** или \n" +
+                "📝 **зарегистрируйтесь**, если у вас еще нет аккаунта", response);
     }
 
     /**
@@ -252,14 +304,15 @@ public class TestAuth {
         long chatId = 103L;
 
         // Регистрируем первого пользователя
-        mock.registerUser("existing", "pass1");
+        mockAuthService.registerUser("existing", "pass1");
 
         // Пытаемся зарегистрировать второго с тем же логином
         authCommand.handleButtonClick("reg_button", chatId, true);
         authCommand.handleTextMessage("existing", chatId, true);
 
         String response = authCommand.handleTextMessage("pass2", chatId, true);
-        Assertions.assertEquals("❌ **Ошибка регистрации!**\nЛогин уже занят или произошла ошибка", response);
+        Assertions.assertEquals("❌ **Ошибка регистрации!**\n" +
+                "Логин уже занят или произошла ошибка", response);
     }
 
     /**
@@ -270,19 +323,20 @@ public class TestAuth {
         long chatId = 104L;
 
         // Регистрируем пользователя
-        mock.registerUser("olduser", "password");
-        mock.linkTelegramChat("olduser", chatId);
+        mockAuthService.registerUser("olduser", "password");
+        mockAuthService.linkTelegramChat("olduser", chatId);
 
         // Начинаем процесс изменения логина
         authCommand.handleButtonClick("login_edit_button", chatId, true);
 
         // Вводим новый логин
         String response = authCommand.handleTextMessage("newuser", chatId, true);
-        Assertions.assertEquals("✅ **Логин изменен!**\nНовый логин: newuser", response);
+        Assertions.assertEquals("✅ **Логин изменен!**\n" +
+                "Новый логин: newuser", response);
 
         // Проверяем, что логин изменился
-        Assertions.assertEquals("newuser", mock.getUsernameByTelegramChatId(chatId));
-        Assertions.assertEquals(true, mock.authenticate("newuser", "password"));
+        Assertions.assertEquals("newuser", mockAuthService.getUsernameByTelegramChatId(chatId));
+        Assertions.assertEquals(true, mockAuthService.authenticate("newuser", "password"));
     }
 
     /**
@@ -293,8 +347,8 @@ public class TestAuth {
         long chatId = 105L;
 
         // Регистрируем пользователя
-        mock.registerUser("testuser", "oldpass");
-        mock.linkTelegramChat("testuser", chatId);
+        mockAuthService.registerUser("testuser", "oldpass");
+        mockAuthService.linkTelegramChat("testuser", chatId);
 
         // Начинаем процесс изменения пароля
         authCommand.handleButtonClick("password_edit_button", chatId, true);
@@ -304,8 +358,8 @@ public class TestAuth {
         Assertions.assertEquals("✅ **Пароль изменен!**", response);
 
         // Проверяем, что пароль изменился
-        Assertions.assertEquals(true, mock.authenticate("testuser", "newpass"));
-        Assertions.assertEquals(false, mock.authenticate("testuser", "oldpass"));
+        Assertions.assertEquals(true, mockAuthService.authenticate("testuser", "newpass"));
+        Assertions.assertEquals(false, mockAuthService.authenticate("testuser", "oldpass"));
     }
 
     /**
@@ -316,17 +370,21 @@ public class TestAuth {
         long chatId = 106L;
 
         // Регистрируем и входим пользователя
-        mock.registerUser("logoutuser", "password");
-        mock.linkTelegramChat("logoutuser", chatId);
+        mockAuthService.registerUser("logoutuser", "password");
+        mockAuthService.linkTelegramChat("logoutuser", chatId);
 
         // Начинаем процесс выхода
         authCommand.handleButtonClick("log_out_button", chatId, true);
         String response = authCommand.handleButtonClick("log_out_final_button", chatId, true);
 
-        Assertions.assertEquals("👋 **Вы вышли из аккаунта**\n\nАккаунт: **logoutuser**  \nСессия завершена.\n\nЧтобы снова получить доступ к вашему профилю, выполните вход.\n\n🌍 *Ждем вас снова в GlobeTalk!*", response);
+        Assertions.assertEquals("👋 **Вы вышли из аккаунта**\n\n" +
+                "Аккаунт: **logoutuser**  \n" +
+                "Сессия завершена.\n\n" +
+                "Чтобы снова получить доступ к вашему профилю, выполните вход.\n\n" +
+                "🌍 *Ждем вас снова в GlobeTalk!*", response);
 
         // Проверяем, что чат отвязан
-        Assertions.assertEquals(false, mock.isTelegramUserAuthorized(chatId));
+        Assertions.assertEquals(false, mockAuthService.isTelegramUserAuthorized(chatId));
     }
 
     /**
@@ -337,15 +395,15 @@ public class TestAuth {
         long chatId = 107L;
 
         // Регистрируем пользователя
-        mock.registerUser("canceluser", "password");
-        mock.linkTelegramChat("canceluser", chatId);
+        mockAuthService.registerUser("canceluser", "password");
+        mockAuthService.linkTelegramChat("canceluser", chatId);
 
         // Начинаем процесс выхода и отменяем
         authCommand.handleButtonClick("log_out_button", chatId, true);
         String response = authCommand.handleButtonClick("log_out_cancel_button", chatId, true);
 
         // Проверяем, что остались в системе
-        Assertions.assertEquals(true, mock.isTelegramUserAuthorized(chatId));
+        Assertions.assertEquals(true, mockAuthService.isTelegramUserAuthorized(chatId));
     }
 
     /**
@@ -356,11 +414,18 @@ public class TestAuth {
         long chatId = 108L;
 
         // Регистрируем пользователя
-        mock.registerUser("profileuser", "password");
-        mock.linkTelegramChat("profileuser", chatId);
+        mockAuthService.registerUser("profileuser", "password");
+        mockAuthService.linkTelegramChat("profileuser", chatId);
 
         String response = authCommand.getUserProfileMessage(chatId);
-        Assertions.assertEquals("👤 **Профиль пользователя** 🌍\n\n📋 **Основная информация:**\n• **Логин:** profileuser\n• **Пароль:** ••••••••\n\n⚙️ **Управление аккаунтом:**\n• Изменить логин\n• Изменить пароль\n• Выйти из аккаунта\n", response);
+        Assertions.assertEquals("👤 **Профиль пользователя** 🌍\n\n" +
+                "📋 **Основная информация:**\n" +
+                "• **Логин:** profileuser\n" +
+                "• **Пароль:** ••••••••\n\n" +
+                "⚙️ **Управление аккаунтом:**\n" +
+                "• Изменить логин\n" +
+                "• Изменить пароль\n" +
+                "• Выйти из аккаунта\n", response);
     }
 
     /**
@@ -371,7 +436,8 @@ public class TestAuth {
         long chatId = 109L;
 
         String response = authCommand.getUserProfileMessage(chatId);
-        Assertions.assertEquals("❌ **Пользователь не найден!**\nСначала войдите в аккаунт", response);
+        Assertions.assertEquals("❌ **Пользователь не найден!**\n" +
+                "Сначала войдите в аккаунт", response);
     }
 
     /**
@@ -382,26 +448,27 @@ public class TestAuth {
         long chatId = 110L;
 
         // Регистрируем пользователя
-        mock.registerUser("authuser", "password");
-        mock.linkTelegramChat("authuser", chatId);
+        mockAuthService.registerUser("authuser", "password");
+        mockAuthService.linkTelegramChat("authuser", chatId);
 
         String response = authCommand.getStartMessage(chatId);
-        Assertions.assertEquals("🌍 *С возвращением в GlobeTalk!* 🌍\n\nРады снова видеть вас! Ваш персональный помощник в изучении иностранных языков готов к работе! 🎯\n\n✨ **Ваш аккаунт активен, доступ открыт:**\n• Продолжайте обучение по персональной программе\n• Доступ к урокам и упражнениям\n• Ваш личный словарь\n• Трекинг прогресса\n\n📚 **Что хотите сделать?**\n• Продолжить тестирование\n• Попрактиковать слова из словаря\n• Пройти новые упражнения\n\n🎯 **Продолжайте изучать языки!**\n🚀 Выберите действие из меню", response);
+        Assertions.assertEquals("🌍 *С возвращением в GlobeTalk!* 🌍\n\n" +
+                "Рады снова видеть вас! Ваш персональный помощник в изучении иностранных языков готов к работе! 🎯\n\n" +
+                "✨ **Ваш аккаунт активен, доступ открыт:**\n• Продолжайте обучение по персональной программе\n" +
+                "• Доступ к урокам и упражнениям\n" +
+                "• Ваш личный словарь\n" +
+                "• Трекинг прогресса\n\n" +
+                "📚 **Что хотите сделать?**\n" +
+                "• Продолжить тестирование\n" +
+                "• Попрактиковать слова из словаря\n" +
+                "• Пройти новые упражнения\n\n" +
+                "🎯 **Продолжайте изучать языки!**\n" +
+                "🚀 Выберите действие из меню", response);
     }
 
-    /**
-     * Тест: стартовое сообщение для неавторизованного пользователя
-     */
-    @Test
-    public void testStartMessageUnauthorized() {
-        long chatId = 111L;
-
-        String response = authCommand.getStartMessage(chatId);
-        Assertions.assertEquals("🌍 *Добро пожаловать в GlobeTalk!* 🌍\n\nВаш персональный помощник в изучении иностранных языков! 🎯\n\n📝 **Для начала работы необходимо зарегистрироваться**\nЭто займет всего 30 секунд, но откроет все возможности платформы!\n\n✨ **После регистрации вы получите:**\n• Персональную программу обучения\n• Доступ к урокам и упражнениям\n• Доступ к созданию личного словаря\n• Трекинг прогресса\n\n📚 **Перед началом обучения** рекомендую пройти короткий тест для определения вашего текущего уровня владения языком.\n\n💡 Это поможет нам подобрать оптимальную программу обучения именно для вас!\n\n🎯 **Готовы открыть мир языков?**\n🚀 Начните с регистрации и тестирования!", response);
-    }
 
     /**
-     * Тест: обработка неизвестной команды
+     * Проверка обработки неизвестной команды
      */
     @Test
     public void testUnknownCommand() {
@@ -412,7 +479,7 @@ public class TestAuth {
     }
 
     /**
-     * Тест: очистка состояния пользователя
+     * Проверка очистки состояния пользователя
      */
     @Test
     public void testClearUserState() {
@@ -427,5 +494,83 @@ public class TestAuth {
         // Проверяем, что состояние очищено
         String response = authCommand.handleTextMessage("test", chatId, true);
         Assertions.assertEquals("🌍 *Добро пожаловать в GlobeTalk!* 🌍\n\nВаш персональный помощник в изучении иностранных языков! 🎯\n\n📝 **Для начала работы необходимо зарегистрироваться**\nЭто займет всего 30 секунд, но откроет все возможности платформы!\n\n✨ **После регистрации вы получите:**\n• Персональную программу обучения\n• Доступ к урокам и упражнениям\n• Доступ к созданию личного словаря\n• Трекинг прогресса\n\n📚 **Перед началом обучения** рекомендую пройти короткий тест для определения вашего текущего уровня владения языком.\n\n💡 Это поможет нам подобрать оптимальную программу обучения именно для вас!\n\n🎯 **Готовы открыть мир языков?**\n🚀 Начните с регистрации и тестирования!", response);
+    }
+
+
+    // ТЕСТЫ BOTLOGIC ДЛЯ АВТОРИЗОВАННОГО ПОЛЬЗОВАТЕЛЯ
+
+    /**
+     * Проверка команда /start_test для авторизованного пользователя
+     */
+    @Test
+    public void testStartTestCommandAuthorized() {
+        long chatId = 201L;
+
+        // Авторизуем пользователя
+        mockAuthService.authorizeUser(chatId, "testuser", "testpass");
+
+        BotResponse result = botLogic.processMessage("/start_test", chatId);
+
+        Assertions.assertEquals(chatId, result.getChatId());
+        Assertions.assertEquals("Ваш персональный помощник в изучении иностранных языков GlobeTalk!* 🌍!\n\n" +
+                "📚 **Перед началом обучения** рекомендую пройти короткий тест для определения вашего текущего уровня владения языком.\n\n" +
+                "💡 Это поможет нам подобрать оптимальную программу обучения именно для вас!\n\n" +
+                "🔍 Для просмотра всех команд нажмите /help\n\n" +
+                "🚀 **Вы готовы начать тест?**", result.getText());
+        Assertions.assertEquals("start", result.getKeyboardType());
+    }
+
+    /**
+     * Проверка команда /speed_test для авторизованного пользователя
+     */
+    @Test
+    public void testSpeedTestCommandAuthorized() {
+        long chatId = 202L;
+
+        // Авторизуем пользователя
+        mockAuthService.authorizeUser(chatId, "speeduser", "speedpass");
+
+        BotResponse result = botLogic.processMessage("/speed_test", chatId);
+
+        Assertions.assertEquals(chatId, result.getChatId());
+        Assertions.assertEquals("🌍 *Добро пожаловать в тест на скорость!* 🌍\n\n" +
+                "⚡ **Тест на скорость реакции** ⚡\n\n" +
+                "Проверьте, насколько быстро вы можете отвечать на вопросы!\n\n" +
+                "📊 **Как это работает:**\n" +
+                "• Вам будут показаны вопросы с вариантами ответов\n" +
+                "• Отвечайте как можно быстрее\n" +
+                "• В конце получите статистику ответов\n\n" +
+                "🎯 **Особенности теста:**\n" +
+                "• Таймер отслеживает скорость ваших ответов\n" +
+                "• Можно перейти к следующему вопросу кнопкой \"Дальше\"\n" +
+                "• Результаты помогут оценить вашу реакцию\n\n" +
+                "🚀 **Начнем тест на скорость?**", result.getText());
+        Assertions.assertEquals("speed_test_start", result.getKeyboardType());
+    }
+
+    //тест на словарь в словаре
+
+    /**
+     * Проверка команда /my_profile для авторизованного пользователя
+     */
+    @Test
+    public void testMyProfileCommandAuthorized() {
+        long chatId = 204L;
+
+        // Авторизуем пользователя
+        mockAuthService.authorizeUser(chatId, "profileuser", "profilepass");
+
+        BotResponse result = botLogic.processMessage("/my_profile", chatId);
+
+        Assertions.assertEquals(chatId, result.getChatId());
+        Assertions.assertEquals("👤 **Профиль пользователя** 🌍\n\n" +
+                "📋 **Основная информация:**\n" +
+                "• **Логин:** profileuser\n" +
+                "• **Пароль:** ••••••••\n\n" +
+                "⚙️ **Управление аккаунтом:**\n" +
+                "• Изменить логин\n" +
+                "• Изменить пароль\n" +
+                "• Выйти из аккаунта\n", result.getText());
+        Assertions.assertEquals("my_profile", result.getKeyboardType());
     }
 }
