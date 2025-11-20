@@ -6,7 +6,7 @@ import java.util.List;
 
 /**
  * DictionaryServiceImpl - реализация работы со словарем в SQLite.
- * Выполняет CRUD операции с базой данных слов.
+ * Выполняет Create, Read, Update, Delete операции с базой данных слов.
  */
 public class DictionaryServiceImpl implements DictionaryService {
     private Connection connection;
