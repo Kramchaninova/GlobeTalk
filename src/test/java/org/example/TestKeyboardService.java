@@ -142,4 +142,78 @@ public class TestKeyboardService {
         Assertions.assertEquals("main_button", finalButtons.get("На главную"));
         Assertions.assertEquals(2, finalButtons.size());
     }
+
+    /**
+     * Тест кнопок аутентификации - главное меню входа
+     */
+    @Test
+    void testSingInMainButtons() {
+        Map<String, String> authButtons = keyboardService.getSingInMain();
+
+        Assertions.assertEquals("sing_in_button", authButtons.get("Войти"));
+        Assertions.assertEquals("reg_button", authButtons.get("Зарегистрироваться"));
+        Assertions.assertEquals(2, authButtons.size());
+    }
+
+    /**
+     * Тест кнопок завершения аутентификации
+     */
+    @Test
+    void testSingInEndButtons() {
+        Map<String, String> endButtons = keyboardService.getSingInEnd();
+
+        Assertions.assertEquals("sing_in_button", endButtons.get("Войти"));
+        Assertions.assertEquals("start_button", endButtons.get("В начало"));
+        Assertions.assertEquals(2, endButtons.size());
+    }
+
+    /**
+     * Тест кнопок ошибки логина
+     */
+    @Test
+    void testLoginErrorButtons() {
+        Map<String, String> errorButtons = keyboardService.getLoginError();
+
+        Assertions.assertEquals("login_again_button", errorButtons.get("Еще раз"));
+        Assertions.assertEquals("start_button", errorButtons.get("В начало"));
+        Assertions.assertEquals(2, errorButtons.size());
+    }
+
+    /**
+     * Тест кнопок профиля пользователя
+     */
+    @Test
+    void testMyProfileButtons() {
+        Map<String, String> profileButtons = keyboardService.getMyProfile();
+
+        Assertions.assertEquals("login_edit_button", profileButtons.get("Логин"));
+        Assertions.assertEquals("password_edit_button", profileButtons.get("Пароль"));
+        Assertions.assertEquals("log_out_button", profileButtons.get("Выйти"));
+        Assertions.assertEquals(3, profileButtons.size());
+    }
+
+    /**
+     * Тест кнопок завершения редактирования логина/пароля
+     */
+    @Test
+    void testLoginPasswordEditEndButtons() {
+        Map<String, String> editEndButtons = keyboardService.getLoginPasswordEditEnd();
+
+        Assertions.assertEquals("my_profile_button", editEndButtons.get("Мой профиль"));
+        Assertions.assertEquals("main_button", editEndButtons.get("На главную"));
+        Assertions.assertEquals(2, editEndButtons.size());
+    }
+
+    /**
+     * Тест кнопок подтверждения выхода
+     */
+    @Test
+    void testLogOutConfirmationButtons() {
+        Map<String, String> logoutButtons = keyboardService.getLogOutConfirmation();
+
+        Assertions.assertEquals("log_out_final_button", logoutButtons.get("Выйти"));
+        Assertions.assertEquals("log_out_cancel_button", logoutButtons.get("Остаться"));
+        Assertions.assertEquals(2, logoutButtons.size());
+    }
+
 }

@@ -1,7 +1,7 @@
-package org.example;
+package org.example.Bots;
 
+import org.example.BotLogic;
 import org.example.Data.BotResponse;
-import org.example.Data.KeyboardService;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -25,7 +25,6 @@ public class TelegramBot extends TelegramLongPollingBot  {
 
     private final String botUsername;
     private final BotLogic botLogic;
-    private final KeyboardService keyboardService;
 
     private final Map<String, InlineKeyboardMarkup> keyboardCache = new HashMap<>();
 
@@ -33,7 +32,6 @@ public class TelegramBot extends TelegramLongPollingBot  {
         super(botToken); //супер вызывает конструктор родительского класс лонгполинг (выше)
         this.botUsername = botUsername;
         this.botLogic = new BotLogic();
-        this.keyboardService = new KeyboardService();
         registerBotCommands();
         initializeKeyboards();
 
@@ -53,8 +51,10 @@ public class TelegramBot extends TelegramLongPollingBot  {
 
         // добавление команд (без символа '/', так как это формальный признак команды для бота)
         commands.add(new BotCommand("start", "начать работу с ботом"));
+        commands.add(new BotCommand("start_test", "начальный тест на уровень знаний"));
         commands.add(new BotCommand("help", "справка по командам"));
         commands.add(new BotCommand("speed_test", "тест на скорость"));
+        commands.add(new BotCommand("my_profile", "мой профиль"));
         commands.add(new BotCommand("dictionary", "ваш словарь"));
 
 
@@ -177,6 +177,18 @@ public class TelegramBot extends TelegramLongPollingBot  {
                 botLogic.getKeyboardService().getDictionaryFinalButton(), 2));
         keyboardCache.put("main", createKeyboardFromMap(
                 botLogic.getKeyboardService().getMainButtonCallBack(),1));
+        keyboardCache.put("sing_in_main", createKeyboardFromMap(
+                botLogic.getKeyboardService().getSingInMain(), 2));
+        keyboardCache.put("sing_in_end", createKeyboardFromMap(
+                botLogic.getKeyboardService().getSingInEnd(),2));
+        keyboardCache.put("login_error", createKeyboardFromMap(
+                botLogic.getKeyboardService().getLoginError(),2));
+        keyboardCache.put("my_profile", createKeyboardFromMap(
+                botLogic.getKeyboardService().getMyProfile(), 3));
+        keyboardCache.put("login_password_edit_end", createKeyboardFromMap(
+                botLogic.getKeyboardService().getLoginPasswordEditEnd(), 2));
+        keyboardCache.put("log_out_confirm", createKeyboardFromMap(
+                botLogic.getKeyboardService().getLogOutConfirmation(), 2));
         System.out.println("Клавиатуры инициализированы");
     }
 
