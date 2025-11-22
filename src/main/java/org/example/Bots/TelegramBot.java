@@ -28,6 +28,7 @@ public class TelegramBot extends TelegramLongPollingBot  {
     private final String botUsername;
     private final BotLogic botLogic;
     private final ScheduledExecutorService scheduler;
+    private final ScheduledExecutorService testScheduler;
     private final Map<String, InlineKeyboardMarkup> keyboardCache = new HashMap<>();
 
     public TelegramBot(String botToken, String botUsername) {
@@ -35,9 +36,11 @@ public class TelegramBot extends TelegramLongPollingBot  {
         this.botUsername = botUsername;
         this.botLogic = new BotLogic();
         this.scheduler = Executors.newScheduledThreadPool(1);
+        this.testScheduler = Executors.newScheduledThreadPool(1);
         registerBotCommands();
         initializeKeyboards();
         startScheduling();
+        startTestScheduling();
     }
 
     @Override
@@ -57,6 +60,7 @@ public class TelegramBot extends TelegramLongPollingBot  {
         commands.add(new BotCommand("my_profile", "мой профиль"));
         commands.add(new BotCommand("dictionary", "ваш словарь"));
         commands.add(new BotCommand("word", "отложенные сообщения"));
+        commands.add(new BotCommand("scheduled_test", "отложенный тест по словам"));
         return commands;
     }
 
@@ -74,15 +78,27 @@ public class TelegramBot extends TelegramLongPollingBot  {
     }
 
     /**
-     * Запускает таймер для отложенных сообщений
+     * Запускает таймер для отложенных сообщений (слова)
      */
     private void startScheduling() {
-        // Запускаем таймер каждую минуту
+        // Запускаем таймер каждую минуту для слов
         scheduler.scheduleAtFixedRate(
                 this::sendScheduledMessagesToAllUsers,
-                10, 60, TimeUnit.SECONDS // Начинаем через 10 сек, потом каждую минуту
+                60, 3 * 60, TimeUnit.SECONDS // Начинаем через 10 сек, потом каждую минуту
         );
-        System.out.println("Таймер отложенных сообщений запущен в TelegramBot");
+        System.out.println("Таймер отложенных сообщений (слова) запущен в TelegramBot");
+    }
+
+    /**
+     * Запускает таймер для отложенных тестов
+     */
+    private void startTestScheduling() {
+        // Запускаем таймер каждые 6 часов для тестов
+        testScheduler.scheduleAtFixedRate(
+                this::sendScheduledTestsToAllUsers,
+                10, 60, TimeUnit.SECONDS // Начинаем через 30 сек, потом каждые 6 часов
+        );
+        System.out.println("Таймер отложенных тестов запущен в TelegramBot");
     }
 
     /**
@@ -90,38 +106,78 @@ public class TelegramBot extends TelegramLongPollingBot  {
      */
     private void sendScheduledMessagesToAllUsers() {
         try {
-            System.out.println("TelegramBot: запуск отправки отложенных сообщений");
+            System.out.println("TelegramBot: запуск отправки отложенных сообщений (слова)");
 
             // Получаем активных пользователей АВТОМАТИЧЕСКИ
             List<Long> activeUsers = getActiveTelegramUsers();
 
             if (activeUsers.isEmpty()) {
-                System.out.println("Нет активных пользователей для рассылки");
+                System.out.println("Нет активных пользователей для рассылки слов");
                 return;
             }
 
-            System.out.println("Найдено " + activeUsers.size() + " активных пользователей");
+            System.out.println("Найдено " + activeUsers.size() + " активных пользователей для слов");
 
             // Отправляем сообщения каждому пользователю
             for (Long chatId : activeUsers) {
                 try {
                     BotResponse response = botLogic.generateScheduledMessage(chatId);
                     if (response != null && response.isValid()) {
-                        // отпрвка
+                        // отправка
                         SendMessage message = createMessage(response);
                         execute(message);
-                        System.out.println("Telegram: отложенное сообщение отправлено пользователю " + chatId);
+                        System.out.println("Telegram: отложенное сообщение (слово) отправлено пользователю " + chatId);
 
                         // Небольшая задержка чтобы не превысить лимиты Telegram
                         Thread.sleep(100);
                     }
                 } catch (Exception e) {
-                    System.err.println("Ошибка отправки пользователю " + chatId + ": " + e.getMessage());
+                    System.err.println("Ошибка отправки слова пользователю " + chatId + ": " + e.getMessage());
                 }
             }
 
         } catch (Exception e) {
-            System.err.println("Ошибка в процессе рассылки Telegram: " + e.getMessage());
+            System.err.println("Ошибка в процессе рассылки слов Telegram: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Отправляет отложенные тесты всем активным пользователям
+     */
+    private void sendScheduledTestsToAllUsers() {
+        try {
+            System.out.println("TelegramBot: запуск отправки отложенных тестов");
+
+            // Получаем активных пользователей АВТОМАТИЧЕСКИ
+            List<Long> activeUsers = getActiveTelegramUsers();
+
+            if (activeUsers.isEmpty()) {
+                System.out.println("Нет активных пользователей для рассылки тестов");
+                return;
+            }
+
+            System.out.println("Найдено " + activeUsers.size() + " активных пользователей для тестов");
+
+            // Отправляем тесты каждому пользователю
+            for (Long chatId : activeUsers) {
+                try {
+                    BotResponse response = botLogic.generateScheduledTest(chatId);
+                    if (response != null && response.isValid()) {
+                        // отправка
+                        SendMessage message = createMessage(response);
+                        execute(message);
+                        System.out.println("Telegram: отложенный тест отправлен пользователю " + chatId);
+
+                        // Небольшая задержка чтобы не превысить лимиты Telegram
+                        Thread.sleep(100);
+                    }
+                } catch (Exception e) {
+                    System.err.println("Ошибка отправки теста пользователю " + chatId + ": " + e.getMessage());
+                }
+            }
+
+        } catch (Exception e) {
+            System.err.println("Ошибка в процессе рассылки тестов Telegram: " + e.getMessage());
         }
     }
 
@@ -203,7 +259,7 @@ public class TelegramBot extends TelegramLongPollingBot  {
         SendMessage message = SendMessage.builder()
                 .chatId(String.valueOf(response.getChatId()))
                 .text(response.getText())
-                .parseMode("Markdown") //разметка, типо: жирный, курсиввный и тд
+                //.parseMode("Markdown") //разметка, типо: жирный, курсиввный и тд
                 .build();
 
         if (response.hasKeyboard() && keyboardCache.containsKey(response.getKeyboardType())) {
@@ -253,21 +309,29 @@ public class TelegramBot extends TelegramLongPollingBot  {
                 botLogic.getKeyboardService().getScheduleMessage(), 2));
         keyboardCache.put("schedule_message_final", createKeyboardFromMap(
                 botLogic.getKeyboardService().getScheduleMessageFinal(), 2));
+        keyboardCache.put("schedule_test", createKeyboardFromMap(
+                botLogic.getKeyboardService().getScheduleTestYesOrNo(),2));
         System.out.println("Клавиатуры инициализированы");
     }
 
     /**
-     * Остановка таймера
+     * Остановка таймеров
      */
     public void shutdown() {
         try {
             scheduler.shutdown();
+            testScheduler.shutdown();
+
             if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
                 scheduler.shutdownNow();
             }
-            System.out.println("Таймер TelegramBot остановлен");
+            if (!testScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                testScheduler.shutdownNow();
+            }
+            System.out.println("Таймеры TelegramBot остановлены");
         } catch (InterruptedException e) {
             scheduler.shutdownNow();
+            testScheduler.shutdownNow();
             Thread.currentThread().interrupt();
         }
     }

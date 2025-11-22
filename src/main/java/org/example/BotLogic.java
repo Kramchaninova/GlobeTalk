@@ -13,6 +13,7 @@ import org.example.Authentication.AuthCommand;
 import org.example.Authentication.AuthService;
 import org.example.Authentication.AuthServiceImpl;
 import org.example.ScheduledMessages.Message;
+import org.example.ScheduledTests.ScheduleTests;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,6 +34,7 @@ public class BotLogic {
     private final AuthService authService;
     private final UserService userService;
     private final Message message;
+    private final ScheduleTests scheduleTests;
 
     // Состояния пользователей для отслеживания активных процессов
     private final Map<Long, String> userStates = new ConcurrentHashMap<>();
@@ -49,6 +51,7 @@ public class BotLogic {
         this.authService = new AuthServiceImpl();
         this.authCommand = new AuthCommand(authService);
         this.message = new Message();
+        this.scheduleTests = new ScheduleTests();
 
         // Запускаем очистку неактивных пользователей
         startUserCleanupScheduler();
@@ -75,14 +78,16 @@ public class BotLogic {
             "• /help - Показать эту справку\n" +
             "• /dictionary - Работа со словарем\n" +
             "• /speed_test - Пройти тест на скорость\n" +
-            "• /word - Получить новое английское слово\n\n" +
+            "• /word - Получить новое английское слово\n" +
+            "• /scheduled_test - Пройти отложенный тест по словам\n\n" +
 
             "🎯 **Как работает бот:**\n" +
             "GlobeTalk поможет вам в изучении иностранных языков через:\n" +
             "• 📝 Тестирование для определения вашего уровня\n" +
             "• 🎮 Интерактивные упражнения\n" +
             "• 📚 Личный словарь\n" +
-            "• 🔄 Ежедневные слова и повторения\n\n" +
+            "• 🔄 Ежедневные слова и повторения\n" +
+            "• ⏰ Отложенные тесты для закрепления материала\n\n" +
 
             "💡 **Как взаимодействовать:**\n" +
             "• Используйте команды из меню (слева)\n" +
@@ -128,8 +133,10 @@ public class BotLogic {
                         state.startsWith("speed_test_") ||
                         state.startsWith("dictionary_") ||
                         state.startsWith("profile_") ||
+                        state.startsWith("schedule_test_") ||
                         testHandler.isTestActive(chatId) ||
-                        speedTestHandler.isTestActive(chatId)
+                        speedTestHandler.isTestActive(chatId) ||
+                        scheduleTests.isTestActive(chatId)
         );
 
         if (isBusy) {
@@ -203,6 +210,30 @@ public class BotLogic {
     }
 
     /**
+     * Генерирует отложенный тест с кнопками
+     * Вызывается из TelegramBot/DiscordBot по отдельному таймеру
+     */
+    public BotResponse generateScheduledTest(long chatId) {
+        // Проверяем, можно ли отправлять тест
+        if (!canReceiveScheduledMessages(chatId)) {
+            System.out.println("[Bot Logic] Пользователь " + chatId + " занят, пропускаем отложенный тест");
+            return null;
+        }
+
+        try {
+            // Отправляем приглашение на тест
+            System.out.println("[Bot Logic] Генерация отложенного теста для пользователя " + chatId);
+
+            String testInvitation = scheduleTests.getScheduleTestInvitation();
+            return new BotResponse(chatId, testInvitation, "schedule_test");
+
+        } catch (Exception e) {
+            System.err.println("[Bot Logic] Ошибка генерации отложенного теста: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Получает активных пользователей для рассылки
      */
     public List<Long> getActiveUsersForDistribution() {
@@ -238,6 +269,38 @@ public class BotLogic {
 
             // Message сам генерирует новое слово, добавляет в БД и возвращает следующее слово
             return message.handleWordButtonClick(callbackData, chatId);
+        }
+
+        // Обработка кнопок отложенных тестов
+        if (callbackData.equals("yes_schedule_test_button") ||
+                callbackData.equals("no_schedule_test_button")) {
+            if (!isUserAuthorized(chatId)) {
+                return NOT_AUTHORIZED_MESSAGE;
+            }
+
+            setUserState(chatId, "schedule_test_decision");
+            String result = scheduleTests.handleButtonClick(callbackData, chatId);
+
+            if (callbackData.equals("yes_schedule_test_button")) {
+                setUserState(chatId, "schedule_test_active");
+            } else {
+                setUserState(chatId, null);
+            }
+
+            return result;
+        }
+
+        // Обработка ответов в активном отложенном тесте
+        if ((callbackData.equals("A_button") || callbackData.equals("B_button") ||
+                callbackData.equals("C_button") || callbackData.equals("D_button")) &&
+                scheduleTests.isTestActive(chatId)) {
+
+            setUserState(chatId, "schedule_test_active");
+            String result = scheduleTests.handleTestAnswer(callbackData, chatId);
+            if (result.contains("Тест завершён") || result.contains("результаты теста")) {
+                setUserState(chatId, null);
+            }
+            return result;
         }
 
         if (callbackData.equals("next_scheduled_word")) {
@@ -403,6 +466,16 @@ public class BotLogic {
                     keyboardType = "schedule_message";
                 }
                 break;
+            case "/scheduled_test":
+                if (!isUserAuthorized(chatId)) {
+                    responseText = NOT_AUTHORIZED_MESSAGE;
+                    keyboardType = "sing_in_main";
+                } else {
+                    setUserState(chatId, "schedule_test_invitation");
+                    responseText = scheduleTests.getScheduleTestInvitation();
+                    keyboardType = "schedule_test";
+                }
+                break;
             case "/help":
                 setUserState(chatId, null);
                 responseText = COMMAND_HELP;
@@ -518,7 +591,10 @@ public class BotLogic {
             return "schedule_message";
         } else if (responseText.contains("Слово уже добавлено в словарь для изучения!")){
             return "schedule_message_final";
-
+        } else if (responseText.contains("🌙 *Момент истины настал!*")) {
+            return "schedule_test";
+        } else if (responseText.contains("Вопрос") && responseText.contains("A)") && responseText.contains("B)")) {
+            return "test_answers";
         }
         return "";
     }
@@ -538,6 +614,8 @@ public class BotLogic {
                     return "test_answers";
                 } else if (speedTestHandler.isTestActive(chatId)) {
                     return "speed_test_next";
+                } else if (scheduleTests.isTestActive(chatId)) {
+                    return "test_answers";
                 } else {
                     return "main";
                 }
@@ -586,6 +664,12 @@ public class BotLogic {
             case "more_word_button" ->{
                 return "schedule_message";
             }
+            case "yes_schedule_test_button" -> {
+                return "test_answers";
+            }
+            case "no_schedule_test_button" -> {
+                return "main";
+            }
         }
         return null;
     }
@@ -610,6 +694,8 @@ public class BotLogic {
                     return "my_profile";
                 case "/word":
                     return "schedule_message";
+                case "/scheduled_test":
+                    return "schedule_test";
                 default:
                     return null;
             }

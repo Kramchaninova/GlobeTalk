@@ -177,15 +177,16 @@ public class DictionaryServiceImpl implements DictionaryService {
      */
     @Override
     public Word getWordByEnglish(long userId, String englishWord) throws SQLException {
-        String sql = "SELECT * FROM dictionary WHERE user_id = ? AND english_word = ?";
+        String sql = "SELECT * FROM dictionary WHERE user_id = ? AND LOWER(english_word) = LOWER(?)";
 
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setLong(1, userId);
-            pstmt.setString(2, englishWord);
+            pstmt.setString(2, englishWord.trim());
             ResultSet rs = pstmt.executeQuery();
 
             if (rs.next()) {
-                System.out.println("[Dictionary] Найдено слово: " + englishWord + " для userId: " + userId);
+                System.out.println("[Dictionary] Найдено слово: '" + englishWord + "' -> '" +
+                        rs.getString("english_word") + "' для userId: " + userId);
                 return new Word(
                         rs.getInt("id"),
                         rs.getLong("user_id"),
@@ -195,7 +196,7 @@ public class DictionaryServiceImpl implements DictionaryService {
                 );
             }
         }
-        System.out.println("[Dictionary] Слово не найдено: " + englishWord + " для userId: " + userId);
+        System.out.println("[Dictionary] Слово не найдено: '" + englishWord + "' для userId: " + userId);
         return null;
     }
 

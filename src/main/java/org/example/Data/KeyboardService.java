@@ -111,6 +111,12 @@ public class KeyboardService {
             "Еще слова", "more_word_button"
     );
 
+    //ОТЛОЖЕННЫЕ ТЕСТЫ
+    private final Map<String, String> scheduleTestYesOrNo = Map.of(
+            "Конечно!", "yes_schedule_test_button",
+            "Нет:(", "no_schedule_test_button"
+    );
+
 
 
     //гетеры возвращающие копию map коллекции
@@ -141,4 +147,7 @@ public class KeyboardService {
     //ОТЛОЖЕННЫЕ СООБЩЕНИЯ И ТЕСТЫ
     public Map<String, String> getScheduleMessage(){return new HashMap<>(scheduleMessage);}
     public Map<String, String> getScheduleMessageFinal(){return new HashMap<>(scheduleMessageFinal);}
+
+    //ОТЛОЖЕННЫЕ ТЕСТЫ
+    public Map<String, String> getScheduleTestYesOrNo(){return new HashMap<>(scheduleTestYesOrNo);}
 }
