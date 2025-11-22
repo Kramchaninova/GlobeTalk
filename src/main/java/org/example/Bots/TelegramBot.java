@@ -16,25 +16,28 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Bot.java - основной класс бота, реализующий интерфейс для получения обновлений
- * Формирует текстовые (в боковом меню) команды и кнопки
+ * TelegramBot - основной класс бота для Telegram
  */
 public class TelegramBot extends TelegramLongPollingBot  {
 
     private final String botUsername;
     private final BotLogic botLogic;
-
+    private final ScheduledExecutorService scheduler;
     private final Map<String, InlineKeyboardMarkup> keyboardCache = new HashMap<>();
 
     public TelegramBot(String botToken, String botUsername) {
-        super(botToken); //супер вызывает конструктор родительского класс лонгполинг (выше)
+        super(botToken);
         this.botUsername = botUsername;
         this.botLogic = new BotLogic();
+        this.scheduler = Executors.newScheduledThreadPool(1);
         registerBotCommands();
         initializeKeyboards();
-
+        startScheduling();
     }
 
     @Override
@@ -44,35 +47,26 @@ public class TelegramBot extends TelegramLongPollingBot  {
 
     /**
      * хранит команды для бокового меню
-     * @return список команд бота для бокового меню
      */
     public List<BotCommand> getBotCommands() {
         List<BotCommand> commands = new ArrayList<>();
-
-        // добавление команд (без символа '/', так как это формальный признак команды для бота)
         commands.add(new BotCommand("start", "начать работу с ботом"));
         commands.add(new BotCommand("start_test", "начальный тест на уровень знаний"));
         commands.add(new BotCommand("help", "справка по командам"));
         commands.add(new BotCommand("speed_test", "тест на скорость"));
         commands.add(new BotCommand("my_profile", "мой профиль"));
         commands.add(new BotCommand("dictionary", "ваш словарь"));
-
-
-        System.out.println("команды зарегестрированы в боковом меню");
+        commands.add(new BotCommand("word", "отложенные сообщения"));
         return commands;
     }
 
-    //registerBotCommands - формирует из списка метода getBotCommands и вызывает в команды
     public void registerBotCommands() {
         try {
-            //список команд из класса для хранения кнопок и команд
             List<BotCommand> commands = getBotCommands();
-
             execute(SetMyCommands.builder()
                     .commands(commands)
                     .scope(new BotCommandScopeDefault())
                     .build());
-
             System.out.println("Команды зарегистрированы в боковом меню");
         } catch (TelegramApiException e) {
             System.err.println("Ошибка регистрации команд: " + e.getMessage());
@@ -80,8 +74,74 @@ public class TelegramBot extends TelegramLongPollingBot  {
     }
 
     /**
-     * создание наборов кнопок из map словарей
-     * @return готовый набор уже сформированных кнопок для сообщения
+     * Запускает таймер для отложенных сообщений
+     */
+    private void startScheduling() {
+        // Запускаем таймер каждую минуту
+        scheduler.scheduleAtFixedRate(
+                this::sendScheduledMessagesToAllUsers,
+                10, 60, TimeUnit.SECONDS // Начинаем через 10 сек, потом каждую минуту
+        );
+        System.out.println("Таймер отложенных сообщений запущен в TelegramBot");
+    }
+
+    /**
+     * Отправляет отложенные сообщения всем активным пользователям
+     */
+    private void sendScheduledMessagesToAllUsers() {
+        try {
+            System.out.println("TelegramBot: запуск отправки отложенных сообщений");
+
+            // Получаем активных пользователей АВТОМАТИЧЕСКИ
+            List<Long> activeUsers = getActiveTelegramUsers();
+
+            if (activeUsers.isEmpty()) {
+                System.out.println("Нет активных пользователей для рассылки");
+                return;
+            }
+
+            System.out.println("Найдено " + activeUsers.size() + " активных пользователей");
+
+            // Отправляем сообщения каждому пользователю
+            for (Long chatId : activeUsers) {
+                try {
+                    BotResponse response = botLogic.generateScheduledMessage(chatId);
+                    if (response != null && response.isValid()) {
+                        // отпрвка
+                        SendMessage message = createMessage(response);
+                        execute(message);
+                        System.out.println("Telegram: отложенное сообщение отправлено пользователю " + chatId);
+
+                        // Небольшая задержка чтобы не превысить лимиты Telegram
+                        Thread.sleep(100);
+                    }
+                } catch (Exception e) {
+                    System.err.println("Ошибка отправки пользователю " + chatId + ": " + e.getMessage());
+                }
+            }
+
+        } catch (Exception e) {
+            System.err.println("Ошибка в процессе рассылки Telegram: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Получает активных Telegram пользователей АВТОМАТИЧЕСКИ
+     */
+    private List<Long> getActiveTelegramUsers() {
+        List<Long> users = botLogic.getActiveUsersForDistribution();
+
+        System.out.println("Найдено " + users.size() + " активных пользователей");
+
+        if (users.isEmpty()) {
+            System.out.println("Пользователи автоматически добавляются при первом сообщении боту");
+        }
+
+        return users;
+    }
+
+    /**
+     * создание набора кнопок
      */
     private InlineKeyboardMarkup createKeyboardFromMap(Map<String, String> buttonConfigs, int buttonsPerRow) {
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
@@ -114,14 +174,15 @@ public class TelegramBot extends TelegramLongPollingBot  {
     public void onUpdateReceived(Update update) {
         try {
             BotResponse response = null;
+            long chatId;
 
             if (update.hasCallbackQuery()) {
                 String callbackData = update.getCallbackQuery().getData();
-                long chatId = update.getCallbackQuery().getMessage().getChatId();
+                chatId = update.getCallbackQuery().getMessage().getChatId();
                 response = botLogic.processCallback(callbackData, chatId);
             } else if (update.hasMessage() && update.getMessage().hasText()) {
                 String messageText = update.getMessage().getText();
-                long chatId = update.getMessage().getChatId();
+                chatId = update.getMessage().getChatId();
                 response = botLogic.processMessage(messageText, chatId);
             }
 
@@ -135,15 +196,14 @@ public class TelegramBot extends TelegramLongPollingBot  {
         }
     }
 
-
     /**
      * создание сообщения с кнопками
-     * @return cooбщение для отправки
      */
     private SendMessage createMessage(BotResponse response) {
         SendMessage message = SendMessage.builder()
                 .chatId(String.valueOf(response.getChatId()))
                 .text(response.getText())
+                .parseMode("Markdown") //разметка, типо: жирный, курсиввный и тд
                 .build();
 
         if (response.hasKeyboard() && keyboardCache.containsKey(response.getKeyboardType())) {
@@ -189,8 +249,26 @@ public class TelegramBot extends TelegramLongPollingBot  {
                 botLogic.getKeyboardService().getLoginPasswordEditEnd(), 2));
         keyboardCache.put("log_out_confirm", createKeyboardFromMap(
                 botLogic.getKeyboardService().getLogOutConfirmation(), 2));
+        keyboardCache.put("schedule_message", createKeyboardFromMap(
+                botLogic.getKeyboardService().getScheduleMessage(), 2));
+        keyboardCache.put("schedule_message_final", createKeyboardFromMap(
+                botLogic.getKeyboardService().getScheduleMessageFinal(), 2));
         System.out.println("Клавиатуры инициализированы");
     }
 
-
+    /**
+     * Остановка таймера
+     */
+    public void shutdown() {
+        try {
+            scheduler.shutdown();
+            if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                scheduler.shutdownNow();
+            }
+            System.out.println("Таймер TelegramBot остановлен");
+        } catch (InterruptedException e) {
+            scheduler.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
 }

@@ -13,6 +13,9 @@ public class DictionaryCommand {
     private final DictionaryService dictionaryService;
     private final Map<Long, String> userStates = new HashMap<>(); // chatId -> "delete:wordId" или "edit:wordId"
 
+    //Константа приоритета по умолчанию
+    private static final int DEFAULT_PRIORITY = 2;
+
     private static final String DICTIONARY_EMPTY =
             "✨ *Добро пожаловать в ваш личный словарь!* ✨\n\n" +
                     "Здесь вы можете смотреть и пополнять свою уникальную коллекцию слов для изучения.\n\n" +
@@ -126,7 +129,7 @@ public class DictionaryCommand {
     public String addWord(long chatId, String englishWord, String translation) {
         try {
             long userId = getUserId(chatId);
-            dictionaryService.addWord(userId, englishWord, translation);
+            dictionaryService.addWord(userId, englishWord, translation, DEFAULT_PRIORITY);
             System.out.println("Слово добавлено в словарь");
 
             return "🔤 *Новое слово добавлено!*\n\n" +

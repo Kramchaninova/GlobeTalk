@@ -1,10 +1,5 @@
 package org.example.Data;
-
-import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
-
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -106,6 +101,17 @@ public class KeyboardService {
     );
 
 
+    //ОТЛОЖЕННЫЕ СООБЩЕНИЯ
+    private final Map<String, String> scheduleMessage = Map.of(
+            "Знаю", "know_button",
+            "Изучаю", "learn_button"
+    );
+    private final Map<String, String> scheduleMessageFinal = Map.of(
+            "Словарь", "dictionary_button",
+            "Еще слова", "more_word_button"
+    );
+
+
 
     //гетеры возвращающие копию map коллекции
     //@return map где ключ - текст кнопки, значение - callback данные
@@ -131,4 +137,8 @@ public class KeyboardService {
     public Map<String, String> getLoginPasswordEditEnd() {return new HashMap<>(loginPasswordEditEnd);}
     public Map<String, String> getLogOutConfirmation() {return new HashMap<>(logOutConfirmation);}
 
+
+    //ОТЛОЖЕННЫЕ СООБЩЕНИЯ И ТЕСТЫ
+    public Map<String, String> getScheduleMessage(){return new HashMap<>(scheduleMessage);}
+    public Map<String, String> getScheduleMessageFinal(){return new HashMap<>(scheduleMessageFinal);}
 }

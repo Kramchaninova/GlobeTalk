@@ -6,7 +6,7 @@ import java.util.List;
 
 /**
  * DictionaryServiceImpl - реализация работы со словарем в SQLite.
- * Выполняет CRUD операции с базой данных слов.
+ * Выполняет Create, Read, Update, Delete операции с базой данных слов.
  */
 public class DictionaryServiceImpl implements DictionaryService {
     private Connection connection;
@@ -41,7 +41,7 @@ public class DictionaryServiceImpl implements DictionaryService {
                 user_id BIGINT NOT NULL,
                 english_word TEXT NOT NULL,
                 translation TEXT NOT NULL,
-                priority INTEGER DEFAULT 2,
+                priority INTEGER NOT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
             """;
@@ -238,6 +238,57 @@ public class DictionaryServiceImpl implements DictionaryService {
             pstmt.setInt(2, wordId);
             pstmt.executeUpdate();
             System.out.println("[Dictionary] Слово удалено: " + wordId + " для userId: " + userId);
+        }
+    }
+    /**
+     * Получает слова пользователя по приоритету
+     */
+    @Override
+    public List<Word> getWordsByPriority(long userId, int priority) throws SQLException {
+        List<Word> words = new ArrayList<>();
+        String sql = "SELECT * FROM dictionary WHERE user_id = ? AND priority = ? ORDER BY id";
+
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setLong(1, userId);
+            pstmt.setInt(2, priority);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                Word word = new Word(
+                        rs.getInt("id"),
+                        rs.getLong("user_id"),
+                        rs.getString("english_word"),
+                        rs.getString("translation"),
+                        rs.getInt("priority")
+                );
+                words.add(word);
+            }
+        }
+        System.out.println("[Dictionary] Загружено " + words.size() + " слов с приоритетом " + priority + " для userId: " + userId);
+        return words;
+    }
+    /**
+     * Обновляет приоритет слова в словаре
+     * @param userId идентификатор пользователя
+     * @param wordId идентификатор слова
+     * @param newPriority новый приоритет (1-низкий, 2-средний, 3-высокий)
+     * @throws SQLException если произошла ошибка при работе с БД
+     */
+    @Override
+    public void updateWordPriority(long userId, int wordId, int newPriority) throws SQLException {
+        String sql = "UPDATE dictionary SET priority = ? WHERE user_id = ? AND id = ?";
+
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, newPriority);
+            pstmt.setLong(2, userId);
+            pstmt.setInt(3, wordId);
+            int rowsUpdated = pstmt.executeUpdate();
+
+            if (rowsUpdated > 0) {
+                System.out.println("[Dictionary] Приоритет слова обновлен: wordId=" + wordId + ", новый приоритет=" + newPriority + " для userId: " + userId);
+            } else {
+                throw new SQLException("Слово не найдено для обновления приоритета");
+            }
         }
     }
 }

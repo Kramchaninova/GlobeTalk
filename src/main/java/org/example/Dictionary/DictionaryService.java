@@ -9,15 +9,6 @@ import java.util.List;
  */
 public interface DictionaryService {
 
-    int DEFAULT_PRIORITY = 2;
-
-    /**
-     * Добавить слово с приоритетом по умолчанию
-     */
-    default void addWord(long userId, String englishWord, String translation) throws SQLException {
-        addWord(userId, englishWord, translation, DEFAULT_PRIORITY);
-    }
-
     /**
      * Добавить слово с указанным приоритетом
      */
@@ -27,6 +18,11 @@ public interface DictionaryService {
      * Получить все слова пользователя
      */
     List<Word> getAllWords(long userId) throws SQLException;
+
+    /**
+     * Получить слова пользователя по приоритету
+     */
+    List<Word> getWordsByPriority(long userId, int priority) throws SQLException;
 
     /**
      * Получить слово по ID
@@ -42,6 +38,11 @@ public interface DictionaryService {
      * Обновить слово в словаре
      */
     void updateWord(long userId, int wordId, String newEnglishWord, String newTranslation, Integer newPriority) throws SQLException;
+
+    /**
+     * Обновить приоритет слова
+     */
+    void updateWordPriority(long userId, int wordId, int newPriority) throws SQLException;
 
     /**
      * Удалить слово из словаря
