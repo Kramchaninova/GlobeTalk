@@ -39,6 +39,7 @@ public class TestSession {
 
     /**
      * Возвращает текущий вопрос с номером
+     * @return текст вопроса с номером или сообщение о завершении
      */
     public String getCurrentQuestion() {
         if (currentQuestionIndex >= testsData.getQuestions().size()) {
@@ -62,6 +63,24 @@ public class TestSession {
         TestsData.QuestionData currentQuestion = testsData.getQuestions().get(currentQuestionIndex);
         boolean isCorrect = currentQuestion.getCorrectAnswer().equalsIgnoreCase(userAnswer);
 
+        System.out.println("\n\n        TestSession.checkAnswer()          ");
+        System.out.println("Английское слово: '" + currentQuestion.getEnglishWord() + "'");
+        System.out.println("Перевод: '" + currentQuestion.getTranslation() + "'");
+        System.out.println("Тип слова: " + currentQuestion.getWordType());
+        System.out.println("Правильный ответ: " + currentQuestion.getCorrectAnswer());
+        System.out.println("Ответ пользователя: " + userAnswer);
+        System.out.println("Результат: " + (isCorrect ? "ПРАВИЛЬНО" : "НЕПРАВИЛЬНО"));
+
+        // Проверка на пустые слова
+        if (currentQuestion.getEnglishWord() == null || currentQuestion.getEnglishWord().trim().isEmpty()) {
+            System.err.println("❌ ОШИБКА: Пустое английское слово!");
+            return isCorrect;
+        }
+        if (currentQuestion.getTranslation() == null || currentQuestion.getTranslation().trim().isEmpty()) {
+            System.err.println("❌ ОШИБКА: Пустой перевод!");
+            return isCorrect;
+        }
+
         // Распределяем слово по соответствующему списку
         String englishWord = currentQuestion.getEnglishWord();
         String translation = currentQuestion.getTranslation();
@@ -71,21 +90,17 @@ public class TestSession {
             if (isCorrect) {
                 priorityCorrectWords.add(englishWord);
                 priorityCorrectTranslations.add(translation);
-                System.out.println("correct priority word");
             } else {
                 priorityWrongWords.add(englishWord);
                 priorityWrongTranslations.add(translation);
-                System.out.println("Not correct priority word");
             }
         } else {
             if (isCorrect) {
                 newCorrectWords.add(englishWord);
                 newCorrectTranslations.add(translation);
-                System.out.println("correct word");
             } else {
                 newWrongWords.add(englishWord);
                 newWrongTranslations.add(translation);
-                System.out.println("Not correct word");
             }
         }
 
@@ -105,6 +120,7 @@ public class TestSession {
 
     /**
      * Проверяет завершен ли тест
+     * @return true если тест завершен
      */
     public boolean isTestCompleted() {
         return currentQuestionIndex >= testsData.getQuestions().size();
@@ -112,6 +128,7 @@ public class TestSession {
 
     /**
      * Возвращает общее количество вопросов
+     * @return количество вопросов в тесте
      */
     public int getTotalQuestions() {
         return testsData.getQuestions().size();
@@ -119,6 +136,7 @@ public class TestSession {
 
     /**
      * Возвращает количество правильных ответов
+     * @return число правильных ответов
      */
     public int getCorrectAnswersCount() {
         return correctAnswersCount;
@@ -126,6 +144,7 @@ public class TestSession {
 
     /**
      * Возвращает данные текущего вопроса
+     * @return текущий вопрос или null если тест завершен
      */
     public TestsData.QuestionData getCurrentQuestionData() {
         if (currentQuestionIndex < testsData.getQuestions().size()) {
@@ -136,30 +155,30 @@ public class TestSession {
 
     // Геттеры для списков слов
 
-    /** Возвращает приоритетные слова с правильными ответами */
+    /** @return приоритетные слова с правильными ответами */
     public List<String> getPriorityCorrectWords() { return priorityCorrectWords; }
 
-    /** Возвращает приоритетные слова с неправильными ответами */
+    /** @return приоритетные слова с неправильными ответами */
     public List<String> getPriorityWrongWords() { return priorityWrongWords; }
 
-    /** Возвращает новые слова с правильными ответами */
+    /** @return новые слова с правильными ответами */
     public List<String> getNewCorrectWords() { return newCorrectWords; }
 
-    /** Возвращает новые слова с неправильными ответами */
+    /** @return новые слова с неправильными ответами */
     public List<String> getNewWrongWords() { return newWrongWords; }
 
-    /** Возвращает переводы приоритетных слов с правильными ответами */
+    /** @return переводы приоритетных слов с правильными ответами */
     public List<String> getPriorityCorrectTranslations() { return priorityCorrectTranslations; }
 
-    /** Возвращает переводы приоритетных слов с неправильными ответами */
+    /** @return переводы приоритетных слов с неправильными ответами */
     public List<String> getPriorityWrongTranslations() { return priorityWrongTranslations; }
 
-    /** Возвращает переводы новых слов с правильными ответами */
+    /** @return переводы новых слов с правильными ответами */
     public List<String> getNewCorrectTranslations() { return newCorrectTranslations; }
 
-    /** Возвращает переводы новых слов с неправильными ответами */
+    /** @return переводы новых слов с неправильными ответами */
     public List<String> getNewWrongTranslations() { return newWrongTranslations; }
 
-    /** Возвращает идентификатор пользователя */
+    /** @return идентификатор пользователя */
     public long getUserId() { return userId; }
 }

@@ -49,7 +49,6 @@ public class ScheduleTestHandler {
         }
 
         String question = session.getCurrentQuestion();
-        System.out.println("[ScheduleTestHandler] Получен вопрос для chatId " + chatId + ": " + question.substring(0, Math.min(50, question.length())) + "...");
         return question;
     }
 
@@ -57,7 +56,7 @@ public class ScheduleTestHandler {
      * Обрабатывает ответ пользователя
      */
     public String handleAnswer(long chatId, String callbackData) {
-        System.out.println("[ScheduleTestHandler] Обработка ответа для chatId: " + chatId + ", callbackData: " + callbackData);
+        System.out.println("[ScheduleTestHandler] Обработка ответа для chatId: " + chatId);
 
         TestSession session = userSessions.get(chatId);
         if (session == null) {
@@ -67,27 +66,10 @@ public class ScheduleTestHandler {
 
         // Извлекаем букву ответа из callback_data (например, "B_button" -> "B")
         String answer = extractAnswerFromCallback(callbackData);
-        System.out.println("[ScheduleTestHandler] Извлеченный ответ: " + answer);
 
-        // Получаем данные текущего вопроса перед проверкой
-        TestsData.QuestionData currentQuestion = session.getCurrentQuestionData();
-        if (currentQuestion != null) {
-            System.out.println("[ScheduleTestHandler] Текущий вопрос: " + currentQuestion.getEnglishWord() + " - " + currentQuestion.getTranslation());
-            System.out.println("[ScheduleTestHandler] Правильный ответ: " + currentQuestion.getCorrectAnswer());
-            System.out.println("[ScheduleTestHandler] Тип слова: " + currentQuestion.getWordType());
-        }
-
-        // Проверяем ответ
         boolean isCorrect = session.checkAnswer(answer);
-
-        // Выводим информацию о правильности ответа и текущий счетчик
-        int currentCorrect = session.getCorrectAnswersCount();
-        int totalQuestions = session.getTotalQuestions();
-
-        System.out.println("[ScheduleTestHandler] Ответ '" + answer + "' - " + (isCorrect ? "ПРАВИЛЬНЫЙ" : "НЕПРАВИЛЬНЫЙ"));
-        System.out.println("[ScheduleTestHandler] Текущий счет: " + currentCorrect + "/" + totalQuestions + " правильных ответов");
-        System.out.println("[ScheduleTestHandler] Прогресс: " + currentCorrect + " из " + totalQuestions + " (" +
-                String.format("%.1f", (currentCorrect * 100.0 / totalQuestions)) + "%)");
+        System.out.println("[ScheduleTestHandler] Ответ " + answer + " - " + (isCorrect ? "ПРАВИЛЬНЫЙ" : "НЕПРАВИЛЬНЫЙ"));
+        System.out.println("[ScheduleTestHandler] Текущий счет: " + session.getCorrectAnswersCount() + "/" + session.getTotalQuestions() + " правильных ответов");
 
         // Переходим к следующему вопросу
         session.nextQuestion();
@@ -114,7 +96,7 @@ public class ScheduleTestHandler {
             return "";
         }
 
-        // Убираем суффикс "_button" и оставляем только первую букву
+        // Убираем "_button" и оставляем только первую букву
         if (callbackData.endsWith("_button")) {
             return callbackData.substring(0, 1);
         }
@@ -127,14 +109,6 @@ public class ScheduleTestHandler {
      * Завершает тест и обновляет приоритеты слов
      */
     private String completeTest(long chatId, TestSession session) {
-        System.out.println("[ScheduleTestHandler] Завершение теста для chatId: " + chatId);
-
-        // Логируем распределение слов
-        System.out.println("[ScheduleTestHandler] Приоритетные правильные слова: " + session.getPriorityCorrectWords());
-        System.out.println("[ScheduleTestHandler] Приоритетные неправильные слова: " + session.getPriorityWrongWords());
-        System.out.println("[ScheduleTestHandler] Новые правильные слова: " + session.getNewCorrectWords());
-        System.out.println("[ScheduleTestHandler] Новые неправильные слова: " + session.getNewWrongWords());
-
         // Обновляем приоритеты для всех слов
         updateWordPriorities(session);
 
@@ -151,10 +125,24 @@ public class ScheduleTestHandler {
         long userId = session.getUserId();
         System.out.println("[ScheduleTestHandler] Обновление приоритетов для userId: " + userId);
 
+        // ДОБАВЛЕНА ПРОВЕРКА ДАННЫХ
+        System.out.println("\n\n        [ScheduleTestHandler] ПРОВЕРКА ДАННЫХ ПЕРЕД ОБНОВЛЕНИЕМ");
+        System.out.println("Приоритетные правильные слова: " + session.getPriorityCorrectWords());
+        System.out.println("Приоритетные неправильные слова: " + session.getPriorityWrongWords());
+        System.out.println("Новые правильные слова: " + session.getNewCorrectWords());
+        System.out.println("Новые неправильные слова: " + session.getNewWrongWords());
+
         // Обновляем приоритеты для приоритетных слов с правильными ответами
         for (int i = 0; i < session.getPriorityCorrectWords().size(); i++) {
             String word = session.getPriorityCorrectWords().get(i);
             String translation = session.getPriorityCorrectTranslations().get(i);
+
+            // ПРОВЕРКА НА ПУСТЫЕ ЗНАЧЕНИЯ
+            if (word == null || word.trim().isEmpty() || translation == null || translation.trim().isEmpty()) {
+                System.err.println("❌ ПРОПУСК: Пустое слово или перевод в приоритетных правильных, индекс " + i);
+                continue;
+            }
+
             System.out.println("[ScheduleTestHandler] Обновление приоритета (правильно, приоритетное): " + word);
             scheduleTests.updateWordPriority(userId, word, translation, true, true);
         }
@@ -163,6 +151,13 @@ public class ScheduleTestHandler {
         for (int i = 0; i < session.getPriorityWrongWords().size(); i++) {
             String word = session.getPriorityWrongWords().get(i);
             String translation = session.getPriorityWrongTranslations().get(i);
+
+            // ПРОВЕРКА НА ПУСТЫЕ ЗНАЧЕНИЯ
+            if (word == null || word.trim().isEmpty() || translation == null || translation.trim().isEmpty()) {
+                System.err.println("❌ ПРОПУСК: Пустое слово или перевод в приоритетных неправильных, индекс " + i);
+                continue;
+            }
+
             System.out.println("[ScheduleTestHandler] Обновление приоритета (неправильно, приоритетное): " + word);
             scheduleTests.updateWordPriority(userId, word, translation, false, true);
         }
@@ -171,6 +166,13 @@ public class ScheduleTestHandler {
         for (int i = 0; i < session.getNewCorrectWords().size(); i++) {
             String word = session.getNewCorrectWords().get(i);
             String translation = session.getNewCorrectTranslations().get(i);
+
+            // ПРОВЕРКА НА ПУСТЫЕ ЗНАЧЕНИЯ
+            if (word == null || word.trim().isEmpty() || translation == null || translation.trim().isEmpty()) {
+                System.err.println("❌ ПРОПУСК: Пустое слово или перевод в новых правильных, индекс " + i);
+                continue;
+            }
+
             System.out.println("[ScheduleTestHandler] Обновление приоритета (правильно, новое): " + word);
             scheduleTests.updateWordPriority(userId, word, translation, true, false);
         }
@@ -179,6 +181,13 @@ public class ScheduleTestHandler {
         for (int i = 0; i < session.getNewWrongWords().size(); i++) {
             String word = session.getNewWrongWords().get(i);
             String translation = session.getNewWrongTranslations().get(i);
+
+            // ПРОВЕРКА НА ПУСТЫЕ ЗНАЧЕНИЯ
+            if (word == null || word.trim().isEmpty() || translation == null || translation.trim().isEmpty()) {
+                System.err.println("❌ ПРОПУСК: Пустое слово или перевод в новых неправильных, индекс " + i);
+                continue;
+            }
+
             System.out.println("[ScheduleTestHandler] Обновление приоритета (неправильно, новое): " + word);
             scheduleTests.updateWordPriority(userId, word, translation, false, false);
         }
@@ -195,21 +204,6 @@ public class ScheduleTestHandler {
         System.out.println("[ScheduleTestHandler] Проверка активности теста для chatId " + chatId + ": " + isActive);
         return isActive;
     }
-
-    /**
-     * Получает данные текущего вопроса
-     */
-    public TestsData.QuestionData getCurrentQuestionData(long chatId) {
-        TestSession session = userSessions.get(chatId);
-        TestsData.QuestionData questionData = session != null ? session.getCurrentQuestionData() : null;
-        if (questionData != null) {
-            System.out.println("[ScheduleTestHandler] Получены данные вопроса: " + questionData.getEnglishWord() + " - " + questionData.getTranslation());
-        } else {
-            System.out.println("[ScheduleTestHandler] Данные вопроса не найдены для chatId: " + chatId);
-        }
-        return questionData;
-    }
-
     /**
      * Форматирует результат теста
      */
@@ -228,30 +222,35 @@ public class ScheduleTestHandler {
         sb.append("• Ошибок: ").append(total - correct).append("\n");
         sb.append("• Процент правильных: ").append(percentage).append("%\n\n");
 
+        // Добавляем мотивационную фразу в зависимости от результата
+        if (percentage >= 80) {
+            sb.append("🎉 *Блестящий результат!*\n");
+            sb.append("Вы ответили правильно на ").append(correct).append(" из ").append(total).append(" вопросов!\n");
+            sb.append("Это уровень уверенного знатока языка — так держать! 🚀\n\n");
+        } else if (percentage >= 50) {
+            sb.append("📖 *Хорошая основа для роста!*\n");
+            sb.append("Ваш результат: ").append(correct).append(" из ").append(total).append(" правильных ответов.\n");
+            sb.append("Вы уже многое знаете, а пробелы — это возможности для новых открытий!\n\n");
+        } else {
+            sb.append("🌱 *Начало пути!*\n");
+            sb.append("Вы ответили правильно на ").append(correct).append(" из ").append(total).append(" вопросов.\n");
+            sb.append("Каждый эксперт когда-то начинал с первого шага — и вы его уже сделали!\n\n");
+        }
+
         // Добавляем информацию об изменении приоритетов
         sb.append("📈 Изменения приоритетов:\n");
 
         if (!session.getPriorityCorrectWords().isEmpty()) {
-            sb.append("• Приоритетные слова, которые вы знаете: ").append(session.getPriorityCorrectWords().size()).append("\n");
+            sb.append("• Слова, которые вы хорошо знаете: ").append(session.getPriorityCorrectWords().size()).append("\n");
         }
         if (!session.getPriorityWrongWords().isEmpty()) {
-            sb.append("• Приоритетные слова для повторения: ").append(session.getPriorityWrongWords().size()).append("\n");
+            sb.append("• Слова для повторения: ").append(session.getPriorityWrongWords().size()).append("\n");
         }
         if (!session.getNewCorrectWords().isEmpty()) {
-            sb.append("• Новые слова, которые вы усвоили: ").append(session.getNewCorrectWords().size()).append("\n");
+            sb.append("• Новые слова, которые вы знаете: ").append(session.getNewCorrectWords().size()).append("\n");
         }
         if (!session.getNewWrongWords().isEmpty()) {
             sb.append("• Новые слова для изучения: ").append(session.getNewWrongWords().size()).append("\n");
-        }
-
-        sb.append("\n");
-
-        if (percentage >= 80) {
-            sb.append("🏆 Отличный результат! Вы хорошо знаете слова!");
-        } else if (percentage >= 60) {
-            sb.append("👍 Хороший результат! Продолжайте практиковаться!");
-        } else {
-            sb.append("💪 Есть над чем поработать! Учите слова регулярно!");
         }
 
         return sb.toString();

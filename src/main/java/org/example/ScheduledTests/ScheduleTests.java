@@ -51,12 +51,18 @@ public class ScheduleTests {
 
             // Генерируем тест
             String testText = scheduleGenerateTests.generateTest(userId);
+
             if (testText.contains("ошибка") || testText.contains("API ключ")) {
                 return "❌ Не удалось сгенерировать тест. Попробуйте позже.";
             }
 
             // Парсим тест
             TestsData testsData = testsParser.parseTest(testText);
+
+            for (int i = 0; i < testsData.getQuestions().size(); i++) {
+                TestsData.QuestionData q = testsData.getQuestions().get(i);
+            }
+
             if (testsData.getQuestions().isEmpty()) {
                 return "❌ Не удалось распознать вопросы теста.";
             }
@@ -92,9 +98,9 @@ public class ScheduleTests {
      * Возвращает приветственное сообщение для начала теста
      */
     public String getTestIntroduction() {
-        return "🌙 *Момент истины настал!*\n\n" +
+        return "🌙 Момент истины настал!\n\n" +
                 "Знания, которые вы собирали по крупицам в течении недели и не только, готовы проверке!\n\n" +
-                "✨ *Готовы бросить вызов себе?*";
+                "✨ Готовы бросить вызов себе?";
     }
 
     /**
@@ -104,7 +110,7 @@ public class ScheduleTests {
         return "Хорошо, не сейчас ✨\n\n" +
                 "Знания никуда не убегут — они терпеливо ждут своего часа.\n\n" +
                 "Когда почувствуете готовность, просто нажмите кнопку /scheduled_test в боковом меню - и мы продолжим!\n\n" +
-                "🌟 *Ваше обучение — в ваших руках*";
+                "🌟 Ваше обучение — в ваших руках";
     }
 
     /**
@@ -158,9 +164,6 @@ public class ScheduleTests {
                 }
             }
 
-            System.out.println("[ScheduleTests] Найдено " + topWords.size() +
-                    " слов с максимальным приоритетом для пользователя " + userId);
-
             return convertToPairs(topWords);
 
         } catch (SQLException e) {
@@ -189,65 +192,55 @@ public class ScheduleTests {
     public void updateWordPriority(long userId, String englishWord, String translation, boolean isCorrect, boolean isPriorityWord) {
         try {
             Word word = dictionaryService.getWordByEnglish(userId, englishWord);
-            if (word == null) {
-                System.out.println("[ScheduleTests] Слово не найдено: " + englishWord + ", добавляем как новое");
 
-                // Добавляем новое слово в словарь
-                int initialPriority = isCorrect ? 3 : 6;
-                dictionaryService.addWord(userId, englishWord, translation, initialPriority);
+            // Если слово УЖЕ ЕСТЬ в словаре - применяем старую логику
+            if (word != null) {
+                int currentPriority = word.getPriority();
+                int newPriority;
 
-                // ОТЧЕТ О ДОБАВЛЕНИИ НОВОГО СЛОВА
-                System.out.println("  ТЧЕТ О ДОБАВЛЕНИИ НОВОГО СЛОВА    ");
-                System.out.println("📝 Слово: '" + englishWord + "'");
-                System.out.println("🔤 Перевод: '" + translation + "'");
-                System.out.println("🎯 Начальный приоритет: " + initialPriority);
-                System.out.println("✅ Ответ: " + (isCorrect ? "ПРАВИЛЬНЫЙ" : "НЕПРАВИЛЬНЫЙ"));
-                System.out.println("🏷️ Тип: " + (isPriorityWord ? "ПРИОРИТЕТНОЕ" : "НОВОЕ"));
-                System.out.println("📈 Влияние: " + (isCorrect ?
-                        "Слово добавлено с низким приоритетом (будет реже)" :
-                        "Слово добавлено с высоким приоритетом (будет чаще)\n\n"));
-                System.out.println("=====================================");
+                // Если ответил неправильно - приоритет повышается, если правильно - уменьшается
+                newPriority = isCorrect ? Math.max(0, currentPriority - 1) : Math.min(10, currentPriority + 1);
+
+                dictionaryService.updateWordPriority(userId, word.getId(), newPriority);
+
+                // ОТЧЕТ ОБ ОБНОВЛЕНИИ ПРИОРИТЕТА
+                System.out.println("\n\n        ОТЧЕТ ОБ ОБНОВЛЕНИИ ПРИОРИТЕТА");
+                System.out.println("- Слово: '" + englishWord + "'");
+                System.out.println("- Перевод: '" + translation + "'");
+                System.out.println("- Старый приоритет: " + currentPriority);
+                System.out.println("- Новый приоритет: " + newPriority);
+                System.out.println("- Изменение: " +
+                        (newPriority > currentPriority ? "УВЕЛИЧЕН на " + (newPriority - currentPriority) :
+                                newPriority < currentPriority ? "УМЕНЬШЕН на " + (currentPriority - newPriority) :
+                                        "→ БЕЗ ИЗМЕНЕНИЙ"));
+                System.out.println("- Ответ: " + (isCorrect ? "ПРАВИЛЬНЫЙ" : "НЕПРАВИЛЬНЫЙ"));
+                System.out.println("- Тип: " + (isPriorityWord ? "ПРИОРИТЕТНОЕ" : "НОВОЕ"));
                 return;
             }
 
-            int currentPriority = word.getPriority();
-            int newPriority;
+            // Если слово НОВОЕ (нет в словаре) - добавляем ТОЛЬКО если пользователь ответил ПРАВИЛЬНО
+            if (!isCorrect) {
+                System.out.println("[ScheduleTests] Новое слово '" + englishWord + "' не добавлено в словарь (неправильный ответ)");
+                return;
+            }
 
-            newPriority = isCorrect ? Math.max(0, currentPriority - 1) : Math.min(10, currentPriority + 1);
+            // Добавляем новое слово в словарь ТОЛЬКО если пользователь ответил ПРАВИЛЬНО
+            System.out.println("[ScheduleTests] Слово не найдено: " + englishWord + ", добавляем как новое");
 
-            dictionaryService.updateWordPriority(userId, word.getId(), newPriority);
+            int initialPriority = 3; // Всегда 3 для новых слов, которые пользователь знает
+            dictionaryService.addWord(userId, englishWord, translation, initialPriority);
 
-            // ОТЧЕТ ОБ ОБНОВЛЕНИИ ПРИОРИТЕТА
-            System.out.println("   ОТЧЕТ ОБ ОБНОВЛЕНИИ ПРИОРИТЕТА   ");
-            System.out.println("📝 Слово: '" + englishWord + "'");
-            System.out.println("🔤 Перевод: '" + translation + "'");
-            System.out.println("📊 Старый приоритет: " + currentPriority);
-            System.out.println("📈 Новый приоритет: " + newPriority);
-            System.out.println("🔄 Изменение: " +
-                    (newPriority > currentPriority ? "↑ УВЕЛИЧЕН на " + (newPriority - currentPriority) :
-                            newPriority < currentPriority ? "↓ УМЕНЬШЕН на " + (currentPriority - newPriority) :
-                                    "→ БЕЗ ИЗМЕНЕНИЙ"));
-            System.out.println("✅ Ответ: " + (isCorrect ? "ПРАВИЛЬНЫЙ" : "НЕПРАВИЛЬНЫЙ"));
-            System.out.println("🏷️ Тип: " + (isPriorityWord ? "ПРИОРИТЕТНОЕ" : "НОВОЕ"));
-            System.out.println("📈 Влияние: " +
-                    (isCorrect ? "Приоритет уменьшен - слово будет встречаться РЕЖЕ" :
-                            "Приоритет увеличен - слово будет встречаться ЧАЩЕ\n\n"));
+            // ОТЧЕТ О ДОБАВЛЕНИИ НОВОГО СЛОВА
+            System.out.println("\n\n        ОТЧЕТ О ДОБАВЛЕНИИ НОВОГО СЛОВА");
+            System.out.println("- Слово: '" + englishWord + "'");
+            System.out.println("- Перевод: '" + translation + "'");
+            System.out.println("- Начальный приоритет: " + initialPriority);
+            System.out.println("- Ответ: ПРАВИЛЬНЫЙ");
+            System.out.println("-️ Тип: " + (isPriorityWord ? "ПРИОРИТЕТНОЕ" : "НОВОЕ"));
+
 
         } catch (SQLException e) {
             System.err.println("[ScheduleTests] ❌ Ошибка обновления приоритета слова '" + englishWord + "': " + e.getMessage());
-        }
-    }
-
-    /**
-     * Получает информацию об изменении приоритета для отчета
-     */
-    public String getPriorityChangeMessage(String englishWord, String translation, int oldPriority, int newPriority, boolean isPriorityWord) {
-        if (newPriority > oldPriority) {
-            return "📉 Кажется вы забыли слово '" + englishWord + "' (" + translation + "), теперь оно будет попадаться чаще";
-        } else if (newPriority < oldPriority) {
-            return "📈 Вы хорошо запомнили слово '" + englishWord + "' (" + translation + "), теперь оно будет попадаться реже";
-        } else {
-            return "➡️ Слово '" + englishWord + "' (" + translation + ") приоритет не изменился";
         }
     }
 }
