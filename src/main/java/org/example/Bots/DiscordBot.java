@@ -3,8 +3,6 @@ package org.example.Bots;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
-import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.entities.channel.concrete.PrivateChannel;
 import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
@@ -15,26 +13,50 @@ import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import org.example.BotLogic;
 import org.example.Data.BotResponse;
+import org.example.Interface.DistributionService;
+import org.example.Interface.UniversalDistributionService;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * DiscordBot - основной класс бота для Discord
+ * Реализует подобный интерфейс как TelegramBot с общей логикой BotLogic
  */
 public class DiscordBot extends ListenerAdapter {
-    private final BotLogic botLogic;
-    private final ScheduledExecutorService scheduler;
-    private final Map<String, List<Button>> keyboardCache = new HashMap<>();
     private JDA jda;
+    private final BotLogic botLogic;
+    private final Map<String, List<Button>> buttonCache = new HashMap<>();
+    private final DistributionService wordDistribution;
+    private final DistributionService testDistribution;
+    private final DistributionService oldWordDistribution;
 
-    public DiscordBot() {
+    public DiscordBot(String botToken) {
         this.botLogic = new BotLogic();
-        this.scheduler = Executors.newScheduledThreadPool(1);
+
+        this.wordDistribution = new UniversalDistributionService(
+                botLogic,
+                this::sendMessageToChannel,
+                "ежедневные слова",
+                "discord" // ← Добавлен параметр платформы
+        );
+
+        this.testDistribution = new UniversalDistributionService(
+                botLogic,
+                this::sendMessageToChannel,
+                "отложенные тесты",
+                "discord"
+        );
+
+        this.oldWordDistribution = new UniversalDistributionService(
+                botLogic,
+                this::sendMessageToChannel,
+                "старое слово",
+                "discord"
+        );
+
+        initializeBot(botToken);
     }
 
     /**
@@ -42,12 +64,8 @@ public class DiscordBot extends ListenerAdapter {
      */
     public void initializeBot(String botToken) {
         try {
-            jda = JDABuilder.createDefault(botToken)
-                    .enableIntents(
-                            GatewayIntent.MESSAGE_CONTENT,
-                            GatewayIntent.GUILD_MESSAGES,
-                            GatewayIntent.DIRECT_MESSAGES
-                    )
+            this.jda = JDABuilder.createDefault(botToken)
+                    .enableIntents(GatewayIntent.MESSAGE_CONTENT)
                     .addEventListeners(this)
                     .setActivity(Activity.playing("Type /help"))
                     .build();
@@ -55,88 +73,22 @@ public class DiscordBot extends ListenerAdapter {
             jda.awaitReady();
             registerBotCommands(jda);
             initializeButtons();
-            startScheduling();
+            startDistributions();
+
+            System.out.println("DiscordBot запущен и готов к работе");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
     }
 
     /**
-     * Запускает таймер для отложенных сообщений
+     * Запускает все рассылки, с определенными параметрами задержек
      */
-    private void startScheduling() {
-        scheduler.scheduleAtFixedRate(
-                this::sendScheduledMessagesToAllUsers,
-                10, 60, TimeUnit.SECONDS
-        );
-        System.out.println("Таймер отложенных сообщений запущен в DiscordBot");
-    }
-
-    /**
-     * Отправляет отложенные сообщения всем активным пользователям
-     */
-    private void sendScheduledMessagesToAllUsers() {
-        try {
-            System.out.println("DiscordBot: запуск отправки отложенных сообщений");
-
-            List<Long> activeUsers = getActiveDiscordUsers();
-
-            if (activeUsers.isEmpty()) {
-                System.out.println("Нет активных пользователей для рассылки");
-                return;
-            }
-
-            System.out.println("Найдено " + activeUsers.size() + " активных пользователей");
-
-            for (Long userId : activeUsers) {
-                try {
-                    BotResponse response = botLogic.generateScheduledMessage(userId);
-                    if (response != null && response.isValid()) {
-                        sendDirectMessage(response);
-                        System.out.println("Discord: отложенное сообщение отправлено пользователю " + userId);
-                        Thread.sleep(100);
-                    }
-                } catch (Exception e) {
-                    System.err.println("Ошибка отправки пользователю " + userId + ": " + e.getMessage());
-                }
-            }
-
-        } catch (Exception e) {
-            System.err.println("Ошибка в процессе рассылки Discord: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Получает активных Discord пользователей
-     */
-    private List<Long> getActiveDiscordUsers() {
-        List<Long> users = botLogic.getActiveUsersForDistribution();
-        System.out.println("Найдено " + users.size() + " активных пользователей Discord");
-        return users;
-    }
-
-    /**
-     * Прямая отправка сообщения пользователю в Discord
-     */
-    private void sendDirectMessage(BotResponse response) {
-        try {
-            User user = jda.retrieveUserById(response.getChatId()).complete();
-            if (user != null) {
-                PrivateChannel privateChannel = user.openPrivateChannel().complete();
-
-                if (response.hasKeyboard() && keyboardCache.containsKey(response.getKeyboardType())) {
-                    privateChannel.sendMessage(response.getText())
-                            .addActionRow(keyboardCache.get(response.getKeyboardType()))
-                            .queue();
-                } else {
-                    privateChannel.sendMessage(response.getText()).queue();
-                }
-            } else {
-                System.err.println("Пользователь с ID " + response.getChatId() + " не найден");
-            }
-        } catch (Exception e) {
-            System.err.println("Ошибка отправки сообщения пользователю " + response.getChatId() + ": " + e.getMessage());
-        }
+    private void startDistributions() {
+        wordDistribution.startDistribution(100, 3 * 60);
+        testDistribution.startDistribution(150, 2 * 60);
+        oldWordDistribution.startDistribution(30, 60);
+        System.out.println("Все рассылки DiscordBot запущены");
     }
 
     /**
@@ -150,32 +102,35 @@ public class DiscordBot extends ListenerAdapter {
                 Commands.slash("speed_test", "тест на скорость"),
                 Commands.slash("my_profile", "мой профиль"),
                 Commands.slash("dictionary", "ваш словарь"),
-                Commands.slash("word", "отложенные сообщения")
+                Commands.slash("word", "отложенные сообщения"),
+                Commands.slash("scheduled_test", "отложенный тест по словам"),
+                Commands.slash("old_word", "Забытое слово")
         ).queue();
     }
 
     /**
      * onEventReceived - получает события из Discord и передает в BotLogic
+     * на подобе onUpdateReceived в TelegramBot
      */
     @Override
     public void onGenericEvent(GenericEvent genericEvent) {
         try {
             BotResponse response = null;
-            long userId = 0;
+            long channelId = 0;
 
             if (genericEvent instanceof SlashCommandInteractionEvent event) {
                 String commandName = "/" + event.getName();
-                userId = event.getUser().getIdLong();
-                response = botLogic.processMessage(commandName, userId);
+                channelId = event.getChannel().getIdLong();
+                response = botLogic.processMessage(commandName, channelId);
             } else if (genericEvent instanceof ButtonInteractionEvent event) {
                 String callbackData = event.getComponentId();
-                userId = event.getUser().getIdLong();
-                response = botLogic.processCallback(callbackData, userId);
+                channelId = event.getChannel().getIdLong();
+                response = botLogic.processCallback(callbackData, channelId);
             } else if (genericEvent instanceof MessageReceivedEvent event) {
                 if (event.getAuthor().isBot()) return;
                 String messageText = event.getMessage().getContentRaw();
-                userId = event.getAuthor().getIdLong();
-                response = botLogic.processMessage(messageText, userId);
+                channelId = event.getChannel().getIdLong();
+                response = botLogic.processMessage(messageText, channelId);
             }
 
             if (response != null && response.isValid()) {
@@ -188,7 +143,69 @@ public class DiscordBot extends ListenerAdapter {
     }
 
     /**
-     * создание набора кнопок
+     * Универсальный метод отправки сообщения для рассылок
+     * @param response данные сообщения
+     * @return true если отправка успешна
+     */
+    private boolean sendMessageToChannel(BotResponse response) {
+        try {
+            if (jda == null) {
+                System.err.println("JDA не инициализирован");
+                return false;
+            }
+
+            var channel = jda.getTextChannelById(response.getChatId());
+            if (channel == null) {
+                System.err.println("Канал не найден: " + response.getChatId());
+                return false;
+            }
+
+            if (response.hasKeyboard() && buttonCache.containsKey(response.getKeyboardType())) {
+                channel.sendMessage(response.getText())
+                        .addActionRow(buttonCache.get(response.getKeyboardType()))
+                        .queue();
+            } else {
+                channel.sendMessage(response.getText()).queue();
+            }
+
+            return true;
+        } catch (Exception e) {
+            System.err.println("Ошибка отправки сообщения в Discord: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * создание сообщения с кнопками
+     * подобие createMessage в TelegramBot
+     */
+    private void sendMessage(GenericEvent event, BotResponse response) {
+        if (event instanceof SlashCommandInteractionEvent slashEvent) {
+            if (response.hasKeyboard() && buttonCache.containsKey(response.getKeyboardType())) {
+                slashEvent.reply(response.getText()).addActionRow(buttonCache.get(response.getKeyboardType())).queue();
+            } else {
+                slashEvent.reply(response.getText()).queue();
+            }
+        } else if (event instanceof ButtonInteractionEvent buttonEvent) {
+            if (response.hasKeyboard() && buttonCache.containsKey(response.getKeyboardType())) {
+                buttonEvent.reply(response.getText()).addActionRow(buttonCache.get(response.getKeyboardType())).queue();
+            } else {
+                buttonEvent.reply(response.getText()).queue();
+            }
+        } else if (event instanceof MessageReceivedEvent messageEvent) {
+            if (response.hasKeyboard() && buttonCache.containsKey(response.getKeyboardType())) {
+                messageEvent.getChannel().sendMessage(response.getText())
+                        .addActionRow(buttonCache.get(response.getKeyboardType()))
+                        .queue();
+            } else {
+                messageEvent.getChannel().sendMessage(response.getText()).queue();
+            }
+        }
+    }
+
+    /**
+     * создание наборов кнопок из map словарей
+     * @return готовый набор уже сформированных кнопок для сообщения
      */
     private List<Button> createButtonsFromMap(Map<String, String> buttonConfigs) {
         return buttonConfigs.entrySet().stream()
@@ -197,88 +214,43 @@ public class DiscordBot extends ListenerAdapter {
     }
 
     /**
-     * создание сообщения с кнопками
-     */
-    private void sendMessage(GenericEvent event, BotResponse response) {
-        if (event instanceof SlashCommandInteractionEvent slashEvent) {
-            if (response.hasKeyboard() && keyboardCache.containsKey(response.getKeyboardType())) {
-                slashEvent.reply(response.getText())
-                        .addActionRow(keyboardCache.get(response.getKeyboardType()))
-                        .setEphemeral(true)
-                        .queue();
-            } else {
-                slashEvent.reply(response.getText())
-                        .setEphemeral(true)
-                        .queue();
-            }
-        } else if (event instanceof ButtonInteractionEvent buttonEvent) {
-            if (response.hasKeyboard() && keyboardCache.containsKey(response.getKeyboardType())) {
-                buttonEvent.reply(response.getText())
-                        .addActionRow(keyboardCache.get(response.getKeyboardType()))
-                        .setEphemeral(true)
-                        .queue();
-            } else {
-                buttonEvent.reply(response.getText())
-                        .setEphemeral(true)
-                        .queue();
-            }
-        } else if (event instanceof MessageReceivedEvent messageEvent) {
-            // Для текстовых сообщений отправляем в ЛС
-            try {
-                User user = messageEvent.getAuthor();
-                PrivateChannel privateChannel = user.openPrivateChannel().complete();
-
-                if (response.hasKeyboard() && keyboardCache.containsKey(response.getKeyboardType())) {
-                    privateChannel.sendMessage(response.getText())
-                            .addActionRow(keyboardCache.get(response.getKeyboardType()))
-                            .queue();
-                } else {
-                    privateChannel.sendMessage(response.getText()).queue();
-                }
-            } catch (Exception e) {
-                System.err.println("Ошибка отправки ЛС: " + e.getMessage());
-            }
-        }
-    }
-
-    /**
      * создание клавиатур (набор) кнопок под определенными ключами
      */
     private void initializeButtons() {
-        keyboardCache.put("start", createButtonsFromMap(botLogic.getKeyboardService().getStartButtonConfigs()));
-        keyboardCache.put("test_answers", createButtonsFromMap(botLogic.getKeyboardService().getTestAnswerConfigs()));
-        keyboardCache.put("speed_test_next", createButtonsFromMap(botLogic.getKeyboardService().getSpeedTestNextButton()));
-        keyboardCache.put("speed_test_start", createButtonsFromMap(botLogic.getKeyboardService().getSpeedTestStartButton()));
-        keyboardCache.put("dictionary", createButtonsFromMap(botLogic.getKeyboardService().getDictionaryMainButton()));
-        keyboardCache.put("add_again", createButtonsFromMap(botLogic.getKeyboardService().getDictionaryAddAgainButton()));
-        keyboardCache.put("delete", createButtonsFromMap(botLogic.getKeyboardService().getDictionaryDeleteButton()));
-        keyboardCache.put("delete_cancel", createButtonsFromMap(botLogic.getKeyboardService().getDictionaryDeleteCancelButton()));
-        keyboardCache.put("dictionary_final_button", createButtonsFromMap(botLogic.getKeyboardService().getDictionaryFinalButton()));
-        keyboardCache.put("main", createButtonsFromMap(botLogic.getKeyboardService().getMainButtonCallBack()));
-        keyboardCache.put("sing_in_main", createButtonsFromMap(botLogic.getKeyboardService().getSingInMain()));
-        keyboardCache.put("sing_in_end", createButtonsFromMap(botLogic.getKeyboardService().getSingInEnd()));
-        keyboardCache.put("login_error", createButtonsFromMap(botLogic.getKeyboardService().getLoginError()));
-        keyboardCache.put("my_profile", createButtonsFromMap(botLogic.getKeyboardService().getMyProfile()));
-        keyboardCache.put("login_password_edit_end", createButtonsFromMap(botLogic.getKeyboardService().getLoginPasswordEditEnd()));
-        keyboardCache.put("log_out_confirm", createButtonsFromMap(botLogic.getKeyboardService().getLogOutConfirmation()));
-        keyboardCache.put("schedule_message", createButtonsFromMap(botLogic.getKeyboardService().getScheduleMessage()));
-        keyboardCache.put("schedule_message_final", createButtonsFromMap(botLogic.getKeyboardService().getScheduleMessageFinal()));
-        System.out.println("Клавиатуры Discord инициализированы");
+        buttonCache.put("start", createButtonsFromMap(botLogic.getKeyboardService().getStartButtonConfigs()));
+        buttonCache.put("test_answers", createButtonsFromMap(botLogic.getKeyboardService().getTestAnswerConfigs()));
+        buttonCache.put("speed_test_next", createButtonsFromMap(botLogic.getKeyboardService().getSpeedTestNextButton()));
+        buttonCache.put("speed_test_start", createButtonsFromMap(botLogic.getKeyboardService().getSpeedTestStartButton()));
+        buttonCache.put("dictionary", createButtonsFromMap(botLogic.getKeyboardService().getDictionaryMainButton()));
+        buttonCache.put("add_again", createButtonsFromMap(botLogic.getKeyboardService().getDictionaryAddAgainButton()));
+        buttonCache.put("delete", createButtonsFromMap(botLogic.getKeyboardService().getDictionaryDeleteButton()));
+        buttonCache.put("delete_cancel", createButtonsFromMap(botLogic.getKeyboardService().getDictionaryDeleteCancelButton()));
+        buttonCache.put("dictionary_final_button", createButtonsFromMap(botLogic.getKeyboardService().getDictionaryFinalButton()));
+        buttonCache.put("main", createButtonsFromMap(botLogic.getKeyboardService().getMainButtonCallBack()));
+        buttonCache.put("sing_in_main", createButtonsFromMap(botLogic.getKeyboardService().getSingInMain()));
+        buttonCache.put("sing_in_end", createButtonsFromMap(botLogic.getKeyboardService().getSingInEnd()));
+        buttonCache.put("login_error", createButtonsFromMap(botLogic.getKeyboardService().getLoginError()));
+        buttonCache.put("my_profile", createButtonsFromMap(botLogic.getKeyboardService().getMyProfile()));
+        buttonCache.put("login_password_edit_end", createButtonsFromMap(botLogic.getKeyboardService().getLoginPasswordEditEnd()));
+        buttonCache.put("log_out_confirm", createButtonsFromMap(botLogic.getKeyboardService().getLogOutConfirmation()));
+        buttonCache.put("schedule_message", createButtonsFromMap(botLogic.getKeyboardService().getScheduleMessage()));
+        buttonCache.put("schedule_message_final", createButtonsFromMap(botLogic.getKeyboardService().getScheduleMessageFinal()));
+        buttonCache.put("schedule_test", createButtonsFromMap(botLogic.getKeyboardService().getScheduleTestYesOrNo()));
+
+        System.out.println("Кнопки DiscordBot инициализированы");
     }
 
     /**
-     * Остановка таймера
+     * Остановка бота и рассылок
      */
     public void shutdown() {
-        try {
-            scheduler.shutdown();
-            if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-                scheduler.shutdownNow();
-            }
-            System.out.println("Таймер DiscordBot остановлен");
-        } catch (InterruptedException e) {
-            scheduler.shutdownNow();
-            Thread.currentThread().interrupt();
+        wordDistribution.stopDistribution();
+        testDistribution.stopDistribution();
+        oldWordDistribution.stopDistribution();
+
+        if (jda != null) {
+            jda.shutdown();
         }
+        System.out.println("DiscordBot и все рассылки остановлены");
     }
 }

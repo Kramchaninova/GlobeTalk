@@ -12,12 +12,11 @@ import org.example.Dictionary.DictionaryServiceImpl;
 import org.example.Authentication.AuthCommand;
 import org.example.Authentication.AuthService;
 import org.example.Authentication.AuthServiceImpl;
-import org.example.ScheduledMessages.Message;
+import org.example.ScheduledNewWord.Message;
 import org.example.ScheduledTests.ScheduleTests;
+import org.example.ScheduledOldWord.OldWord;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * BotLogic - класс для обработки логики бота.
@@ -35,9 +34,7 @@ public class BotLogic {
     private final UserService userService;
     private final Message message;
     private final ScheduleTests scheduleTests;
-
-    // Состояния пользователей для отслеживания активных процессов
-    private final Map<Long, String> userStates = new ConcurrentHashMap<>();
+    private final OldWord oldWord;
 
     public BotLogic() {
         this.userService = new UserService();
@@ -52,22 +49,7 @@ public class BotLogic {
         this.authCommand = new AuthCommand(authService);
         this.message = new Message();
         this.scheduleTests = new ScheduleTests();
-
-        // Запускаем очистку неактивных пользователей
-        startUserCleanupScheduler();
-    }
-
-    /**
-     * Запускает таймер для очистки неактивных пользователей
-     */
-    private void startUserCleanupScheduler() {
-        Timer timer = new Timer();
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                userService.cleanupInactiveUsers();
-            }
-        }, TimeUnit.DAYS.toMillis(1), TimeUnit.DAYS.toMillis(1)); // Раз в день
+        this.oldWord = new OldWord();
     }
 
     public static final String COMMAND_HELP = "🌍 *GlobeTalk - Изучение иностранных языков* 🌍\n\n" +
@@ -79,7 +61,8 @@ public class BotLogic {
             "• /dictionary - Работа со словарем\n" +
             "• /speed_test - Пройти тест на скорость\n" +
             "• /word - Получить новое английское слово\n" +
-            "• /scheduled_test - Пройти отложенный тест по словам\n\n" +
+            "• /scheduled_test - Пройти отложенный тест по словам\n" +
+            "• /old_word - Повторить слово с низким приоритетом\n\n" +
 
             "🎯 **Как работает бот:**\n" +
             "GlobeTalk поможет вам в изучении иностранных языков через:\n" +
@@ -87,7 +70,8 @@ public class BotLogic {
             "• 🎮 Интерактивные упражнения\n" +
             "• 📚 Личный словарь\n" +
             "• 🔄 Ежедневные слова и повторения\n" +
-            "• ⏰ Отложенные тесты для закрепления материала\n\n" +
+            "• ⏰ Отложенные тесты для закрепления материала\n" +
+            "• 📊 Повторение слов с низким приоритетом\n\n" +
 
             "💡 **Как взаимодействовать:**\n" +
             "• Используйте команды из меню (слева)\n" +
@@ -114,9 +98,10 @@ public class BotLogic {
                 ": Telegram=" + telegramAuth + ", Discord=" + discordAuth);
 
         if (isAuthorized) {
-            userService.addToDistribution(chatId);
+            userService.addUser(chatId);
+            userService.unblockUser(chatId);
         } else {
-            userService.removeFromDistribution(chatId);
+            userService.blockUser(chatId);
         }
 
         return isAuthorized;
@@ -126,21 +111,14 @@ public class BotLogic {
      * Проверяет, занят ли пользователь другим процессом
      */
     public boolean isUserBusy(long chatId) {
-        String state = userStates.get(chatId);
-        boolean isBusy = state != null && (
-                state.startsWith("waiting_") ||
-                        state.startsWith("test_") ||
-                        state.startsWith("speed_test_") ||
-                        state.startsWith("dictionary_") ||
-                        state.startsWith("profile_") ||
-                        state.startsWith("schedule_test_") ||
-                        testHandler.isTestActive(chatId) ||
-                        speedTestHandler.isTestActive(chatId) ||
-                        scheduleTests.isTestActive(chatId)
-        );
+        boolean isBusy = userService.isUserBlocked(chatId) ||
+                testHandler.isTestActive(chatId) ||
+                speedTestHandler.isTestActive(chatId) ||
+                scheduleTests.isTestActive(chatId) ||
+                oldWord.isTestActive(chatId);
 
         if (isBusy) {
-            System.out.println("[Bot Logic] Пользователь chatId " + chatId + " занят: " + state);
+            System.out.println("[Bot Logic] Пользователь chatId " + chatId + " занят");
         }
 
         return isBusy;
@@ -163,19 +141,13 @@ public class BotLogic {
     /**
      * Устанавливает состояние пользователя
      */
-    private void setUserState(long chatId, String state) {
-        if (state == null) {
-            userStates.remove(chatId);
-            System.out.println("[Bot Logic] Очищено состояние для chatId " + chatId);
-            // Если пользователь свободен, добавляем в рассылку если авторизован
-            if (isUserAuthorized(chatId)) {
-                userService.addToDistribution(chatId);
-            }
+    private void setUserState(long chatId, boolean isBusy) {
+        if (isBusy) {
+            userService.blockUser(chatId);
+            System.out.println("[Bot Logic] * Пользователь заблокирован: " + chatId);
         } else {
-            userStates.put(chatId, state);
-            System.out.println("[Bot Logic] Установлено состояние '" + state + "' для chatId " + chatId);
-            // Если пользователь занят, убираем из рассылки
-            userService.removeFromDistribution(chatId);
+            userService.unblockUser(chatId);
+            System.out.println("[Bot Logic] Пользователь разблокирован: " + chatId);
         }
     }
 
@@ -225,6 +197,9 @@ public class BotLogic {
             System.out.println("[Bot Logic] Генерация отложенного теста для пользователя " + chatId);
 
             String testInvitation = scheduleTests.getScheduleTestInvitation();
+
+            setUserState(chatId, true);
+
             return new BotResponse(chatId, testInvitation, "schedule_test");
 
         } catch (Exception e) {
@@ -234,19 +209,37 @@ public class BotLogic {
     }
 
     /**
-     * Получает активных пользователей для рассылки
+     * Генерирует отложенное сообщение для повторения слов с низким приоритетом
+     * Вызывается из TelegramBot/DiscordBot по таймеру
      */
-    public List<Long> getActiveUsersForDistribution() {
-        Set<Long> activeUsers = userService.getActiveUsers();
-        return new ArrayList<>(activeUsers);
+    public BotResponse generateScheduledOldWord(long chatId) {
+        // Проверяем, можно ли отправлять сообщение
+        if (!canReceiveScheduledMessages(chatId)) {
+            System.out.println("[Bot Logic] Пользователь " + chatId + " занят, пропускаем отложенное повторение слова");
+            return null;
+        }
+
+        try {
+            // Генерируем тест по слову с низким приоритетом
+            System.out.println("[Bot Logic] Генерация отложенного повторения слова для пользователя " + chatId);
+
+            String testText = oldWord.startLowPriorityTest(chatId);
+
+            // Блокируем пользователя при успешной генерации теста
+            setUserState(chatId, true);
+
+            System.out.println("[Bot Logic] Сгенерировано отложенное повторение слова для пользователя " + chatId);
+
+            return new BotResponse(chatId, testText, "test_answers");
+
+        } catch (Exception e) {
+            System.err.println("[Bot Logic] Ошибка генерации отложенного повторения слова: " + e.getMessage());
+            return null;
+        }
     }
 
-    /**
-     * Очищает неактивных пользователей
-     */
-    public void cleanupInactiveUsers() {
-        userService.cleanupInactiveUsers();
-    }
+
+
 
     /**
      * Обработка ответов с кнопок
@@ -266,8 +259,6 @@ public class BotLogic {
             if (isUserBusy(chatId)) {
                 return "⏳ Сначала завершите текущее действие";
             }
-
-            // Message сам генерирует новое слово, добавляет в БД и возвращает следующее слово
             return message.handleWordButtonClick(callbackData, chatId);
         }
 
@@ -278,45 +269,18 @@ public class BotLogic {
                 return NOT_AUTHORIZED_MESSAGE;
             }
 
-            setUserState(chatId, "schedule_test_decision");
-            String result = scheduleTests.handleButtonClick(callbackData, chatId);
-
             if (callbackData.equals("yes_schedule_test_button")) {
-                setUserState(chatId, "schedule_test_active");
+                setUserState(chatId, true);
             } else {
-                setUserState(chatId, null);
+                setUserState(chatId, false);
             }
 
-            return result;
-        }
-
-        // Обработка ответов в активном отложенном тесте
-        if ((callbackData.equals("A_button") || callbackData.equals("B_button") ||
-                callbackData.equals("C_button") || callbackData.equals("D_button")) &&
-                scheduleTests.isTestActive(chatId)) {
-
-            setUserState(chatId, "schedule_test_active");
-            String result = scheduleTests.handleTestAnswer(callbackData, chatId);
-            if (result.contains("Тест завершён") || result.contains("результаты теста")) {
-                setUserState(chatId, null);
-            }
-            return result;
-        }
-
-        if (callbackData.equals("next_scheduled_word")) {
-            if (!isUserAuthorized(chatId)) {
-                return NOT_AUTHORIZED_MESSAGE;
-            }
-            if (isUserBusy(chatId)) {
-                return "⏳ Сначала завершите текущее действие";
-            }
-            // Генерируем следующее слово
-            return message.getUniqueWordForUser(chatId);
+            return scheduleTests.handleButtonClick(callbackData, chatId);
         }
 
         // Кнопки аутентификации доступны без авторизации
         if (callbackData.equals("main_button")) {
-            setUserState(chatId, null);
+            setUserState(chatId, false);
             return COMMAND_HELP;
         }
         else if (callbackData.equals("sing_in_button") ||
@@ -336,46 +300,60 @@ public class BotLogic {
                 callbackData.equals("D_button")) {
 
             if (testHandler.isTestActive(chatId)) {
-                setUserState(chatId, "test_active");
+                setUserState(chatId, true);
                 String result = testHandler.handleAnswer(callbackData, chatId);
                 if (result.contains("Тест завершён")) {
-                    setUserState(chatId, null);
+                    setUserState(chatId, false);
                 }
                 return result;
             } else if (speedTestHandler.isTestActive(chatId)) {
-                setUserState(chatId, "speed_test_active");
+                setUserState(chatId, true);
                 var result = speedTestHandler.handleAnswerWithFeedback(callbackData, chatId);
                 if (((String) result.get("feedback")).contains("Тест завершён")) {
-                    setUserState(chatId, null);
+                    setUserState(chatId, false);
                 }
                 return (String) result.get("feedback");
+            } else if (scheduleTests.isTestActive(chatId)) {
+                setUserState(chatId, true);
+                String result = scheduleTests.handleTestAnswer(callbackData, chatId);
+                if (result.contains("Тест завершён") || result.contains("результаты теста")) {
+                    setUserState(chatId, false);
+                }
+                return result;
+            } else if (oldWord.isTestActive(chatId)) {
+                setUserState(chatId, true);
+                String userAnswer = callbackData.replace("_button", "").toUpperCase();
+                String result = oldWord.handleUserAnswer(chatId, userAnswer);
+                // Разблокируем пользователя после обработки ответа
+                setUserState(chatId, false);
+                return result;
             } else {
-                return "Сначала начните тест командой /start_test или /speed_test";
+                return "Сначала начните тест командой /start_test, /speed_test, /scheduled_test или /old_word";
             }
         } else if (callbackData.equals("speed_yes_button") ||
                 callbackData.equals("speed_no_button")) {
-            setUserState(chatId, "speed_test_start");
+            setUserState(chatId, true);
             return speedTestCommand.handleButtonClick(callbackData, chatId);
         } else if (callbackData.equals("next_button")) {
             if (speedTestHandler.isTestActive(chatId)) {
                 return speedTestHandler.moveToNextQuestion(chatId);
             } else {
-                setUserState(chatId, null);
+                setUserState(chatId, false);
                 return "Тест не активен";
             }
         } else if (callbackData.startsWith("dictionary_")) {
-            setUserState(chatId, "dictionary_active");
+            setUserState(chatId, true);
 
             // Обрабатываем специфичные состояния словаря
             if (callbackData.equals("dictionary_add_button")) {
-                setUserState(chatId, "waiting_add_word");
+                // Остаемся занятым - ждем ввода слова
             } else if (callbackData.equals("dictionary_edit_button")) {
-                setUserState(chatId, "waiting_edit_word");
+                // Остаемся занятым - ждем ввода слова
             } else if (callbackData.equals("dictionary_delete_button")) {
-                setUserState(chatId, "waiting_delete_word");
+                // Остаемся занятым - ждем подтверждения
             } else if (callbackData.equals("dictionary_add_no_button") ||
                     callbackData.equals("dictionary_delete_cancel_button")) {
-                setUserState(chatId, "dictionary_active");
+                // Остаемся в словаре, но не ждем ввода
             }
 
             return dictionaryCommand.handleButtonClick(callbackData, chatId);
@@ -386,12 +364,12 @@ public class BotLogic {
                 callbackData.equals("log_out_button") ||
                 callbackData.equals("log_out_final_button")||
                 callbackData.equals("my_profile_button")) {
-            setUserState(chatId, "profile_active");
+            setUserState(chatId, true);
             return authCommand.handleButtonClick(callbackData, chatId, true);
         }
         // Обработка остальных кнопок
         else {
-            setUserState(chatId, "test_start");
+            setUserState(chatId, true);
             return startCommand.handleButtonClick(callbackData, chatId);
         }
     }
@@ -411,7 +389,7 @@ public class BotLogic {
 
         switch (command) {
             case "/start":
-                setUserState(chatId, null);
+                setUserState(chatId, false);
                 responseText = authCommand.getStartMessage(chatId);
                 keyboardType = !isUserAuthorized(chatId) ? "sing_in_main" : null;
                 break;
@@ -420,7 +398,7 @@ public class BotLogic {
                     responseText = NOT_AUTHORIZED_MESSAGE;
                     keyboardType = "sing_in_main";
                 } else {
-                    setUserState(chatId, "profile_view");
+                    setUserState(chatId, true);
                     responseText = authCommand.getUserProfileMessage(chatId);
                     keyboardType = "my_profile";
                 }
@@ -430,7 +408,7 @@ public class BotLogic {
                     responseText = NOT_AUTHORIZED_MESSAGE;
                     keyboardType = "sing_in_main";
                 } else {
-                    setUserState(chatId, "test_start");
+                    setUserState(chatId, true);
                     responseText = startCommand.startTest();
                     keyboardType = "start";
                 }
@@ -440,7 +418,7 @@ public class BotLogic {
                     responseText = NOT_AUTHORIZED_MESSAGE;
                     keyboardType = "sing_in_main";
                 } else {
-                    setUserState(chatId, "speed_test_start");
+                    setUserState(chatId, true);
                     responseText = speedTestCommand.startTest();
                     keyboardType = "speed_test_start";
                 }
@@ -450,7 +428,7 @@ public class BotLogic {
                     responseText = NOT_AUTHORIZED_MESSAGE;
                     keyboardType = "sing_in_main";
                 } else {
-                    setUserState(chatId, "dictionary_view");
+                    setUserState(chatId, true);
                     responseText = dictionaryCommand.showDictionary(chatId);
                     keyboardType = "dictionary";
                 }
@@ -460,9 +438,9 @@ public class BotLogic {
                     responseText = NOT_AUTHORIZED_MESSAGE;
                     keyboardType = "sing_in_main";
                 } else {
-                    setUserState(chatId, "word_request");
+                    setUserState(chatId, true);
                     responseText = message.getUniqueWordForUser(chatId);
-                    setUserState(chatId, null); // Сразу освобождаем состояние
+                    setUserState(chatId, false);
                     keyboardType = "schedule_message";
                 }
                 break;
@@ -471,20 +449,30 @@ public class BotLogic {
                     responseText = NOT_AUTHORIZED_MESSAGE;
                     keyboardType = "sing_in_main";
                 } else {
-                    setUserState(chatId, "schedule_test_invitation");
+                    setUserState(chatId, true);
                     responseText = scheduleTests.getScheduleTestInvitation();
                     keyboardType = "schedule_test";
                 }
                 break;
+            case "/old_word":
+                if (!isUserAuthorized(chatId)) {
+                    responseText = NOT_AUTHORIZED_MESSAGE;
+                    keyboardType = "sing_in_main";
+                } else {
+                    setUserState(chatId, true);
+                    responseText = oldWord.startLowPriorityTest(chatId);
+                    keyboardType = "test_answers";
+                }
+                break;
             case "/help":
-                setUserState(chatId, null);
+                setUserState(chatId, false);
                 responseText = COMMAND_HELP;
                 break;
             default:
                 responseText = COMMAND_UNKNOWN;
         }
 
-        System.out.println("[Bot Logic] Ответ на команду '" + command);
+        System.out.println("[Bot Logic] Ответ на команду '" + command + "': " + responseText);
 
         return new BotResponse(chatId, responseText, keyboardType);
     }
@@ -535,11 +523,11 @@ public class BotLogic {
                     if (responseText.contains("Новое слово добавлено!") ||
                             responseText.contains("Удаление отменено") ||
                             responseText.contains("Перевод успешно обновлён")) {
-                        setUserState(chatId, "dictionary_active");
+                        setUserState(chatId, false); // Освобождаем после завершения
                     } else if (responseText.contains("Пополнить еще словарь?")) {
-                        setUserState(chatId, "waiting_add_decision");
+                        // Остаемся занятым - ждем решения
                     } else {
-                        setUserState(chatId, null);
+                        setUserState(chatId, false); // Освобождаем по умолчанию
                     }
 
                     String keyboardType = determineKeyboardType(responseText);
@@ -616,6 +604,8 @@ public class BotLogic {
                     return "speed_test_next";
                 } else if (scheduleTests.isTestActive(chatId)) {
                     return "test_answers";
+                } else if (oldWord.isTestActive(chatId)) {
+                    return "main";
                 } else {
                     return "main";
                 }
@@ -696,6 +686,8 @@ public class BotLogic {
                     return "schedule_message";
                 case "/scheduled_test":
                     return "schedule_test";
+                case "/old_word":
+                    return "test_answers";
                 default:
                     return null;
             }

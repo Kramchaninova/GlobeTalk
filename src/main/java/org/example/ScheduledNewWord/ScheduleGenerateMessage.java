@@ -1,4 +1,4 @@
-package org.example.ScheduledMessages;
+package org.example.ScheduledNewWord;
 
 import org.example.OpenRouter.OpenRouterClient;
 import org.example.Tokens.TokenOpenRouter;

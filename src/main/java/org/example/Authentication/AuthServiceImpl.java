@@ -4,6 +4,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.*;
 import java.util.Base64;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * AuthServiceImpl - реализация работы с аутентификацией в SQLite.
@@ -405,6 +407,61 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    /**
+     * Получает всех Telegram пользователей
+     *
+     * @return множество Telegram chat_id всех пользователей с привязанным Telegram
+     */
+    @Override
+    public Set<Long> getAllTelegramUsers() {
+        Set<Long> telegramUsers = new HashSet<>();
+        String sql = "SELECT telegram_chat_id FROM users WHERE telegram_chat_id IS NOT NULL";
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                long chatId = rs.getLong("telegram_chat_id");
+                if (!rs.wasNull() && chatId != 0) {
+                    telegramUsers.add(chatId);
+                }
+            }
+            System.out.println("[Auth] Получено Telegram пользователей: " + telegramUsers.size());
+            return telegramUsers;
+
+        } catch (SQLException e) {
+            System.err.println("[Auth] Ошибка получения Telegram пользователей: " + e.getMessage());
+            return new HashSet<>();
+        }
+    }
+
+    /**
+     * Получает всех Discord пользователей
+     *
+     * @return множество Discord channel_id всех пользователей с привязанным Discord
+     */
+    @Override
+    public Set<Long> getAllDiscordUsers() {
+        Set<Long> discordUsers = new HashSet<>();
+        String sql = "SELECT discord_channel_id FROM users WHERE discord_channel_id IS NOT NULL";
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                long channelId = rs.getLong("discord_channel_id");
+                if (!rs.wasNull() && channelId != 0) {
+                    discordUsers.add(channelId);
+                }
+            }
+            System.out.println("[Auth] Получено Discord пользователей: " + discordUsers.size());
+            return discordUsers;
+
+        } catch (SQLException e) {
+            System.err.println("[Auth] Ошибка получения Discord пользователей: " + e.getMessage());
+            return new HashSet<>();
+        }
+    }
     /**
      * Генерирует соль на основе имени пользователя
      *

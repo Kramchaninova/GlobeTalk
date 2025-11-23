@@ -1,5 +1,7 @@
 package org.example.Authentication;
 
+import java.util.Set;
+
 /**
  * AuthService - интерфейс для работы с аутентификацией пользователей.
  * Определяет контракт для операций с пользователями и их данными.
@@ -65,4 +67,17 @@ public interface AuthService {
      * Отвязка текущего чата от пользователя при выходе
      */
     boolean unlinkCurrentChat(long chatId);
+
+    /**
+     * Получает всех Telegram пользователей
+     * @return множество Telegram chat_id всех авторизованных пользователей
+     */
+    Set<Long> getAllTelegramUsers();
+
+    /**
+     * Получает всех Discord пользователей
+     * @return множество Discord channel_id всех авторизованных пользователей
+     */
+    Set<Long> getAllDiscordUsers();
+
 }

@@ -46,8 +46,7 @@ public class Main {
         }
 
         try {
-            DiscordBot discordBot = new DiscordBot();
-            discordBot.initializeBot(discordBotToken);
+            DiscordBot discordBot = new DiscordBot(discordBotToken);
             System.out.println("Discord бот работает");
         } catch (Exception e) {
             System.err.println("ошибка запуска Discord бота: " + e.getMessage());

@@ -1,93 +1,204 @@
 package org.example.Data;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.TimeUnit;
+import org.example.Authentication.AuthService;
+import org.example.Authentication.AuthServiceImpl;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
- * UserService - сервис для управления активными пользователями
+ * UserService с системой блокировки пользователей
  */
 public class UserService {
-    private final Set<Long> allUsers; // Все пользователи, которые когда-либо писали боту
-    private final Set<Long> activeUsers; // Пользователи, которые могут получать рассылку
-    private final Map<Long, Long> lastActivity; // Время последней активности пользователя
+    /**
+     * Заблокированные пользователи - не получают рассылки
+     * Блокируются когда: заняты тестом, не авторизованы, недоступен канал
+     */
+    private final Set<Long> blockedUsers = new HashSet<>();
+
+    private final AuthService authService;
+
+    private Set<Long> telegramUsersCache;
+    private Set<Long> discordUsersCache;
+    private long lastCacheUpdate = 0;
+    private static final long CACHE_TTL = 30000; // 30 секунд
 
     public UserService() {
-        this.allUsers = new CopyOnWriteArraySet<>();
-        this.activeUsers = new CopyOnWriteArraySet<>();
-        this.lastActivity = new ConcurrentHashMap<>();
+        this.authService = new AuthServiceImpl();
+        updateCache();
     }
 
     /**
-     * Добавляет пользователя при первом взаимодействии
+     * Обновляет кэш списков пользователей
      */
-    public void addUser(long chatId) {
-        allUsers.add(chatId);
-        lastActivity.put(chatId, System.currentTimeMillis());
-        System.out.println("Добавлен пользователь: " + chatId);
+    private void updateCache() {
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastCacheUpdate > CACHE_TTL) {
+            this.telegramUsersCache = authService.getAllTelegramUsers();
+            this.discordUsersCache = authService.getAllDiscordUsers();
+            this.lastCacheUpdate = currentTime;
+            System.out.println("[UserService] Кэш пользователей обновлен");
+        }
     }
 
     /**
-     * Обновляет активность пользователя
+     * Получает ТОЛЬКО Telegram пользователей для рассылки
      */
-    public void updateUserActivity(long chatId) {
-        lastActivity.put(chatId, System.currentTimeMillis());
-        // Автоматически добавляем в активные, если пользователь авторизован и не занят
-        activeUsers.add(chatId);
+    public Set<Long> getActiveTelegramUsers() {
+        updateCache();
+        Set<Long> activeUsers = new HashSet<>();
+
+        for (Long userId : telegramUsersCache) {
+            if (!isUserBlocked(userId)) activeUsers.add(userId);
+        }
+
+        System.out.println("[UserService] Активных Telegram: " + activeUsers.size());
+        return activeUsers;
     }
 
     /**
-     * Добавляет пользователя в рассылку
+     * Получает ТОЛЬКО Discord пользователей для рассылки
      */
-    public void addToDistribution(long chatId) {
-        activeUsers.add(chatId);
-        System.out.println("Пользователь " + chatId + " добавлен в рассылку");
+    public Set<Long> getActiveDiscordUsers() {
+        updateCache();
+        Set<Long> activeUsers = new HashSet<>();
+
+        for (Long userId : discordUsersCache) {
+            if (!isUserBlocked(userId)) activeUsers.add(userId);
+        }
+
+        System.out.println("[UserService] Активных Discord: " + activeUsers.size());
+        return activeUsers;
     }
 
     /**
-     * Удаляет пользователя из рассылки
-     */
-    public void removeFromDistribution(long chatId) {
-        activeUsers.remove(chatId);
-        System.out.println("Пользователь " + chatId + " удален из рассылки");
-    }
-
-    /**
-     * Получает всех активных пользователей для рассылки
+     * Получает всех активных пользователей (для обратной совместимости)
      */
     public Set<Long> getActiveUsers() {
-        return new HashSet<>(activeUsers);
+        Set<Long> activeUsers = new HashSet<>();
+        activeUsers.addAll(getActiveTelegramUsers());
+        activeUsers.addAll(getActiveDiscordUsers());
+        return activeUsers;
     }
 
     /**
-     * Получает всех пользователей бота
+     * БЛОКИРУЕТ пользователя - добавляет в blockedUsers
+     * Пользователь перестает получать рассылки
      */
-    public Set<Long> getAllUsers() {
-        return new HashSet<>(allUsers);
+    public void blockUser(long chatId) {
+        blockedUsers.add(chatId);
+        System.out.println("[UserService] * Заблокирован: " + chatId);
+        logStatistics();
     }
 
     /**
-     * Очищает неактивных пользователей (старше 30 дней)
+     * РАЗБЛОКИРУЕТ пользователя - убирает из blockedUsers
+     * Пользователь снова может получать рассылки
      */
+    public void unblockUser(long chatId) {
+        blockedUsers.remove(chatId);
+        System.out.println("[UserService] Разблокирован: " + chatId);
+        logStatistics();
+    }
+
+    /**
+     * Проверяет, заблокирован ли пользователь для рассылок
+     */
+    public boolean isUserBlocked(long chatId) {
+        return blockedUsers.contains(chatId);
+    }
+
+    /**
+     * Определяет тип платформы по ID
+     */
+    public String getPlatformType(long userId) {
+        updateCache();
+        return discordUsersCache.contains(userId) ? "discord" :
+                telegramUsersCache.contains(userId) ? "telegram" : "unknown";
+    }
+
+    /**
+     * Обрабатывает ошибку отправки
+     */
+    public void handleSendError(long userId, Exception e) {
+        String platform = getPlatformType(userId);
+        String error = e.getMessage();
+
+        System.out.println("[UserService] Анализ ошибки: " + userId + " -> " + platform);
+
+        // Discord ошибки - не критичны, просто отвязываем
+        if (error != null && (error.contains("не найден"))) {
+            System.out.println("Discord канал недоступен, отвязываем: " + userId);
+            authService.unlinkCurrentChat(userId);
+            blockUser(userId); // Блокируем чтобы больше не пытаться отправлять
+            updateCache();
+        }
+        // Telegram ошибки - логируем
+        else if ("telegram".equals(platform)) {
+            System.err.println("[UserService]"+"Ошибка Telegram: " + userId + " - " + error);
+        }
+        // Прочие ошибки
+        else {
+            System.out.println("[UserService]"+" Ошибка отправки: " + userId + " (" + platform + ") - " + error);
+            authService.unlinkCurrentChat(userId);
+            blockUser(userId); // Блокируем при любых других ошибках
+            updateCache();
+        }
+    }
+
+    public void addUser(long chatId) {
+        System.out.println("[UserService] Обработан: " + chatId);
+    }
+
+    /**
+     * @deprecated Используйте blockUser()
+     */
+    public void freezeUser(long chatId) {
+        blockUser(chatId);
+    }
+
+    /**
+     * @deprecated Используйте unblockUser()
+     */
+    public void unfreezeUser(long chatId) {
+        unblockUser(chatId);
+    }
+
+    /**
+     * @deprecated Используйте isUserBlocked()
+     */
+    public boolean isUserBusy(long chatId) {
+        return isUserBlocked(chatId);
+    }
+
+    /**
+     * @deprecated Используйте isUserBlocked()
+     */
+    public boolean isUserFrozen(long chatId) {
+        return isUserBlocked(chatId);
+    }
+
+    public void updateUserActivity(long chatId) {
+        addUser(chatId);
+    }
+
+    private void logStatistics() {
+        updateCache();
+        int total = telegramUsersCache.size() + discordUsersCache.size();
+        System.out.println("[UserService] Статистика: " +
+                "всего=" + total +
+                " (TG:" + telegramUsersCache.size() + ",DC:" + discordUsersCache.size() + ")" +
+                ", заблокировано=" + blockedUsers.size());
+    }
+
     public void cleanupInactiveUsers() {
-        long thirtyDaysAgo = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(30);
-        int removedCount = 0;
-
-        for (Map.Entry<Long, Long> entry : lastActivity.entrySet()) {
-            if (entry.getValue() < thirtyDaysAgo) {
-                Long chatId = entry.getKey();
-                allUsers.remove(chatId);
-                activeUsers.remove(chatId);
-                lastActivity.remove(chatId);
-                removedCount++;
-            }
-        }
-
-        if (removedCount > 0) {
-            System.out.println("Очищено " + removedCount + " неактивных пользователей");
-        }
+        System.out.println("[UserService] Очистка неактивных пользователей");
+        updateCache();
     }
 
-
+    public void unfreezeAllUsers() {
+        blockedUsers.clear();
+        System.out.println("[UserService] Все пользователи разблокированы");
+        logStatistics();
+    }
 }

@@ -1,4 +1,4 @@
-package org.example.ScheduledMessages;
+package org.example.ScheduledNewWord;
 
 import java.util.*;
 
