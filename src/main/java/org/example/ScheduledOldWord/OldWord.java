@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Находит одно слово с минимальным приоритетом и генерирует по нему тест
  */
 public class OldWord {
-    private final DictionaryService dictionaryService;
+    private DictionaryService dictionaryService;
     private final OldWordGenerator testGenerator;
     private final OldWordParser testParser;
 
@@ -28,6 +28,13 @@ public class OldWord {
         this.testParser = new OldWordParser();
     }
 
+    // Конструктор для тестирования
+    public OldWord(DictionaryService dictionaryService) {
+        this.dictionaryService = dictionaryService;
+        this.testGenerator = new OldWordGenerator(this);
+        this.testParser = new OldWordParser();
+    }
+
     /**
      * Проверяет, активен ли тест для пользователя
      */
@@ -36,21 +43,20 @@ public class OldWord {
     }
 
     /**
-     * Получает ID пользователя по chatId
+     * Получает ID пользователя по chatId (для тестирования)
      */
-    private long getUserId(long chatId) throws SQLException {
+    public long getUserId(long chatId) throws SQLException {
         return dictionaryService.getUserIdByChatId(chatId);
     }
 
     /**
-     * Находит ОДНО слово с самым низким приоритетом для пользователя
+     * Находит ОДНО слово с самым низким приоритетом для пользователя (для тестирования)
      */
-    private Word getWordWithLowestPriority(long userId) {
+    public Word findWordWithLowestPriority(long userId) {
         try {
             List<Word> allWords = dictionaryService.getAllWords(userId);
 
             if (allWords.isEmpty()) {
-                System.out.println("[OldWord] У пользователя " + userId + " нет слов в словаре");
                 return null;
             }
 
@@ -74,122 +80,17 @@ public class OldWord {
             Random random = new Random();
             Word selectedWord = lowestPriorityWords.get(random.nextInt(lowestPriorityWords.size()));
 
-            System.out.println("[OldWord] Найдено слово с низким приоритетом: '" +
-                    selectedWord.getEnglishWord() + "' - '" +
-                    selectedWord.getTranslation() + "' (приоритет: " +
-                    selectedWord.getPriority() + ") из " + lowestPriorityWords.size() + " вариантов");
-
             return selectedWord;
 
-            // SQLException - Checked Exception проверяемое исключение
         } catch (SQLException e) {
-            System.err.println("[OldWord] Ошибка получения слов: " + e.getMessage());
-            return null;
+            throw new RuntimeException("Ошибка получения слов: " + e.getMessage());
         }
     }
 
     /**
-     * Запускает процесс тестирования слова с низким приоритетом
-     * Возвращает отформатированный текст теста для пользователя
+     * Обрабатывает ответ пользователя и обновляет приоритет (для тестирования)
      */
-    public String startLowPriorityTest(long chatId) {
-        try {
-            long userId = getUserId(chatId);
-            Word word = getWordWithLowestPriority(userId);
-            if (word == null) {
-                return null;
-            }
-
-            // Генерируем тест
-            String testText = testGenerator.generateTest(word.getEnglishWord(), word.getTranslation());
-
-            System.out.println("\n    [OldWord] Сгенерированный текст:");
-            System.out.println(testText);
-
-            // CUSTOM EXCEPTIONS (Пользовательские)
-            //UNCHECKED EXCEPTIONS (Непроверяемые)
-            if (testText.contains("ошибка") || testText.contains("API ключ")) {
-                throw new RuntimeException("[OldWord]  Не удалось сгенерировать тест. Попробуйте позже.");
-            }
-
-            // Парсим тест и передаем полную информацию о слове
-            OldWordData parsedData = testParser.parseTest(testText, word.getEnglishWord(), word.getTranslation());
-
-            // Сохраняем ID слова из базы данных для последующего обновления
-            parsedData.setWordId(word.getId());
-            parsedData.setCurrentPriority(word.getPriority());
-
-            // Сохраняем активный тест
-            activeTests.put(chatId, parsedData);
-
-            // Форматируем для показа пользователю
-            return formatTestForDisplay(parsedData);
-
-        } catch (SQLException e) {
-            throw new RuntimeException("[OldWord]  Ошибка доступа к словарю: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Форматирует ParsedTestData в красивый вывод для пользователя
-     */
-    public String formatTestForDisplay(OldWordData testData) {
-        String header =
-                "📚 *Кажется найдено забытое слово из словаря*\n" +
-                        "Необходимо срочно освежить в памяти его значение 💫\n\n";
-
-        return header + testData.getFullQuestion();
-    }
-
-    /**
-     * Проверяет ответ пользователя
-     */
-    //IllegalArgumentException - неверные аргументы
-    public boolean checkUserAnswer(OldWordData testData, String userAnswer) {
-        String normalizedUserAnswer = userAnswer.trim().toUpperCase();
-
-        // Может выбросить NullPointerException если userAnswer == null
-        String correctAnswer = testData.getCorrectAnswer();
-
-        return normalizedUserAnswer.equals(correctAnswer);
-    }
-
-    /**
-     * Обрабатывает ответ пользователя и обновляет приоритет
-     * Использует данные из активного теста
-     */
-     // NullPointerException
-    public String handleUserAnswer(long chatId, String userAnswer) {
-        try {
-            OldWordData testData = activeTests.get(chatId);
-            if (testData == null) {// NullPointerException
-                return "❌ Активный тест не найден. Начните тест заново.";
-            }
-
-            long userId = getUserId(chatId);
-
-            // Проверяем ответ
-            boolean isCorrect = checkUserAnswer(testData, userAnswer);
-
-            // Обрабатываем ответ
-            String result = handleAnswer(userId, testData, isCorrect, testData.getCorrectAnswer());
-
-            // Очищаем активный тест
-            activeTests.remove(chatId);
-
-            return result;
-
-        } catch (Exception e) {
-            System.err.println("[OldWord] Ошибка обработки ответа: " + e.getMessage());
-            activeTests.remove(chatId);
-            return "❌ Ошибка при обработке ответа";
-        }
-    }
-
-    /**
-     * Обрабатывает ответ пользователя и обновляет приоритет
-     */
-    private String handleAnswer(long userId, OldWordData testData, boolean isCorrect, String correctAnswer) {
+    public String handleAnswer(long userId, OldWordData testData, boolean isCorrect, String correctAnswer) {
         try {
             String englishWord = testData.getEnglishWord();
             String translation = testData.getTranslation();
@@ -209,15 +110,94 @@ public class OldWord {
             dictionaryService.updateWordPriority(userId, wordId, newPriority);
 
             // Формируем отчет
-            String report = formatPriorityReport(englishWord, translation, isCorrect, correctAnswer);
-            System.out.println("[OldWord] Приоритет слова '" + englishWord + "' изменен: " +
-                    currentPriority + " -> " + newPriority + " (правильно: " + isCorrect + ")");
-
-            return report;
+            return formatPriorityReport(englishWord, translation, isCorrect, correctAnswer);
 
         } catch (SQLException e) {
-            System.err.println("[OldWord] Ошибка обновления приоритета: " + e.getMessage());
-            return "❌ Ошибка при обновлении приоритета слова";
+            throw new RuntimeException("Ошибка обновления приоритета: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Запускает процесс тестирования слова с низким приоритетом
+     * Возвращает отформатированный текст теста для пользователя
+     */
+    public String startLowPriorityTest(long chatId) {
+        try {
+            long userId = getUserId(chatId);
+            Word word = findWordWithLowestPriority(userId);
+            if (word == null) {
+                return null;
+            }
+
+            // Генерируем тест
+            String testText = testGenerator.generateTest(word.getEnglishWord(), word.getTranslation());
+
+            if (testText.contains("ошибка") || testText.contains("API ключ")) {
+                throw new RuntimeException("Не удалось сгенерировать тест");
+            }
+
+            // Парсим тест и передаем полную информацию о слове
+            OldWordData parsedData = testParser.parseTest(testText, word.getEnglishWord(), word.getTranslation());
+
+            // Сохраняем ID слова из базы данных для последующего обновления
+            parsedData.setWordId(word.getId());
+            parsedData.setCurrentPriority(word.getPriority());
+
+            // Сохраняем активный тест
+            activeTests.put(chatId, parsedData);
+
+            return formatTestForDisplay(parsedData);
+
+        } catch (SQLException e) {
+            throw new RuntimeException("Ошибка доступа к словарю: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Форматирует ParsedTestData в красивый вывод для пользователя
+     */
+    public String formatTestForDisplay(OldWordData testData) {
+        String header = "📚 *Кажется найдено забытое слово из словаря*\n" +
+                "Необходимо срочно освежить в памяти его значение 💫\n\n";
+        return header + testData.getFullQuestion();
+    }
+
+    /**
+     * Проверяет ответ пользователя
+     */
+    public boolean checkUserAnswer(OldWordData testData, String userAnswer) {
+        String normalizedUserAnswer = userAnswer.trim().toUpperCase();
+        String correctAnswer = testData.getCorrectAnswer();
+        return normalizedUserAnswer.equals(correctAnswer);
+    }
+
+    /**
+     * Обрабатывает ответ пользователя и обновляет приоритет
+     * Использует данные из активного теста
+     */
+    public String handleUserAnswer(long chatId, String userAnswer) {
+        try {
+            OldWordData testData = activeTests.get(chatId);
+            if (testData == null) {
+                return "❌ Активный тест не найден. Начните тест заново.";
+            }
+
+            long userId = getUserId(chatId);
+
+            // Проверяем ответ
+            boolean isCorrect = checkUserAnswer(testData, userAnswer);
+
+            // Обрабатываем ответ
+            String result = handleAnswer(userId, testData, isCorrect, testData.getCorrectAnswer());
+
+            // Очищаем активный тест
+            activeTests.remove(chatId);
+
+            return result;
+
+        } catch (Exception e) {
+            activeTests.remove(chatId);
+            return "❌ Ошибка при обработке ответа";
         }
     }
 
@@ -236,9 +216,7 @@ public class OldWord {
                             "• 🔤 Слово: %s\n" +
                             "• 🌐 Перевод: %s\n\n" +
                             "Теперь это слово будет попадаться чаще!",
-                    correctAnswer,
-                    englishWord,
-                    translation
+                    correctAnswer, englishWord, translation
             );
         }
     }
@@ -247,9 +225,28 @@ public class OldWord {
      * Очищает активный тест для пользователя
      */
     public void clearActiveTest(long chatId) {
-        OldWordData removed = activeTests.remove(chatId);
-        if (removed != null) {
-            System.out.println("[OldWord] Активный тест очищен для chatId: " + chatId);
-        }
+        activeTests.remove(chatId);
+    }
+
+
+    /**
+     * Устанавливает сервис словаря (для тестирования)
+     */
+    public void setDictionaryService(DictionaryService dictionaryService) {
+        this.dictionaryService = dictionaryService;
+    }
+
+    /**
+     * Получает активные тесты (для тестирования)
+     */
+    public ConcurrentHashMap<Long, OldWordData> getActiveTests() {
+        return activeTests;
+    }
+
+    /**
+     * Устанавливает активный тест вручную (для тестирования)
+     */
+    public void setActiveTest(long chatId, OldWordData testData) {
+        activeTests.put(chatId, testData);
     }
 }

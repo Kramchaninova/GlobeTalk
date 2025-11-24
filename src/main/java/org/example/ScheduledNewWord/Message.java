@@ -18,10 +18,16 @@ public class Message {
     // Храним последние показанные слова для каждого пользователя
     private final ConcurrentHashMap<Long, WordData> lastShownWords = new ConcurrentHashMap<>();
 
+    // Основной конструктор
     public Message() {
-        this.messageParser = new MessageParser();
-        this.generator = new ScheduleGenerateMessage();
-        this.dictionaryService = new DictionaryServiceImpl();
+        this(new DictionaryServiceImpl(), new ScheduleGenerateMessage(), new MessageParser());
+    }
+
+    // Для тестирования с инъекцией зависимостей
+    public Message(DictionaryService dictionaryService, ScheduleGenerateMessage generator, MessageParser parser) {
+        this.dictionaryService = dictionaryService;
+        this.generator = generator;
+        this.messageParser = parser;
         System.out.println("✅ Message service инициализирован");
     }
 

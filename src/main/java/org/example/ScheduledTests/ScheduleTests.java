@@ -23,6 +23,14 @@ public class ScheduleTests {
         this.scheduleTestHandler = new ScheduleTestHandler(this);
     }
 
+    // Конструктор для тестирования
+    public ScheduleTests(DictionaryService dictionaryService) {
+        this.dictionaryService = dictionaryService;
+        this.scheduleGenerateTests = new ScheduleGenerateTests(this);
+        this.testsParser = new TestsParser();
+        this.scheduleTestHandler = new ScheduleTestHandler(this);
+    }
+
     /**
      * Обрабатывает нажатия кнопок для отложенных тестов
      */

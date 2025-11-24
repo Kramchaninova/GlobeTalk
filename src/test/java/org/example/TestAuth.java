@@ -2,7 +2,6 @@ package org.example;
 
 import org.example.Authentication.AuthCommand;
 import org.example.Authentication.AuthService;
-import org.example.Data.BotResponse;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

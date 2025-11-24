@@ -151,28 +151,28 @@ public class UserService {
     }
 
     /**
-     * @deprecated Используйте blockUser()
+     * Используйте blockUser()
      */
     public void freezeUser(long chatId) {
         blockUser(chatId);
     }
 
     /**
-     * @deprecated Используйте unblockUser()
+     * Используйте unblockUser()
      */
     public void unfreezeUser(long chatId) {
         unblockUser(chatId);
     }
 
     /**
-     * @deprecated Используйте isUserBlocked()
+     * Используйте isUserBlocked()
      */
     public boolean isUserBusy(long chatId) {
         return isUserBlocked(chatId);
     }
 
     /**
-     * @deprecated Используйте isUserBlocked()
+     * Используйте isUserBlocked()
      */
     public boolean isUserFrozen(long chatId) {
         return isUserBlocked(chatId);

@@ -21,6 +21,7 @@ public class UniversalDistributionService implements DistributionService {
     private final String platform; // "telegram" или "discord"
     private final ScheduledExecutorService scheduler;
     private final UserService userService;
+    private volatile boolean isRunning = false;
 
     /**
      * Конструктор UniversalDistributionService
@@ -50,6 +51,12 @@ public class UniversalDistributionService implements DistributionService {
      */
     @Override
     public void startDistribution(int initialDelay, int period) {
+        if (isRunning) {
+            System.out.println("[Interface] " + distributionType + " для " + platform + " уже запущена");
+            return;
+        }
+
+        isRunning = true;
         scheduler.scheduleAtFixedRate(this::distributeToUsers, initialDelay, period, TimeUnit.SECONDS);
         System.out.println("[Interface] " + distributionType + " для " + platform + " запущена");
     }
@@ -59,7 +66,16 @@ public class UniversalDistributionService implements DistributionService {
      */
     @Override
     public void stopDistribution() {
+        isRunning = false;
         scheduler.shutdown();
+        try {
+            if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                scheduler.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            scheduler.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
         System.out.println("[Interface] " + distributionType + " для " + platform + " остановлена");
     }
 
@@ -68,6 +84,10 @@ public class UniversalDistributionService implements DistributionService {
      * Автоматически фильтрует пользователей по платформе и обрабатывает ошибки отправки
      */
     private void distributeToUsers() {
+        if (!isRunning) {
+            return;
+        }
+
         try {
             System.out.println("[Interface] " + distributionType + ": запуск рассылки для " + platform);
 
@@ -82,10 +102,15 @@ public class UniversalDistributionService implements DistributionService {
             int success = 0, errors = 0, skipped = 0;
 
             for (Long userId : users) {
+                if (!isRunning) {
+                    System.out.println("[Interface] Рассылка прервана во время выполнения");
+                    break;
+                }
+
                 try {
                     BotResponse response = generateResponse(userId);
 
-                    // РАЗДЕЛЯЕМ: null - это нормально (слово не найдено), не отправляем ошибку
+                    // Обработка случаев, когда контент не сгенерирован
                     if (response == null) {
                         System.out.println("[Interface] " + distributionType + " пропущено для " + userId + " (контент не сгенерирован)");
                         skipped++;
@@ -109,10 +134,28 @@ public class UniversalDistributionService implements DistributionService {
                         handleError(userId, new Exception("Ошибка отправки сообщения"));
                         errors++;
                     }
+                } catch (ContentGenerationException e) {
+                    // Специфичные ошибки генерации контента - пропускаем пользователя
+                    System.out.println("[Interface] Ошибка генерации контента для " + userId + ": " + e.getMessage());
+                    skipped++;
+                } catch (ParseException e) {
+                    // Ошибки парсинга - пропускаем пользователя
+                    System.out.println("[Interface] Ошибка парсинга для " + userId + ": " + e.getMessage());
+                    handleError(userId, e);
+                    skipped++;
                 } catch (Exception e) {
+                    // Общие ошибки - логируем и продолжаем
+                    System.out.println("[Interface] Неожиданная ошибка для пользователя " + userId + ": " + e.getMessage());
                     handleError(userId, e);
                     errors++;
-                    Thread.sleep(1000);
+
+                    // Небольшая пауза при ошибках чтобы не перегружать систему
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
                 }
             }
 
@@ -120,7 +163,8 @@ public class UniversalDistributionService implements DistributionService {
                     " завершена. Успешно: " + success + ", Ошибок: " + errors + ", Пропущено: " + skipped);
 
         } catch (Exception e) {
-            System.err.println("[Interface] Ошибка " + platform + " рассылки: " + e.getMessage());
+            System.err.println("[Interface] Критическая ошибка " + platform + " рассылки: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -147,14 +191,15 @@ public class UniversalDistributionService implements DistributionService {
      * Генерирует контент для рассылки на основе типа распределения
      *
      * @param userId ID пользователя для которого генерируется контент
-     * @return BotResponse с сгенерированным контентом или null если генерация не удалась (нормальная ситуация)
+     * @return BotResponse с сгенерированным контентом или null если генерация не удалась
+     * @throws ContentGenerationException если произошла ошибка генерации контента
+     * @throws ParseException если произошла ошибка парсинга ответа
      */
-    private BotResponse generateResponse(long userId) {
+    private BotResponse generateResponse(long userId) throws ContentGenerationException, ParseException {
         System.out.println("[Interface] Генерация ответа для " + userId + ", тип рассылки: '" + distributionType + "'");
 
         BotResponse response = null;
 
-        //EXCEPTION HANDLING PATTERNS (Шаблоны обработки)
         try {
             if ("ежедневные слова".equals(distributionType)) {
                 response = botLogic.generateScheduledMessage(userId);
@@ -167,10 +212,25 @@ public class UniversalDistributionService implements DistributionService {
                 System.out.println("[Interface] Вызван generateScheduledOldWord() - СТАРОЕ слово");
             } else {
                 System.out.println("[Interface] Неизвестный тип рассылки: '" + distributionType + "'");
+                return null;
             }
-        } catch (Exception e) {
-            System.err.println("[Interface] Ошибка генерации контента для пользователя " + userId + ": " + e.getMessage());
-            return null;
+        } catch (RuntimeException e) {
+            // Анализируем тип ошибки по сообщению
+            String errorMessage = e.getMessage();
+            if (errorMessage != null) {
+                if (errorMessage.contains("Не удалось распарсить") ||
+                        errorMessage.contains("парсин") ||
+                        errorMessage.contains("parse")) {
+                    throw new ParseException("Ошибка парсинга сгенерированного контента для пользователя " + userId, e);
+                } else if (errorMessage.contains("Openrouter") ||
+                        errorMessage.contains("API") ||
+                        errorMessage.contains("сеть") ||
+                        errorMessage.contains("network")) {
+                    throw new ContentGenerationException("Ошибка доступа к AI сервису для пользователя " + userId, e);
+                }
+            }
+            // Если не удалось классифицировать - пробрасываем как общую ошибку генерации
+            throw new ContentGenerationException("Ошибка генерации контента для пользователя " + userId, e);
         }
 
         if (response == null) {
@@ -198,14 +258,50 @@ public class UniversalDistributionService implements DistributionService {
                 errorMessage.contains("Ошибка генерации/отправки") ||
                         errorMessage.contains("контент не сгенерирован") ||
                         errorMessage.contains("слово не найдено") ||
-                        errorMessage.contains("пользователь занят")
+                        errorMessage.contains("пользователь занят") ||
+                        errorMessage.contains("Не удалось распарсить")
         )) {
             System.out.println("[Interface] Игнорируем временную ошибку для пользователя " + userId + ": " + errorMessage);
             return;
         }
+
         System.err.println("[Interface] Ошибка " + platform + " пользователю " + userId + ": " + errorMessage);
 
-        //Передаем только реальные ошибки в UserService
+        // Передаем только реальные ошибки в UserService
         userService.handleSendError(userId, e);
+    }
+
+    /**
+     * Проверяет, запущена ли рассылка
+     * @return true если рассылка активна
+     */
+    public boolean isRunning() {
+        return isRunning;
+    }
+
+    /**
+     * Исключение для ошибок генерации контента
+     */
+    private static class ContentGenerationException extends Exception {
+        public ContentGenerationException(String message) {
+            super(message);
+        }
+
+        public ContentGenerationException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    /**
+     * Исключение для ошибок парсинга
+     */
+    private static class ParseException extends Exception {
+        public ParseException(String message) {
+            super(message);
+        }
+
+        public ParseException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 }

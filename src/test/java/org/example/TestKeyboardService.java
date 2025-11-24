@@ -21,13 +21,8 @@ public class TestKeyboardService {
     void testStartKeyboardButtons() {
         Map<String, String> startButtons = keyboardService.getStartButtonConfigs();
 
-        // проверка для yes_button
         Assertions.assertEquals("yes_button", startButtons.get("Конечно!"));
-
-        //проверка для no_button
         Assertions.assertEquals("no_button", startButtons.get("Назад"));
-
-        // проверка на общее количество
         Assertions.assertEquals(2, startButtons.size());
     }
 
@@ -38,13 +33,10 @@ public class TestKeyboardService {
     void testAnswerKeyboardButtons() {
         Map<String, String> answerButtons = keyboardService.getTestAnswerConfigs();
 
-        // проверяем все варианты ответов A, B, C, D
         Assertions.assertEquals("A_button", answerButtons.get("A"));
         Assertions.assertEquals("B_button", answerButtons.get("B"));
         Assertions.assertEquals("C_button", answerButtons.get("C"));
         Assertions.assertEquals("D_button", answerButtons.get("D"));
-
-        // проверяем общее количество кнопок
         Assertions.assertEquals(4, answerButtons.size());
     }
 
@@ -55,6 +47,7 @@ public class TestKeyboardService {
     void testMainKeyboardButton() {
         Map<String, String> answerButtons = keyboardService.getMainButtonCallBack();
         Assertions.assertEquals("main_button", answerButtons.get("На главную"));
+        Assertions.assertEquals(1, answerButtons.size());
     }
 
     /**
@@ -216,4 +209,52 @@ public class TestKeyboardService {
         Assertions.assertEquals(2, logoutButtons.size());
     }
 
+    /**
+     * Тест кнопок отложенных сообщений
+     */
+    @Test
+    void testScheduleMessageButtons() {
+        Map<String, String> scheduleButtons = keyboardService.getScheduleMessage();
+
+        Assertions.assertEquals("know_button", scheduleButtons.get("Знаю"));
+        Assertions.assertEquals("learn_button", scheduleButtons.get("Изучаю"));
+        Assertions.assertEquals(2, scheduleButtons.size());
+    }
+
+    /**
+     * Тест финальных кнопок отложенных сообщений
+     */
+    @Test
+    void testScheduleMessageFinalButtons() {
+        Map<String, String> finalButtons = keyboardService.getScheduleMessageFinal();
+
+        Assertions.assertEquals("dictionary_button", finalButtons.get("Словарь"));
+        Assertions.assertEquals("more_word_button", finalButtons.get("Еще слова"));
+        Assertions.assertEquals(2, finalButtons.size());
+    }
+
+    /**
+     * Тест кнопок отложенных тестов
+     */
+    @Test
+    void testScheduleTestYesOrNoButtons() {
+        Map<String, String> testButtons = keyboardService.getScheduleTestYesOrNo();
+
+        Assertions.assertEquals("yes_schedule_test_button", testButtons.get("Конечно!"));
+        Assertions.assertEquals("no_schedule_test_button", testButtons.get("Нет:("));
+        Assertions.assertEquals(2, testButtons.size());
+    }
+
+    /**
+     * Тест на неизменяемость оригинальных коллекций
+     */
+    @Test
+    void testCollectionsAreImmutable() {
+        Map<String, String> original = keyboardService.getStartButtonConfigs();
+        original.put("Новая кнопка", "new_button");
+
+        Map<String, String> freshCopy = keyboardService.getStartButtonConfigs();
+        Assertions.assertFalse(freshCopy.containsKey("Новая кнопка"));
+        Assertions.assertEquals(2, freshCopy.size());
+    }
 }
