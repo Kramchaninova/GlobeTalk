@@ -362,10 +362,16 @@ public class DictionaryCommand {
                     return addWord(chatId, parts[0].trim(), parts[1].trim());
                 }
             }
-            System.out.println("Введено слово для добавления в словарь");
-            String[] parts = text.split(" ");
+            String trimmedText = text.trim();
+            String[] parts = trimmedText.split("\\s+"); // разделяем по одному или более пробелам
+
             if (parts.length == 2) {
-                return addWord(chatId, parts[0].trim(), parts[1].trim());
+                return addWord(chatId, parts[0], parts[1]);
+            } else if (parts.length > 2) {
+                // Если больше двух слов, берем первое слово как английское, остальное как перевод
+                String englishWord = parts[0];
+                String translation = trimmedText.substring(trimmedText.indexOf(' ') + 1);
+                return addWord(chatId, englishWord, translation);
             }
         }
         // Запуск метода через статус удаления с полученным словом
