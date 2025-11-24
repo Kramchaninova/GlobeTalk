@@ -154,6 +154,7 @@ public class UniversalDistributionService implements DistributionService {
 
         BotResponse response = null;
 
+        //EXCEPTION HANDLING PATTERNS (Шаблоны обработки)
         try {
             if ("ежедневные слова".equals(distributionType)) {
                 response = botLogic.generateScheduledMessage(userId);

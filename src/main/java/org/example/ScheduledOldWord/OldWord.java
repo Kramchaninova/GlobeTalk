@@ -81,6 +81,7 @@ public class OldWord {
 
             return selectedWord;
 
+            // SQLException - Checked Exception проверяемое исключение
         } catch (SQLException e) {
             System.err.println("[OldWord] Ошибка получения слов: " + e.getMessage());
             return null;
@@ -105,6 +106,8 @@ public class OldWord {
             System.out.println("\n    [OldWord] Сгенерированный текст:");
             System.out.println(testText);
 
+            // CUSTOM EXCEPTIONS (Пользовательские)
+            //UNCHECKED EXCEPTIONS (Непроверяемые)
             if (testText.contains("ошибка") || testText.contains("API ключ")) {
                 throw new RuntimeException("[OldWord]  Не удалось сгенерировать тест. Попробуйте позже.");
             }
@@ -141,8 +144,11 @@ public class OldWord {
     /**
      * Проверяет ответ пользователя
      */
+    //IllegalArgumentException - неверные аргументы
     public boolean checkUserAnswer(OldWordData testData, String userAnswer) {
         String normalizedUserAnswer = userAnswer.trim().toUpperCase();
+
+        // Может выбросить NullPointerException если userAnswer == null
         String correctAnswer = testData.getCorrectAnswer();
 
         return normalizedUserAnswer.equals(correctAnswer);
@@ -152,10 +158,11 @@ public class OldWord {
      * Обрабатывает ответ пользователя и обновляет приоритет
      * Использует данные из активного теста
      */
+     // NullPointerException
     public String handleUserAnswer(long chatId, String userAnswer) {
         try {
             OldWordData testData = activeTests.get(chatId);
-            if (testData == null) {
+            if (testData == null) {// NullPointerException
                 return "❌ Активный тест не найден. Начните тест заново.";
             }
 
