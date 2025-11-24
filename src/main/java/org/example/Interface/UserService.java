@@ -1,4 +1,4 @@
-package org.example.Data;
+package org.example.Interface;
 
 import org.example.Authentication.AuthService;
 import org.example.Authentication.AuthServiceImpl;

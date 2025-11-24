@@ -2,7 +2,7 @@ package org.example;
 
 import org.example.Data.BotResponse;
 import org.example.Data.KeyboardService;
-import org.example.Data.UserService;
+import org.example.Interface.UserService;
 import org.example.SpeedTest.SpeedTestCommand;
 import org.example.SpeedTest.SpeedTestHandler;
 import org.example.StartTest.StartCommand;
@@ -15,8 +15,6 @@ import org.example.Authentication.AuthServiceImpl;
 import org.example.ScheduledNewWord.Message;
 import org.example.ScheduledTests.ScheduleTests;
 import org.example.ScheduledOldWord.OldWord;
-
-import java.util.*;
 
 /**
  * BotLogic - класс для обработки логики бота.
@@ -224,6 +222,12 @@ public class BotLogic {
             System.out.println("[Bot Logic] Генерация отложенного повторения слова для пользователя " + chatId);
 
             String testText = oldWord.startLowPriorityTest(chatId);
+
+            //Проверка на наличии мин слова, если словарь пустой, то будет ноль
+            if (testText == null) {
+                System.out.println("[Bot Logic] Слово не найдено для пользователя " + chatId + ", пропускаем отправку");
+                return null;
+            }
 
             // Блокируем пользователя при успешной генерации теста
             setUserState(chatId, true);
@@ -461,7 +465,15 @@ public class BotLogic {
                 } else {
                     setUserState(chatId, true);
                     responseText = oldWord.startLowPriorityTest(chatId);
-                    keyboardType = "test_answers";
+
+                    //В случае пустого словаря мы не сможем найти минимальное
+                    if (responseText == null) {
+                        responseText = "❌ У вас пока нет слов для повторения. Добавьте слова в словарь!";
+                        setUserState(chatId, false);
+                        keyboardType = "main";
+                    }else {
+                        keyboardType = "test_answers";
+                    }
                 }
                 break;
             case "/help":

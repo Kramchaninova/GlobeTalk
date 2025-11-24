@@ -70,11 +70,6 @@ public class OldWord {
                 }
             }
 
-            if (lowestPriorityWords.isEmpty()) {
-                System.out.println("[OldWord] Не найдено слов с минимальным приоритетом");
-                return null;
-            }
-
             // Выбираем случайное слово из слов с минимальным приоритетом
             Random random = new Random();
             Word selectedWord = lowestPriorityWords.get(random.nextInt(lowestPriorityWords.size()));
@@ -101,7 +96,7 @@ public class OldWord {
             long userId = getUserId(chatId);
             Word word = getWordWithLowestPriority(userId);
             if (word == null) {
-                throw new RuntimeException(" [OldWord] У вас пока нет слов для изучения. Добавьте слова в словарь!");
+                return null;
             }
 
             // Генерируем тест
