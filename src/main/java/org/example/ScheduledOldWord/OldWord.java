@@ -227,8 +227,7 @@ public class OldWord {
     private String formatPriorityReport(String englishWord, String translation, boolean isCorrect, String correctAnswer) {
         if (isCorrect) {
             return "✅ Ваш ответ верный! 😎\n" +
-                    "Ничего себе вот это память! 🧠🧠🧠\n\n" +
-                    "Приоритет слова \"" + englishWord + "\" понижен.";
+                    "Ничего себе вот это память! 🧠🧠🧠\n\n";
         } else {
             return String.format(
                     "❌ Почти угадали! 😊\n" +
