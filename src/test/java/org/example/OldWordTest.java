@@ -7,11 +7,10 @@ import org.example.Dictionary.Word;
 import org.example.ScheduledOldWord.OldWordParser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Assertions;
 
 import java.sql.SQLException;
 import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Комплексные тесты для класса OldWord с мокированием DictionaryService
@@ -177,13 +176,13 @@ public class OldWordTest {
         String result = oldWord.handleUserAnswer(AUTHORIZED_CHAT_ID, "B");
 
         String expectedSuccessMessage = "✅ Ваш ответ верный! 😎\nНичего себе вот это память! 🧠🧠🧠\n\n";
-        assertEquals(expectedSuccessMessage, result,
+        Assertions.assertEquals(expectedSuccessMessage, result,
                 "Сообщение об успешном ответе должно соответствовать формату");
-        assertFalse(oldWord.isTestActive(AUTHORIZED_CHAT_ID), "Тест должен быть завершен");
+        Assertions.assertFalse(oldWord.isTestActive(AUTHORIZED_CHAT_ID), "Тест должен быть завершен");
 
         // Проверяем что приоритет уменьшился
         Word updatedWord = mockDictionaryService.getWordById(AUTHORIZED_USER_ID, 2);
-        assertEquals(0, updatedWord.getPriority(), "Приоритет должен уменьшиться с 1 до 0");
+        Assertions.assertEquals(0, updatedWord.getPriority(), "Приоритет должен уменьшиться с 1 до 0");
     }
 
     /**
@@ -206,16 +205,16 @@ public class OldWordTest {
         testData.setCurrentPriority(1);
 
         // Проверяем что парсер правильно распарсил данные
-        assertEquals("B", testData.getCorrectAnswer(), "Парсер должен извлечь правильный ответ B");
-        assertEquals("resilient", testData.getEnglishWord(), "Английское слово должно быть resilient");
-        assertEquals("устойчивый", testData.getTranslation(), "Перевод должен быть устойчивый");
+        Assertions.assertEquals("B", testData.getCorrectAnswer(), "Парсер должен извлечь правильный ответ B");
+        Assertions.assertEquals("resilient", testData.getEnglishWord(), "Английское слово должно быть resilient");
+        Assertions.assertEquals("устойчивый", testData.getTranslation(), "Перевод должен быть устойчивый");
 
         // Устанавливаем активный тест
         oldWord.setActiveTest(AUTHORIZED_CHAT_ID, testData);
 
         // Проверяем неправильный ответ
         boolean isCorrect = oldWord.checkUserAnswer(testData, "A");
-        assertFalse(isCorrect, "Ответ A должен быть неправильным");
+        Assertions.assertFalse(isCorrect, "Ответ A должен быть неправильным");
 
         // Обрабатываем ответ и проверяем результат
         String result = oldWord.handleUserAnswer(AUTHORIZED_CHAT_ID, "A");
@@ -226,12 +225,12 @@ public class OldWordTest {
                 "• 🔤 Слово: resilient\n" +
                 "• 🌐 Перевод: устойчивый\n\n" +
                 "Теперь это слово будет попадаться чаще!";
-        assertEquals(expectedMessage, result, "Сообщение об ошибке должно соответствовать формату");
-        assertFalse(oldWord.isTestActive(AUTHORIZED_CHAT_ID), "Тест должен быть завершен");
+        Assertions.assertEquals(expectedMessage, result, "Сообщение об ошибке должно соответствовать формату");
+        Assertions.assertFalse(oldWord.isTestActive(AUTHORIZED_CHAT_ID), "Тест должен быть завершен");
 
         // Проверяем что приоритет увеличился
         Word updatedWord = mockDictionaryService.getWordById(AUTHORIZED_USER_ID, 4);
-        assertEquals(2, updatedWord.getPriority(), "Приоритет должен увеличиться с 1 до 2");
+        Assertions.assertEquals(2, updatedWord.getPriority(), "Приоритет должен увеличиться с 1 до 2");
     }
 
     /**
@@ -254,28 +253,28 @@ public class OldWordTest {
         testData.setCurrentPriority(3);
 
         // Проверяем что парсер правильно распарсил данные
-        assertEquals("B", testData.getCorrectAnswer(), "Парсер должен извлечь правильный ответ B");
-        assertEquals("accomplishment", testData.getEnglishWord(), "Английское слово должно быть accomplishment");
-        assertEquals("достижение", testData.getTranslation(), "Перевод должен быть достижение");
+        Assertions.assertEquals("B", testData.getCorrectAnswer(), "Парсер должен извлечь правильный ответ B");
+        Assertions.assertEquals("accomplishment", testData.getEnglishWord(), "Английское слово должно быть accomplishment");
+        Assertions.assertEquals("достижение", testData.getTranslation(), "Перевод должен быть достижение");
 
         // Устанавливаем активный тест
         oldWord.setActiveTest(AUTHORIZED_CHAT_ID, testData);
 
         // Проверяем правильный ответ
         boolean isCorrect = oldWord.checkUserAnswer(testData, "B");
-        assertTrue(isCorrect, "Ответ B должен быть правильным");
+        Assertions.assertTrue(isCorrect, "Ответ B должен быть правильным");
 
         // Обрабатываем ответ и проверяем результат
         String result = oldWord.handleUserAnswer(AUTHORIZED_CHAT_ID, "B");
 
         String expectedSuccessMessage = "✅ Ваш ответ верный! 😎\nНичего себе вот это память! 🧠🧠🧠\n\n";
-        assertEquals(expectedSuccessMessage, result,
+        Assertions.assertEquals(expectedSuccessMessage, result,
                 "Сообщение об успешном ответе должно соответствовать формату");
-        assertFalse(oldWord.isTestActive(AUTHORIZED_CHAT_ID), "Тест должен быть завершен");
+        Assertions.assertFalse(oldWord.isTestActive(AUTHORIZED_CHAT_ID), "Тест должен быть завершен");
 
         // Проверяем что приоритет уменьшился
         Word updatedWord = mockDictionaryService.getWordById(AUTHORIZED_USER_ID, 1);
-        assertEquals(2, updatedWord.getPriority(), "Приоритет должен уменьшиться с 3 до 2");
+        Assertions.assertEquals(2, updatedWord.getPriority(), "Приоритет должен уменьшиться с 3 до 2");
     }
 
     /**
@@ -287,8 +286,8 @@ public class OldWordTest {
 
         String result = oldWord.startLowPriorityTest(AUTHORIZED_CHAT_ID);
 
-        assertNull(result, "Результат должен быть null при пустом словаре");
-        assertFalse(oldWord.isTestActive(AUTHORIZED_CHAT_ID), "Тест не должен быть активен при пустом словаре");
+        Assertions.assertNull(result, "Результат должен быть null при пустом словаре");
+        Assertions.assertFalse(oldWord.isTestActive(AUTHORIZED_CHAT_ID), "Тест не должен быть активен при пустом словаре");
     }
 
     /**
@@ -296,14 +295,14 @@ public class OldWordTest {
      */
     @Test
     public void testStartLowPriorityTest_UnauthorizedUser() {
-        Exception exception = assertThrows(RuntimeException.class, () -> {
+        Exception exception = Assertions.assertThrows(RuntimeException.class, () -> {
             oldWord.startLowPriorityTest(UNAUTHORIZED_CHAT_ID);
         });
 
         String expectedErrorMessage = "Ошибка доступа к словарю: Пользователь не авторизован для chatId: 111222333";
-        assertEquals(expectedErrorMessage, exception.getMessage(),
+        Assertions.assertEquals(expectedErrorMessage, exception.getMessage(),
                 "Сообщение исключения должно указывать на ошибку доступа");
-        assertFalse(oldWord.isTestActive(UNAUTHORIZED_CHAT_ID),
+        Assertions.assertFalse(oldWord.isTestActive(UNAUTHORIZED_CHAT_ID),
                 "Тест не должен быть активен для неавторизованного пользователя");
     }
 
@@ -313,11 +312,11 @@ public class OldWordTest {
     @Test
     public void testClearActiveTest() {
         setupActiveTestForWord("test", "тест", 1, 2, "A");
-        assertTrue(oldWord.isTestActive(AUTHORIZED_CHAT_ID), "Тест должен быть активен до очистки");
+        Assertions.assertTrue(oldWord.isTestActive(AUTHORIZED_CHAT_ID), "Тест должен быть активен до очистки");
 
         // Очищаем тест
         oldWord.clearActiveTest(AUTHORIZED_CHAT_ID);
-        assertFalse(oldWord.isTestActive(AUTHORIZED_CHAT_ID), "Тест не должен быть активен после очистки");
+        Assertions.assertFalse(oldWord.isTestActive(AUTHORIZED_CHAT_ID), "Тест не должен быть активен после очистки");
     }
 
     /**
@@ -328,9 +327,9 @@ public class OldWordTest {
         String result = oldWord.handleUserAnswer(AUTHORIZED_CHAT_ID, "A");
 
         String expectedMessage = "❌ Активный тест не найден. Начните тест заново.";
-        assertEquals(expectedMessage, result,
+        Assertions.assertEquals(expectedMessage, result,
                 "Должно вернуть сообщение об отсутствии активного теста");
-        assertFalse(oldWord.isTestActive(AUTHORIZED_CHAT_ID), "Тест не должен быть активен");
+        Assertions.assertFalse(oldWord.isTestActive(AUTHORIZED_CHAT_ID), "Тест не должен быть активен");
     }
 
     /**
@@ -350,7 +349,7 @@ public class OldWordTest {
 
         // Проверяем что приоритет остался 0
         Word updatedWord = mockDictionaryService.getWordById(AUTHORIZED_USER_ID, 1);
-        assertEquals(0, updatedWord.getPriority(), "Приоритет должен остаться 0 (минимальное значение)");
+        Assertions.assertEquals(0, updatedWord.getPriority(), "Приоритет должен остаться 0 (минимальное значение)");
     }
 
     /**
@@ -370,7 +369,7 @@ public class OldWordTest {
 
         // Проверяем что приоритет остался 10
         Word updatedWord = mockDictionaryService.getWordById(AUTHORIZED_USER_ID, 1);
-        assertEquals(10, updatedWord.getPriority(), "Приоритет должен остаться 10 (максимальное значение)");
+        Assertions.assertEquals(10, updatedWord.getPriority(), "Приоритет должен остаться 10 (максимальное значение)");
     }
 
     /**

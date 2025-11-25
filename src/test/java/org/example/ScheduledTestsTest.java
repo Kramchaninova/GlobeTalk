@@ -5,12 +5,11 @@ import org.example.Dictionary.DictionaryService;
 import org.example.Dictionary.Word;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Assertions;
 
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Комплексные тесты для системы отложенных тестов
@@ -224,13 +223,13 @@ public class ScheduledTestsTest {
 
         List<String[]> priorityWords = scheduleTests.getWordsWithMaxPriority(AUTHORIZED_USER_ID);
 
-        assertNotNull(priorityWords, "Список приоритетных слов не должен быть null");
-        assertFalse(priorityWords.isEmpty(), "Список приоритетных слов не должен быть пустым");
-        assertEquals(6, priorityWords.size(), "Должно вернуться 6 приоритетных слов");
+        Assertions.assertNotNull(priorityWords, "Список приоритетных слов не должен быть null");
+        Assertions.assertFalse(priorityWords.isEmpty(), "Список приоритетных слов не должен быть пустым");
+        Assertions.assertEquals(6, priorityWords.size(), "Должно вернуться 6 приоритетных слов");
 
         // Проверяем что слова отсортированы по приоритету
-        assertEquals("persistent", priorityWords.get(0)[0], "Первое слово должно быть с наивысшим приоритетом");
-        assertEquals("настойчивый", priorityWords.get(0)[1], "Перевод должен соответствовать");
+        Assertions.assertEquals("persistent", priorityWords.get(0)[0], "Первое слово должно быть с наивысшим приоритетом");
+        Assertions.assertEquals("настойчивый", priorityWords.get(0)[1], "Перевод должен соответствовать");
     }
 
     /**
@@ -241,25 +240,25 @@ public class ScheduledTestsTest {
         TestsParser parser = new TestsParser();
         TestsData testsData = parser.parseTest(TEST_TEXT);
 
-        assertNotNull(testsData, "Данные теста не должны быть null");
-        assertFalse(testsData.getQuestions().isEmpty(), "Должен быть хотя бы один вопрос");
+        Assertions.assertNotNull(testsData, "Данные теста не должны быть null");
+        Assertions.assertFalse(testsData.getQuestions().isEmpty(), "Должен быть хотя бы один вопрос");
 
         // Проверяем первый вопрос
         TestsData.QuestionData firstQuestion = testsData.getQuestions().get(0);
-        assertEquals("persistent", firstQuestion.getEnglishWord(), "Английское слово должно совпадать");
-        assertEquals("настойчивый", firstQuestion.getTranslation(), "Перевод должен совпадать");
-        assertEquals("B", firstQuestion.getCorrectAnswer(), "Правильный ответ должен быть B");
-        assertEquals("ПРИОРИТЕТНОЕ", firstQuestion.getWordType(), "Тип должен быть ПРИОРИТЕТНОЕ");
+        Assertions.assertEquals("persistent", firstQuestion.getEnglishWord(), "Английское слово должно совпадать");
+        Assertions.assertEquals("настойчивый", firstQuestion.getTranslation(), "Перевод должен совпадать");
+        Assertions.assertEquals("B", firstQuestion.getCorrectAnswer(), "Правильный ответ должен быть B");
+        Assertions.assertEquals("ПРИОРИТЕТНОЕ", firstQuestion.getWordType(), "Тип должен быть ПРИОРИТЕТНОЕ");
 
         // Проверяем второй вопрос
         TestsData.QuestionData secondQuestion = testsData.getQuestions().get(1);
-        assertEquals("resilient", secondQuestion.getEnglishWord(), "Английское слово должно совпадать");
-        assertEquals("устойчивый", secondQuestion.getTranslation(), "Перевод должен совпадать");
-        assertEquals("B", secondQuestion.getCorrectAnswer(), "Правильный ответ должен быть B");
-        assertEquals("НОВОЕ", secondQuestion.getWordType(), "Тип должен быть НОВОЕ");
+        Assertions.assertEquals("resilient", secondQuestion.getEnglishWord(), "Английское слово должно совпадать");
+        Assertions.assertEquals("устойчивый", secondQuestion.getTranslation(), "Перевод должен совпадать");
+        Assertions.assertEquals("B", secondQuestion.getCorrectAnswer(), "Правильный ответ должен быть B");
+        Assertions.assertEquals("НОВОЕ", secondQuestion.getWordType(), "Тип должен быть НОВОЕ");
 
         // Проверяем общее количество вопросов
-        assertEquals(4, testsData.getQuestions().size(), "Должно быть 4 вопроса");
+        Assertions.assertEquals(4, testsData.getQuestions().size(), "Должно быть 4 вопроса");
     }
 
     /**
@@ -301,8 +300,8 @@ public class ScheduledTestsTest {
 
         String result = isolatedScheduleTests.handleButtonClick("yes_schedule_test_button", AUTHORIZED_CHAT_ID);
 
-        assertNotNull(result, "Результат не должен быть null");
-        assertEquals(expectedQuestion, result, "Должен вернуться заранее подготовленный вопрос");
+        Assertions.assertNotNull(result, "Результат не должен быть null");
+        Assertions.assertEquals(expectedQuestion, result, "Должен вернуться заранее подготовленный вопрос");
     }
 
     /**
@@ -314,7 +313,7 @@ public class ScheduledTestsTest {
 
         String expectedMessage = "Хорошо, не сейчас ✨\n\n" +
                 "Знания никуда не убегут — они терпеливо ждут своего часа.";
-        assertTrue(result.contains("Хорошо, не сейчас"),
+        Assertions.assertTrue(result.contains("Хорошо, не сейчас"),
                 "Должно вернуться сообщение об отказе от теста");
     }
 
@@ -325,10 +324,10 @@ public class ScheduledTestsTest {
     public void testGetTestIntroduction() {
         String introduction = scheduleTests.getTestIntroduction();
 
-        assertNotNull(introduction, "Приветственное сообщение не должно быть null");
-        assertTrue(introduction.contains("Момент истины"),
+        Assertions.assertNotNull(introduction, "Приветственное сообщение не должно быть null");
+        Assertions.assertTrue(introduction.contains("Момент истины"),
                 "Должно содержать ключевые фразы приветствия");
-        assertTrue(introduction.contains("Готовы бросить вызов себе"),
+        Assertions.assertTrue(introduction.contains("Готовы бросить вызов себе"),
                 "Должно содержать призыв к действию");
     }
 
@@ -342,15 +341,15 @@ public class ScheduledTestsTest {
 
         // Проверяем что слово добавилось
         Word wordBefore = mockDictionaryService.getWordByEnglish(AUTHORIZED_USER_ID, "persistent");
-        assertNotNull(wordBefore, "Слово должно существовать в словаре перед обновлением");
-        assertEquals(5, wordBefore.getPriority(), "Начальный приоритет должен быть 5");
+        Assertions.assertNotNull(wordBefore, "Слово должно существовать в словаре перед обновлением");
+        Assertions.assertEquals(5, wordBefore.getPriority(), "Начальный приоритет должен быть 5");
 
         // Обновляем приоритет (правильный ответ)
         scheduleTests.updateWordPriority(AUTHORIZED_USER_ID, "persistent", "настойчивый", true, true);
 
         Word updatedWord = mockDictionaryService.getWordByEnglish(AUTHORIZED_USER_ID, "persistent");
-        assertNotNull(updatedWord, "Слово должно существовать в словаре после обновления");
-        assertEquals(4, updatedWord.getPriority(), "Приоритет должен уменьшиться на 1 при правильном ответе");
+        Assertions.assertNotNull(updatedWord, "Слово должно существовать в словаре после обновления");
+        Assertions.assertEquals(4, updatedWord.getPriority(), "Приоритет должен уменьшиться на 1 при правильном ответе");
     }
 
     /**
@@ -360,16 +359,16 @@ public class ScheduledTestsTest {
     public void testUpdateWordPriority_NewWordCorrect() throws SQLException {
         // Проверяем что слова изначально нет в словаре
         Word wordBefore = mockDictionaryService.getWordByEnglish(AUTHORIZED_USER_ID, "resilient");
-        assertNull(wordBefore, "Слова не должно быть в словаре перед тестом");
+        Assertions.assertNull(wordBefore, "Слова не должно быть в словаре перед тестом");
 
         // Обновляем приоритет (правильный ответ для нового слова)
         scheduleTests.updateWordPriority(AUTHORIZED_USER_ID, "resilient", "устойчивый", true, false);
 
         Word newWord = mockDictionaryService.getWordByEnglish(AUTHORIZED_USER_ID, "resilient");
-        assertNotNull(newWord, "Новое слово должно быть добавлено при правильном ответе");
-        assertEquals(3, newWord.getPriority(), "Новое слово должно добавляться с приоритетом 3");
-        assertEquals("resilient", newWord.getEnglishWord(), "Английское слово должно совпадать");
-        assertEquals("устойчивый", newWord.getTranslation(), "Перевод должен совпадать");
+        Assertions.assertNotNull(newWord, "Новое слово должно быть добавлено при правильном ответе");
+        Assertions.assertEquals(3, newWord.getPriority(), "Новое слово должно добавляться с приоритетом 3");
+        Assertions.assertEquals("resilient", newWord.getEnglishWord(), "Английское слово должно совпадать");
+        Assertions.assertEquals("устойчивый", newWord.getTranslation(), "Перевод должен совпадать");
     }
 
     /**
@@ -379,13 +378,13 @@ public class ScheduledTestsTest {
     public void testUpdateWordPriority_NewWordIncorrect() throws SQLException {
         // Проверяем что слова изначально нет в словаре
         Word wordBefore = mockDictionaryService.getWordByEnglish(AUTHORIZED_USER_ID, "resilient");
-        assertNull(wordBefore, "Слова не должно быть в словаре перед тестом");
+        Assertions.assertNull(wordBefore, "Слова не должно быть в словаре перед тестом");
 
         // Обновляем приоритет (неправильный ответ для нового слова)
         scheduleTests.updateWordPriority(AUTHORIZED_USER_ID, "resilient", "устойчивый", false, false);
 
         Word newWord = mockDictionaryService.getWordByEnglish(AUTHORIZED_USER_ID, "resilient");
-        assertNull(newWord, "Новое слово не должно добавляться при неправильном ответе");
+        Assertions.assertNull(newWord, "Новое слово не должно добавляться при неправильном ответе");
     }
 
     /**
@@ -395,8 +394,8 @@ public class ScheduledTestsTest {
     public void testGetWordsWithMaxPriority_EmptyDictionary() {
         List<String[]> priorityWords = scheduleTests.getWordsWithMaxPriority(AUTHORIZED_USER_ID);
 
-        assertNotNull(priorityWords, "Список не должен быть null даже при пустом словаре");
-        assertTrue(priorityWords.isEmpty(), "Список должен быть пустым при отсутствии слов");
+        Assertions.assertNotNull(priorityWords, "Список не должен быть null даже при пустом словаре");
+        Assertions.assertTrue(priorityWords.isEmpty(), "Список должен быть пустым при отсутствии слов");
     }
 
     /**
@@ -406,7 +405,7 @@ public class ScheduledTestsTest {
     public void testHandleButtonClick_UnknownCommand() {
         String result = scheduleTests.handleButtonClick("unknown_button", AUTHORIZED_CHAT_ID);
 
-        assertEquals("❌ Неизвестная команда теста", result,
+        Assertions.assertEquals("❌ Неизвестная команда теста", result,
                 "Должно вернуться сообщение о неизвестной команде");
     }
 
@@ -422,20 +421,20 @@ public class ScheduledTestsTest {
 
         // Проверяем первый вопрос
         String firstQuestion = session.getCurrentQuestion();
-        assertTrue(firstQuestion.contains("Вопрос 1 из 4"), "Должен быть первый вопрос с номером");
-        assertTrue(firstQuestion.contains("persistent"), "Должен содержать английское слово");
+        Assertions.assertTrue(firstQuestion.contains("Вопрос 1 из 4"), "Должен быть первый вопрос с номером");
+        Assertions.assertTrue(firstQuestion.contains("persistent"), "Должен содержать английское слово");
 
         // Проверяем ответ
         boolean isCorrect = session.checkAnswer("B");
-        assertTrue(isCorrect, "Ответ B должен быть правильным для первого вопроса");
+        Assertions.assertTrue(isCorrect, "Ответ B должен быть правильным для первого вопроса");
 
         // Переходим к следующему вопросу
         session.nextQuestion();
         String secondQuestion = session.getCurrentQuestion();
-        assertTrue(secondQuestion.contains("Вопрос 2 из 4"), "Должен быть второй вопрос");
+        Assertions.assertTrue(secondQuestion.contains("Вопрос 2 из 4"), "Должен быть второй вопрос");
 
         // Проверяем что тест еще не завершен
-        assertFalse(session.isTestCompleted(), "Тест не должен быть завершен после 2 вопросов");
+        Assertions.assertFalse(session.isTestCompleted(), "Тест не должен быть завершен после 2 вопросов");
     }
 
     /**
@@ -452,19 +451,19 @@ public class ScheduledTestsTest {
         int totalQuestions = testsData.getQuestions().size();
         for (int i = 0; i < totalQuestions; i++) {
             String question = session.getCurrentQuestion();
-            assertTrue(question.contains("Вопрос " + (i + 1) + " из " + totalQuestions),
+            Assertions.assertTrue(question.contains("Вопрос " + (i + 1) + " из " + totalQuestions),
                     "Должен быть вопрос с правильным номером");
 
             // Отвечаем правильно (все вопросы в тесте имеют правильный ответ "B")
             boolean isCorrect = session.checkAnswer("B");
-            assertTrue(isCorrect, "Ответ B должен быть правильным для вопроса " + (i + 1));
+            Assertions.assertTrue(isCorrect, "Ответ B должен быть правильным для вопроса " + (i + 1));
 
             session.nextQuestion();
         }
 
         // Проверяем что тест завершен
-        assertTrue(session.isTestCompleted(), "Тест должен быть завершен после ответов на все вопросы");
-        assertEquals(totalQuestions, session.getCorrectAnswersCount(),
+        Assertions.assertTrue(session.isTestCompleted(), "Тест должен быть завершен после ответов на все вопросы");
+        Assertions.assertEquals(totalQuestions, session.getCorrectAnswersCount(),
                 "Все ответы должны быть правильными");
     }
 
@@ -479,9 +478,9 @@ public class ScheduledTestsTest {
 
         String result = scheduleTestHandler.startTest(AUTHORIZED_CHAT_ID, testsData, AUTHORIZED_USER_ID);
 
-        assertNotNull(result, "Результат начала теста не должен быть null");
-        assertTrue(result.contains("Вопрос 1 из 4"), "Должен вернуться первый вопрос");
-        assertTrue(result.contains("persistent"), "Должен содержать английское слово из первого вопроса");
+        Assertions.assertNotNull(result, "Результат начала теста не должен быть null");
+        Assertions.assertTrue(result.contains("Вопрос 1 из 4"), "Должен вернуться первый вопрос");
+        Assertions.assertTrue(result.contains("persistent"), "Должен содержать английское слово из первого вопроса");
     }
 
     /**
@@ -498,8 +497,8 @@ public class ScheduledTestsTest {
         // Обрабатываем правильный ответ
         String result = scheduleTestHandler.handleAnswer(AUTHORIZED_CHAT_ID, "B_button");
 
-        assertNotNull(result, "Результат обработки ответа не должен быть null");
-        assertTrue(result.contains("Вопрос 2 из 4"), "Должен вернуться следующий вопрос");
+        Assertions.assertNotNull(result, "Результат обработки ответа не должен быть null");
+        Assertions.assertTrue(result.contains("Вопрос 2 из 4"), "Должен вернуться следующий вопрос");
     }
 
     /**
@@ -516,8 +515,8 @@ public class ScheduledTestsTest {
         // Обрабатываем неправильный ответ (A вместо B)
         String result = scheduleTestHandler.handleAnswer(AUTHORIZED_CHAT_ID, "A_button");
 
-        assertNotNull(result, "Результат обработки ответа не должен быть null");
-        assertTrue(result.contains("Вопрос 2 из 4"), "Должен вернуться следующий вопрос даже при неправильном ответе");
+        Assertions.assertNotNull(result, "Результат обработки ответа не должен быть null");
+        Assertions.assertTrue(result.contains("Вопрос 2 из 4"), "Должен вернуться следующий вопрос даже при неправильном ответе");
     }
 
     /**
@@ -537,10 +536,10 @@ public class ScheduledTestsTest {
             result = scheduleTestHandler.handleAnswer(AUTHORIZED_CHAT_ID, "B_button");
         }
 
-        assertNotNull(result, "Финальный результат не должен быть null");
-        assertTrue(result.contains("🎉 Тест завершен! 🎉"), "Должно содержать сообщение о завершении теста");
-        assertTrue(result.contains("📊 Результаты:"), "Должно содержать результаты теста");
-        assertTrue(result.contains("Всего вопросов: 4"), "Должно содержать информацию о количестве вопросов");
+        Assertions.assertNotNull(result, "Финальный результат не должен быть null");
+        Assertions.assertTrue(result.contains("🎉 Тест завершен! 🎉"), "Должно содержать сообщение о завершении теста");
+        Assertions.assertTrue(result.contains("📊 Результаты:"), "Должно содержать результаты теста");
+        Assertions.assertTrue(result.contains("Всего вопросов: 4"), "Должно содержать информацию о количестве вопросов");
     }
 
     /**
@@ -552,19 +551,19 @@ public class ScheduledTestsTest {
         TestsData testsData = parser.parseTest(TEST_TEXT);
 
         // Перед началом теста
-        assertFalse(scheduleTestHandler.isTestActive(AUTHORIZED_CHAT_ID),
+        Assertions.assertFalse(scheduleTestHandler.isTestActive(AUTHORIZED_CHAT_ID),
                 "Тест не должен быть активен до начала");
 
         // После начала теста
         scheduleTestHandler.startTest(AUTHORIZED_CHAT_ID, testsData, AUTHORIZED_USER_ID);
-        assertTrue(scheduleTestHandler.isTestActive(AUTHORIZED_CHAT_ID),
+        Assertions.assertTrue(scheduleTestHandler.isTestActive(AUTHORIZED_CHAT_ID),
                 "Тест должен быть активен после начала");
 
         // После завершения теста
         for (int i = 0; i < testsData.getQuestions().size(); i++) {
             scheduleTestHandler.handleAnswer(AUTHORIZED_CHAT_ID, "B_button");
         }
-        assertFalse(scheduleTestHandler.isTestActive(AUTHORIZED_CHAT_ID),
+        Assertions.assertFalse(scheduleTestHandler.isTestActive(AUTHORIZED_CHAT_ID),
                 "Тест не должен быть активен после завершения");
     }
 
@@ -581,8 +580,8 @@ public class ScheduledTestsTest {
 
         String question = scheduleTestHandler.getCurrentQuestion(AUTHORIZED_CHAT_ID);
 
-        assertNotNull(question, "Текущий вопрос не должен быть null");
-        assertTrue(question.contains("Вопрос 1 из 4"), "Должен вернуться текущий вопрос с правильным номером");
+        Assertions.assertNotNull(question, "Текущий вопрос не должен быть null");
+        Assertions.assertTrue(question.contains("Вопрос 1 из 4"), "Должен вернуться текущий вопрос с правильным номером");
     }
 
     /**
@@ -592,7 +591,7 @@ public class ScheduledTestsTest {
     public void testScheduleTestHandler_HandleAnswerWithoutActiveTest() {
         String result = scheduleTestHandler.handleAnswer(AUTHORIZED_CHAT_ID, "B_button");
 
-        assertEquals("❌ Тест не активен.", result,
+        Assertions.assertEquals("❌ Тест не активен.", result,
                 "Должно вернуться сообщение об отсутствии активного теста");
     }
 
@@ -607,8 +606,7 @@ public class ScheduledTestsTest {
 
         String result = scheduleTestHandler.startTest(AUTHORIZED_CHAT_ID, emptyTestsData, AUTHORIZED_USER_ID);
 
-        assertEquals("❌ Не удалось загрузить вопросы для теста.", result,
+        Assertions.assertEquals("❌ Не удалось загрузить вопросы для теста.", result,
                 "Должно вернуться сообщение об ошибке при пустых вопросах");
     }
-
 }

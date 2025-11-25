@@ -7,11 +7,10 @@ import org.example.Dictionary.DictionaryService;
 import org.example.Dictionary.Word;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Assertions;
 
 import java.sql.SQLException;
 import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Комплексные тесты для класса Message с мокированием DictionaryService
@@ -182,17 +181,17 @@ public class MessageTest {
         String result = message.getUniqueWordForUser(AUTHORIZED_CHAT_ID);
 
         // Проверяем структуру ответа
-        assertNotNull(result, "Результат не должен быть null");
-        assertTrue(result.contains("🎉 **Новое слово!** 🎉"), "Должен быть заголовок нового слова");
-        assertTrue(result.contains("persistent"), "Должно содержать английское слово");
-        assertTrue(result.contains("настойчивый"), "Должно содержать перевод");
+        Assertions.assertNotNull(result, "Результат не должен быть null");
+        Assertions.assertTrue(result.contains("🎉 **Новое слово!** 🎉"), "Должен быть заголовок нового слова");
+        Assertions.assertTrue(result.contains("persistent"), "Должно содержать английское слово");
+        Assertions.assertTrue(result.contains("настойчивый"), "Должно содержать перевод");
 
         // Проверяем что слово добавилось в словарь
         Word addedWord = mockDictionaryService.getWordByEnglish(AUTHORIZED_USER_ID, "persistent");
-        assertNotNull(addedWord, "Слово должно быть добавлено в словарь");
-        assertEquals(5, addedWord.getPriority(), "Слово должно добавляться с приоритетом 5");
-        assertEquals("persistent", addedWord.getEnglishWord(), "Английское слово должно совпадать");
-        assertEquals("настойчивый", addedWord.getTranslation(), "Перевод должен совпадать");
+        Assertions.assertNotNull(addedWord, "Слово должно быть добавлено в словарь");
+        Assertions.assertEquals(5, addedWord.getPriority(), "Слово должно добавляться с приоритетом 5");
+        Assertions.assertEquals("persistent", addedWord.getEnglishWord(), "Английское слово должно совпадать");
+        Assertions.assertEquals("настойчивый", addedWord.getTranslation(), "Перевод должен совпадать");
     }
 
     /**
@@ -208,11 +207,11 @@ public class MessageTest {
         String result = message.handleWordButtonClick("know_button", AUTHORIZED_CHAT_ID);
 
         String expectedStart = "✅Здорово!";
-        assertEquals(expectedStart, result.substring(0, expectedStart.length()));
+        Assertions.assertEquals(expectedStart, result.substring(0, expectedStart.length()));
 
         // Проверяем что приоритет обновился
         Word updatedWord = mockDictionaryService.getWordByEnglish(AUTHORIZED_USER_ID, "persistent");
-        assertEquals(2, updatedWord.getPriority(), "Приоритет должен уменьшиться до 2 после нажатия 'Знаю'");
+        Assertions.assertEquals(2, updatedWord.getPriority(), "Приоритет должен уменьшиться до 2 после нажатия 'Знаю'");
     }
 
     /**
@@ -229,11 +228,11 @@ public class MessageTest {
 
         String expectedMessage = "✅ Слово уже добавлено в словарь для изучения!\n" +
                 "Посмотрите все слова в словаре или изучайте еще...";
-        assertEquals(expectedMessage, result);
+        Assertions.assertEquals(expectedMessage, result);
 
         // Проверяем что приоритет остался 5
         Word word = mockDictionaryService.getWordByEnglish(AUTHORIZED_USER_ID, "persistent");
-        assertEquals(5, word.getPriority(), "Приоритет должен остаться 5 после нажатия 'Изучаю'");
+        Assertions.assertEquals(5, word.getPriority(), "Приоритет должен остаться 5 после нажатия 'Изучаю'");
     }
 
     /**
@@ -245,7 +244,7 @@ public class MessageTest {
         String result = message.getUniqueWordForUser(UNAUTHORIZED_CHAT_ID);
 
         String expectedMessage = "❌ Ошибка при проверке словаря. Попробуйте позже.";
-        assertEquals(expectedMessage, result);
+        Assertions.assertEquals(expectedMessage, result);
     }
 
     /**
@@ -257,7 +256,7 @@ public class MessageTest {
         String result = message.handleWordButtonClick("know_button", AUTHORIZED_CHAT_ID);
 
         String expectedMessage = "❌ Нет активного слова для обработки. Сначала получите слово через /word";
-        assertEquals(expectedMessage, result);
+        Assertions.assertEquals(expectedMessage, result);
     }
 
     /**
@@ -276,16 +275,16 @@ public class MessageTest {
         String result = message.handleWordButtonClick("more_word_button", AUTHORIZED_CHAT_ID);
 
         String expectedStart = "🎉 **Новое слово!** 🎉";
-        assertEquals(expectedStart, result.substring(0, expectedStart.length()));
+        Assertions.assertEquals(expectedStart, result.substring(0, expectedStart.length()));
 
         // Проверяем что добавилось новое слово
         int wordsAfter = mockDictionaryService.getAllWords(AUTHORIZED_USER_ID).size();
-        assertEquals(wordsBefore + 1, wordsAfter, "Должно добавиться новое слово");
+        Assertions.assertEquals(wordsBefore + 1, wordsAfter, "Должно добавиться новое слово");
 
         // Проверяем что второе слово другое
         Word secondWord = mockDictionaryService.getWordByEnglish(AUTHORIZED_USER_ID, "resilient");
-        assertNotNull(secondWord, "Второе слово должно быть добавлено в словарь");
-        assertEquals("resilient", secondWord.getEnglishWord(), "Второе слово должно быть другим");
+        Assertions.assertNotNull(secondWord, "Второе слово должно быть добавлено в словарь");
+        Assertions.assertEquals("resilient", secondWord.getEnglishWord(), "Второе слово должно быть другим");
     }
 
     /**
@@ -300,7 +299,7 @@ public class MessageTest {
         String result = message.handleWordButtonClick("unknown_button", AUTHORIZED_CHAT_ID);
 
         String expectedMessage = "❌ Неизвестная команда кнопки";
-        assertEquals(expectedMessage, result);
+        Assertions.assertEquals(expectedMessage, result);
     }
 
     /**
@@ -313,13 +312,13 @@ public class MessageTest {
         message.getUniqueWordForUser(AUTHORIZED_CHAT_ID);
 
         Word wordBefore = mockDictionaryService.getWordByEnglish(AUTHORIZED_USER_ID, "persistent");
-        assertEquals(5, wordBefore.getPriority(), "Слово должно добавляться с приоритетом 5");
+        Assertions.assertEquals(5, wordBefore.getPriority(), "Слово должно добавляться с приоритетом 5");
 
         // Нажимаем "Знаю" - приоритет должен уменьшиться до 2
         message.handleWordButtonClick("know_button", AUTHORIZED_CHAT_ID);
 
         Word wordAfter = mockDictionaryService.getWordByEnglish(AUTHORIZED_USER_ID, "persistent");
-        assertEquals(2, wordAfter.getPriority(), "Приоритет должен уменьшиться до 2 после нажатия 'Знаю'");
+        Assertions.assertEquals(2, wordAfter.getPriority(), "Приоритет должен уменьшиться до 2 после нажатия 'Знаю'");
     }
 
     /**
@@ -329,13 +328,13 @@ public class MessageTest {
     public void testGetUniqueWordForUser_WordIsUnique() throws SQLException {
         // Проверяем что словаря изначально пуст
         List<Word> wordsBefore = mockDictionaryService.getAllWords(AUTHORIZED_USER_ID);
-        assertTrue(wordsBefore.isEmpty(), "Словарь должен быть пуст перед тестом");
+        Assertions.assertTrue(wordsBefore.isEmpty(), "Словарь должен быть пуст перед тестом");
 
         String result = message.getUniqueWordForUser(AUTHORIZED_CHAT_ID);
 
         // Проверяем что слово добавилось
         List<Word> wordsAfter = mockDictionaryService.getAllWords(AUTHORIZED_USER_ID);
-        assertFalse(wordsAfter.isEmpty(), "Уникальное слово должно быть добавлено в словарь");
-        assertEquals(1, wordsAfter.size(), "Должно быть добавлено ровно одно слово");
+        Assertions.assertFalse(wordsAfter.isEmpty(), "Уникальное слово должно быть добавлено в словарь");
+        Assertions.assertEquals(1, wordsAfter.size(), "Должно быть добавлено ровно одно слово");
     }
 }

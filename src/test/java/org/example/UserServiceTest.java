@@ -3,10 +3,9 @@ package org.example;
 import org.example.Interface.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Тесты для UserService
@@ -28,15 +27,15 @@ public class UserServiceTest {
         long testUserId = 12345L;
 
         // Проверяем что пользователь изначально не заблокирован
-        assertFalse(userService.isUserBlocked(testUserId));
+        Assertions.assertFalse(userService.isUserBlocked(testUserId));
 
         // Блокируем пользователя
         userService.blockUser(testUserId);
-        assertTrue(userService.isUserBlocked(testUserId));
+        Assertions.assertTrue(userService.isUserBlocked(testUserId));
 
         // Разблокируем пользователя
         userService.unblockUser(testUserId);
-        assertFalse(userService.isUserBlocked(testUserId));
+        Assertions.assertFalse(userService.isUserBlocked(testUserId));
     }
 
     /**
@@ -48,15 +47,15 @@ public class UserServiceTest {
 
         // Проверяем названия блокировки
         userService.freezeUser(testUserId);
-        assertTrue(userService.isUserBlocked(testUserId));
-        assertTrue(userService.isUserBusy(testUserId));
-        assertTrue(userService.isUserFrozen(testUserId));
+        Assertions.assertTrue(userService.isUserBlocked(testUserId));
+        Assertions.assertTrue(userService.isUserBusy(testUserId));
+        Assertions.assertTrue(userService.isUserFrozen(testUserId));
 
         // Проверяем названия разблокировки
         userService.unfreezeUser(testUserId);
-        assertFalse(userService.isUserBlocked(testUserId));
-        assertFalse(userService.isUserBusy(testUserId));
-        assertFalse(userService.isUserFrozen(testUserId));
+        Assertions.assertFalse(userService.isUserBlocked(testUserId));
+        Assertions.assertFalse(userService.isUserBusy(testUserId));
+        Assertions.assertFalse(userService.isUserFrozen(testUserId));
     }
 
     /**
@@ -70,17 +69,17 @@ public class UserServiceTest {
         userService.blockUser(333L);
 
         // Проверяем что все заблокированы
-        assertTrue(userService.isUserBlocked(111L));
-        assertTrue(userService.isUserBlocked(222L));
-        assertTrue(userService.isUserBlocked(333L));
+        Assertions.assertTrue(userService.isUserBlocked(111L));
+        Assertions.assertTrue(userService.isUserBlocked(222L));
+        Assertions.assertTrue(userService.isUserBlocked(333L));
 
         // Разблокируем всех
         userService.unfreezeAllUsers();
 
         // Проверяем что все разблокированы
-        assertFalse(userService.isUserBlocked(111L));
-        assertFalse(userService.isUserBlocked(222L));
-        assertFalse(userService.isUserBlocked(333L));
+        Assertions.assertFalse(userService.isUserBlocked(111L));
+        Assertions.assertFalse(userService.isUserBlocked(222L));
+        Assertions.assertFalse(userService.isUserBlocked(333L));
     }
 
     /**
@@ -91,8 +90,8 @@ public class UserServiceTest {
         long testUserId = 99999L;
 
         // Эти методы просто логируют, проверяем что не падают
-        assertDoesNotThrow(() -> userService.addUser(testUserId));
-        assertDoesNotThrow(() -> userService.updateUserActivity(testUserId));
+        Assertions.assertDoesNotThrow(() -> userService.addUser(testUserId));
+        Assertions.assertDoesNotThrow(() -> userService.updateUserActivity(testUserId));
     }
 
     /**
@@ -101,7 +100,7 @@ public class UserServiceTest {
     @Test
     public void testCleanupInactiveUsers() {
         // Метод просто логирует, проверяем что не падает
-        assertDoesNotThrow(() -> userService.cleanupInactiveUsers());
+        Assertions.assertDoesNotThrow(() -> userService.cleanupInactiveUsers());
     }
 
     /**
@@ -111,10 +110,10 @@ public class UserServiceTest {
     public void testGetPlatformType() {
         // Тестируем базовое поведение
         String platformType = userService.getPlatformType(123L);
-        assertNotNull(platformType);
+        Assertions.assertNotNull(platformType);
 
         // Должен вернуть один из ожидаемых типов
-        assertTrue(platformType.equals("telegram") ||
+        Assertions.assertTrue(platformType.equals("telegram") ||
                 platformType.equals("discord") ||
                 platformType.equals("unknown"));
     }
@@ -128,11 +127,11 @@ public class UserServiceTest {
         Exception testException = new Exception("test error message");
 
         // Проверяем что метод не падает при различных ошибках
-        assertDoesNotThrow(() -> userService.handleSendError(testUserId, testException));
+        Assertions.assertDoesNotThrow(() -> userService.handleSendError(testUserId, testException));
 
         // Тест с ошибкой "не найден"
         Exception notFoundException = new Exception("не найден");
-        assertDoesNotThrow(() -> userService.handleSendError(testUserId, notFoundException));
+        Assertions.assertDoesNotThrow(() -> userService.handleSendError(testUserId, notFoundException));
 
         // Тест с null исключением - проверяем что не падает с NPE
         try {
@@ -150,7 +149,7 @@ public class UserServiceTest {
         Set<Long> activeUsers = userService.getActiveUsers();
 
         // Должен вернуть не-null множество
-        assertNotNull(activeUsers);
+        Assertions.assertNotNull(activeUsers);
         // Может быть пустым или содержать пользователей в зависимости от состояния системы
     }
 
@@ -161,7 +160,7 @@ public class UserServiceTest {
     public void testGetActiveTelegramUsers() {
         Set<Long> telegramUsers = userService.getActiveTelegramUsers();
 
-        assertNotNull(telegramUsers);
+        Assertions.assertNotNull(telegramUsers);
         // Должен вернуть множество (может быть пустым)
     }
 
@@ -172,7 +171,7 @@ public class UserServiceTest {
     public void testGetActiveDiscordUsers() {
         Set<Long> discordUsers = userService.getActiveDiscordUsers();
 
-        assertNotNull(discordUsers);
+        Assertions.assertNotNull(discordUsers);
         // Должен вернуть множество (может быть пустым)
     }
 
@@ -186,10 +185,10 @@ public class UserServiceTest {
         // Многократная блокировка/разблокировка
         for (int i = 0; i < 10; i++) {
             userService.blockUser(testUserId);
-            assertTrue(userService.isUserBlocked(testUserId));
+            Assertions.assertTrue(userService.isUserBlocked(testUserId));
 
             userService.unblockUser(testUserId);
-            assertFalse(userService.isUserBlocked(testUserId));
+            Assertions.assertFalse(userService.isUserBlocked(testUserId));
         }
     }
 
@@ -199,12 +198,12 @@ public class UserServiceTest {
     @Test
     public void testEdgeCases() {
         // Тест с нулевым ID
-        assertDoesNotThrow(() -> userService.isUserBlocked(0L));
+        Assertions.assertDoesNotThrow(() -> userService.isUserBlocked(0L));
 
         // Тест с отрицательным ID
-        assertDoesNotThrow(() -> userService.isUserBlocked(-1L));
+        Assertions.assertDoesNotThrow(() -> userService.isUserBlocked(-1L));
 
         // Тест с максимальным long значением
-        assertDoesNotThrow(() -> userService.isUserBlocked(Long.MAX_VALUE));
+        Assertions.assertDoesNotThrow(() -> userService.isUserBlocked(Long.MAX_VALUE));
     }
 }

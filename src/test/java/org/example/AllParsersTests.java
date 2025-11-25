@@ -7,8 +7,7 @@ import org.example.ScheduledOldWord.OldWordParser;
 import org.example.ScheduledTests.TestsData;
 import org.example.ScheduledTests.TestsParser;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Assertions;
 
 /**
  * AllParsersTests - тестирует все парсеры в системе
@@ -38,14 +37,14 @@ public class AllParsersTests {
 
         WordData result = parser.parseWord(input);
 
-        assertEquals("accomplishment", result.getWord(), "Английское слово должно совпадать");
-        assertEquals("достижение", result.getTranslation(), "Перевод должен совпадать");
-        assertEquals("B2", result.getLevel(), "Уровень должен совпадать");
-        assertEquals("noun", result.getPartOfSpeech(), "Часть речи должна совпадать");
-        assertEquals("Finishing the project was a great accomplishment", result.getExample(), "Пример должен совпадать");
-        assertEquals("Завершение проекта было большим достижением", result.getExampleTranslation(), "Перевод примера должен совпадать");
-        assertEquals(3, result.getRelatedWords().size(), "Должно быть 3 связанных слова");
-        assertEquals("work & career", result.getTopic(), "Тема должна совпадать");
+        Assertions.assertEquals("accomplishment", result.getWord(), "Английское слово должно совпадать");
+        Assertions.assertEquals("достижение", result.getTranslation(), "Перевод должен совпадать");
+        Assertions.assertEquals("B2", result.getLevel(), "Уровень должен совпадать");
+        Assertions.assertEquals("noun", result.getPartOfSpeech(), "Часть речи должна совпадать");
+        Assertions.assertEquals("Finishing the project was a great accomplishment", result.getExample(), "Пример должен совпадать");
+        Assertions.assertEquals("Завершение проекта было большим достижением", result.getExampleTranslation(), "Перевод примера должен совпадать");
+        Assertions.assertEquals(3, result.getRelatedWords().size(), "Должно быть 3 связанных слова");
+        Assertions.assertEquals("work & career", result.getTopic(), "Тема должна совпадать");
     }
 
     /**
@@ -62,7 +61,7 @@ public class AllParsersTests {
 
         WordData result = parser.parseWord(input);
 
-        assertNull(result, "Результат должен быть null при отсутствии обязательных полей");
+        Assertions.assertNull(result, "Результат должен быть null при отсутствии обязательных полей");
     }
 
     /**
@@ -75,7 +74,7 @@ public class AllParsersTests {
 
         WordData result = parser.parseWord("");
 
-        assertNull(result, "Результат должен быть null для пустого ввода");
+        Assertions.assertNull(result, "Результат должен быть null для пустого ввода");
     }
 
     /**
@@ -96,8 +95,8 @@ public class AllParsersTests {
 
         WordData result = parser.parseWord(input);
 
-        assertEquals("test", result.getWord(), "Английское слово должно совпадать");
-        assertEquals(0, result.getRelatedWords().size(), "Список связанных слов должен быть пустым");
+        Assertions.assertEquals("test", result.getWord(), "Английское слово должно совпадать");
+        Assertions.assertEquals(0, result.getRelatedWords().size(), "Список связанных слов должен быть пустым");
     }
 
     /**
@@ -118,10 +117,10 @@ public class AllParsersTests {
 
         OldWordData result = parser.parseTest(testText, "accomplishment", "достижение");
 
-        assertNotNull(result, "Результат не должен быть null");
-        assertEquals("accomplishment", result.getEnglishWord(), "Английское слово должно совпадать");
-        assertEquals("достижение", result.getTranslation(), "Перевод должен совпадать");
-        assertEquals("B", result.getCorrectAnswer(), "Правильный ответ должен быть 'B'");
+        Assertions.assertNotNull(result, "Результат не должен быть null");
+        Assertions.assertEquals("accomplishment", result.getEnglishWord(), "Английское слово должно совпадать");
+        Assertions.assertEquals("достижение", result.getTranslation(), "Перевод должен совпадать");
+        Assertions.assertEquals("B", result.getCorrectAnswer(), "Правильный ответ должен быть 'B'");
     }
 
     /**
@@ -140,11 +139,11 @@ public class AllParsersTests {
                 "D) obstacle";
 
         // Ожидаем исключение с конкретным сообщением
-        Exception exception = assertThrows(RuntimeException.class, () -> {
+        Exception exception = Assertions.assertThrows(RuntimeException.class, () -> {
             parser.parseTest(testText, "accomplishment", "достижение");
         });
 
-        assertTrue(exception.getMessage().contains("некорректный формат") ||
+        Assertions.assertTrue(exception.getMessage().contains("некорректный формат") ||
                         exception.getCause().getMessage().contains("некорректный формат"),
                 "Должно содержать сообщение о некорректном формате");
     }
@@ -164,10 +163,10 @@ public class AllParsersTests {
 
         OldWordData result = parser.parseTest(testText, "test", "тест");
 
-        assertNotNull(result, "Результат не должен быть null");
-        assertEquals("test", result.getEnglishWord(), "Английское слово должно совпадать");
-        assertEquals("тест", result.getTranslation(), "Перевод должен совпадать");
-        assertEquals("A", result.getCorrectAnswer(), "Правильный ответ должен быть 'A'");
+        Assertions.assertNotNull(result, "Результат не должен быть null");
+        Assertions.assertEquals("test", result.getEnglishWord(), "Английское слово должно совпадать");
+        Assertions.assertEquals("тест", result.getTranslation(), "Перевод должен совпадать");
+        Assertions.assertEquals("A", result.getCorrectAnswer(), "Правильный ответ должен быть 'A'");
     }
 
     /**
@@ -186,10 +185,10 @@ public class AllParsersTests {
 
         OldWordData result = parser.parseTest(testText, "resilient", "устойчивый");
 
-        assertNotNull(result, "Результат не должен быть null");
-        assertEquals("resilient", result.getEnglishWord(), "Английское слово должно совпадать");
-        assertEquals("устойчивый", result.getTranslation(), "Перевод должен совпадать");
-        assertEquals("B", result.getCorrectAnswer(), "Правильный ответ должен быть 'B'");
+        Assertions.assertNotNull(result, "Результат не должен быть null");
+        Assertions.assertEquals("resilient", result.getEnglishWord(), "Английское слово должно совпадать");
+        Assertions.assertEquals("устойчивый", result.getTranslation(), "Перевод должен совпадать");
+        Assertions.assertEquals("B", result.getCorrectAnswer(), "Правильный ответ должен быть 'B'");
     }
 
     /**
@@ -208,10 +207,10 @@ public class AllParsersTests {
         OldWordData result = parser.parseTest(testText, "test", "тест");
 
         // Если парсер принимает любой формат, проверяем что данные корректны
-        assertNotNull(result, "Результат не должен быть null");
-        assertEquals("test", result.getEnglishWord(), "Английское слово должно совпадать");
-        assertEquals("тест", result.getTranslation(), "Перевод должен совпадать");
-        assertEquals("НЕПРАВИЛЬНЫЙ_ФОРМАТ", result.getCorrectAnswer(), "Должен сохранить ответ как есть");
+        Assertions.assertNotNull(result, "Результат не должен быть null");
+        Assertions.assertEquals("test", result.getEnglishWord(), "Английское слово должно совпадать");
+        Assertions.assertEquals("тест", result.getTranslation(), "Перевод должен совпадать");
+        Assertions.assertEquals("НЕПРАВИЛЬНЫЙ_ФОРМАТ", result.getCorrectAnswer(), "Должен сохранить ответ как есть");
     }
 
     /**
@@ -234,13 +233,13 @@ public class AllParsersTests {
 
         TestsData result = parser.parseTest(testText);
 
-        assertEquals(1, result.getQuestions().size(), "Должен быть распарсен 1 вопрос");
+        Assertions.assertEquals(1, result.getQuestions().size(), "Должен быть распарсен 1 вопрос");
 
         TestsData.QuestionData question = result.getQuestions().get(0);
-        assertEquals("accomplishment", question.getEnglishWord(), "Английское слово должно совпадать");
-        assertEquals("достижение", question.getTranslation(), "Перевод должен совпадать");
-        assertEquals("B", question.getCorrectAnswer(), "Правильный ответ должен быть 'B'");
-        assertEquals("ПРИОРИТЕТНОЕ", question.getWordType(), "Тип слова должен быть 'ПРИОРИТЕТНОЕ'");
+        Assertions.assertEquals("accomplishment", question.getEnglishWord(), "Английское слово должно совпадать");
+        Assertions.assertEquals("достижение", question.getTranslation(), "Перевод должен совпадать");
+        Assertions.assertEquals("B", question.getCorrectAnswer(), "Правильный ответ должен быть 'B'");
+        Assertions.assertEquals("ПРИОРИТЕТНОЕ", question.getWordType(), "Тип слова должен быть 'ПРИОРИТЕТНОЕ'");
     }
 
     /**
@@ -272,17 +271,17 @@ public class AllParsersTests {
 
         TestsData result = parser.parseTest(testText);
 
-        assertEquals(2, result.getQuestions().size(), "Должно быть распарсено 2 вопроса");
+        Assertions.assertEquals(2, result.getQuestions().size(), "Должно быть распарсено 2 вопроса");
 
         TestsData.QuestionData firstQuestion = result.getQuestions().get(0);
-        assertEquals("stable", firstQuestion.getEnglishWord(), "Английское слово первого вопроса должно совпадать");
-        assertEquals("устойчивый", firstQuestion.getTranslation(), "Перевод первого вопроса должен совпадать");
-        assertEquals("НОВОЕ", firstQuestion.getWordType(), "Тип первого вопроса должен быть 'НОВОЕ'");
+        Assertions.assertEquals("stable", firstQuestion.getEnglishWord(), "Английское слово первого вопроса должно совпадать");
+        Assertions.assertEquals("устойчивый", firstQuestion.getTranslation(), "Перевод первого вопроса должен совпадать");
+        Assertions.assertEquals("НОВОЕ", firstQuestion.getWordType(), "Тип первого вопроса должен быть 'НОВОЕ'");
 
         TestsData.QuestionData secondQuestion = result.getQuestions().get(1);
-        assertEquals("beginning", secondQuestion.getEnglishWord(), "Английское слово второго вопроса должно совпадать");
-        assertEquals("начало", secondQuestion.getTranslation(), "Перевод второго вопроса должен совпадать");
-        assertEquals("ПРИОРИТЕТНОЕ", secondQuestion.getWordType(), "Тип второго вопроса должен быть 'ПРИОРИТЕТНОЕ'");
+        Assertions.assertEquals("beginning", secondQuestion.getEnglishWord(), "Английское слово второго вопроса должно совпадать");
+        Assertions.assertEquals("начало", secondQuestion.getTranslation(), "Перевод второго вопроса должен совпадать");
+        Assertions.assertEquals("ПРИОРИТЕТНОЕ", secondQuestion.getWordType(), "Тип второго вопроса должен быть 'ПРИОРИТЕТНОЕ'");
     }
 
     /**
@@ -301,7 +300,7 @@ public class AllParsersTests {
 
         TestsData result = parser.parseTest(testText);
 
-        assertEquals(0, result.getQuestions().size(), "Неполные вопросы должны быть пропущены");
+        Assertions.assertEquals(0, result.getQuestions().size(), "Неполные вопросы должны быть пропущены");
     }
 
     /**
@@ -316,7 +315,7 @@ public class AllParsersTests {
 
         TestsData result = parser.parseTest(testText);
 
-        assertEquals(0, result.getQuestions().size(), "Для пустого ввода не должно быть вопросов");
+        Assertions.assertEquals(0, result.getQuestions().size(), "Для пустого ввода не должно быть вопросов");
     }
 
     /**
@@ -339,12 +338,12 @@ public class AllParsersTests {
 
         TestsData result = parser.parseTest(testText);
 
-        assertEquals(1, result.getQuestions().size(), "Должен быть распарсен 1 вопрос");
+        Assertions.assertEquals(1, result.getQuestions().size(), "Должен быть распарсен 1 вопрос");
 
         TestsData.QuestionData question = result.getQuestions().get(0);
-        assertEquals("alternative", question.getEnglishWord(), "Английское слово должно совпадать");
-        assertEquals("альтернатива", question.getTranslation(), "Перевод должен совпадать");
-        assertEquals("C", question.getCorrectAnswer(), "Правильный ответ должен быть 'C'");
+        Assertions.assertEquals("alternative", question.getEnglishWord(), "Английское слово должно совпадать");
+        Assertions.assertEquals("альтернатива", question.getTranslation(), "Перевод должен совпадать");
+        Assertions.assertEquals("C", question.getCorrectAnswer(), "Правильный ответ должен быть 'C'");
     }
 
     /**
@@ -364,7 +363,7 @@ public class AllParsersTests {
         TestsData result = parser.parseTest(testText);
 
         // В зависимости от реализации парсера - либо 0 вопросов, либо вопрос с типом по умолчанию
-        assertNotNull(result, "Результат не должен быть null");
+        Assertions.assertNotNull(result, "Результат не должен быть null");
     }
 
     /**
@@ -386,11 +385,11 @@ public class AllParsersTests {
 
         TestsData result = parser.parseTest(testText);
 
-        assertEquals(1, result.getQuestions().size(), "Должен быть распарсен 1 вопрос");
+        Assertions.assertEquals(1, result.getQuestions().size(), "Должен быть распарсен 1 вопрос");
 
         TestsData.QuestionData question = result.getQuestions().get(0);
-        assertEquals("various", question.getEnglishWord(), "Английское слово должно совпадать");
-        assertEquals("различный", question.getTranslation(), "Перевод должен совпадать");
-        assertEquals("D", question.getCorrectAnswer(), "Правильный ответ должен быть 'D'");
+        Assertions.assertEquals("various", question.getEnglishWord(), "Английское слово должно совпадать");
+        Assertions.assertEquals("различный", question.getTranslation(), "Перевод должен совпадать");
+        Assertions.assertEquals("D", question.getCorrectAnswer(), "Правильный ответ должен быть 'D'");
     }
 }
