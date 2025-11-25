@@ -1,7 +1,9 @@
-package org.example;
+package org.example.Bots;
 
+import org.example.BotLogic;
 import org.example.Data.BotResponse;
-import org.example.Data.KeyboardService;
+import org.example.Interface.DistributionService;
+import org.example.Interface.UniversalDistributionService;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -18,25 +20,46 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Bot.java - основной класс бота, реализующий интерфейс для получения обновлений
- * Формирует текстовые (в боковом меню) команды и кнопки
+ * TelegramBot - основной класс бота для Telegram
  */
 public class TelegramBot extends TelegramLongPollingBot  {
 
     private final String botUsername;
     private final BotLogic botLogic;
-    private final KeyboardService keyboardService;
-
     private final Map<String, InlineKeyboardMarkup> keyboardCache = new HashMap<>();
+    private final DistributionService wordDistribution;
+    private final DistributionService testDistribution;
+    private final DistributionService oldWordDistribution;
 
     public TelegramBot(String botToken, String botUsername) {
-        super(botToken); //супер вызывает конструктор родительского класс лонгполинг (выше)
+        super(botToken);
         this.botUsername = botUsername;
         this.botLogic = new BotLogic();
-        this.keyboardService = new KeyboardService();
+
+        this.wordDistribution = new UniversalDistributionService(
+                botLogic,
+                this::sendMessage,
+                "ежедневные слова",
+                "telegram"
+        );
+
+        this.testDistribution = new UniversalDistributionService(
+                botLogic,
+                this::sendMessage,
+                "отложенные тесты",
+                "telegram"
+        );
+
+        this.oldWordDistribution = new UniversalDistributionService(
+                botLogic,
+                this::sendMessage,
+                "старое слово",
+                "telegram"
+        );
+
         registerBotCommands();
         initializeKeyboards();
-
+        startDistributions();
     }
 
     @Override
@@ -46,33 +69,28 @@ public class TelegramBot extends TelegramLongPollingBot  {
 
     /**
      * хранит команды для бокового меню
-     * @return список команд бота для бокового меню
      */
     public List<BotCommand> getBotCommands() {
         List<BotCommand> commands = new ArrayList<>();
-
-        // добавление команд (без символа '/', так как это формальный признак команды для бота)
         commands.add(new BotCommand("start", "начать работу с ботом"));
+        commands.add(new BotCommand("start_test", "начальный тест на уровень знаний"));
         commands.add(new BotCommand("help", "справка по командам"));
         commands.add(new BotCommand("speed_test", "тест на скорость"));
+        commands.add(new BotCommand("my_profile", "мой профиль"));
         commands.add(new BotCommand("dictionary", "ваш словарь"));
-
-
-        System.out.println("команды зарегестрированы в боковом меню");
+        commands.add(new BotCommand("word", "отложенные сообщения"));
+        commands.add(new BotCommand("scheduled_test", "отложенный тест по словам"));
+        commands.add(new BotCommand("old_word", "Забытое слово"));
         return commands;
     }
 
-    //registerBotCommands - формирует из списка метода getBotCommands и вызывает в команды
     public void registerBotCommands() {
         try {
-            //список команд из класса для хранения кнопок и команд
             List<BotCommand> commands = getBotCommands();
-
             execute(SetMyCommands.builder()
                     .commands(commands)
                     .scope(new BotCommandScopeDefault())
                     .build());
-
             System.out.println("Команды зарегистрированы в боковом меню");
         } catch (TelegramApiException e) {
             System.err.println("Ошибка регистрации команд: " + e.getMessage());
@@ -80,8 +98,33 @@ public class TelegramBot extends TelegramLongPollingBot  {
     }
 
     /**
-     * создание наборов кнопок из map словарей
-     * @return готовый набор уже сформированных кнопок для сообщения
+     * Запускает все рассылки, с параметрами задержек
+     */
+    private void startDistributions() {
+        wordDistribution.startDistribution(100, 5 * 60);
+        testDistribution.startDistribution(150, 3 * 60);
+        oldWordDistribution.startDistribution(60, 60);
+        System.out.println("Все рассылки TelegramBot запущены");
+    }
+
+    /**
+     * Универсальный метод отправки сообщения
+     * @param response данные сообщения
+     * @return true если отправка успешна
+     */
+    private boolean sendMessage(BotResponse response) {
+        try {
+            SendMessage message = createMessage(response);
+            execute(message);
+            return true;
+        } catch (TelegramApiException e) {
+            System.err.println("Ошибка отправки сообщения в Telegram: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * создание набора кнопок
      */
     private InlineKeyboardMarkup createKeyboardFromMap(Map<String, String> buttonConfigs, int buttonsPerRow) {
         List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
@@ -114,40 +157,40 @@ public class TelegramBot extends TelegramLongPollingBot  {
     public void onUpdateReceived(Update update) {
         try {
             BotResponse response = null;
+            long chatId;
 
             if (update.hasCallbackQuery()) {
                 String callbackData = update.getCallbackQuery().getData();
-                long chatId = update.getCallbackQuery().getMessage().getChatId();
+                chatId = update.getCallbackQuery().getMessage().getChatId();
                 response = botLogic.processCallback(callbackData, chatId);
             } else if (update.hasMessage() && update.getMessage().hasText()) {
                 String messageText = update.getMessage().getText();
-                long chatId = update.getMessage().getChatId();
+                chatId = update.getMessage().getChatId();
                 response = botLogic.processMessage(messageText, chatId);
             }
 
             if (response != null && response.isValid()) {
-                SendMessage message = createMessage(response);
-                execute(message);
+                sendMessage(response);
             }
-        } catch (TelegramApiException e) {
+        } catch (Exception e) {
             System.err.println("Ошибка Telegram API: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-
     /**
      * создание сообщения с кнопками
-     * @return cooбщение для отправки
      */
     private SendMessage createMessage(BotResponse response) {
         SendMessage message = SendMessage.builder()
                 .chatId(String.valueOf(response.getChatId()))
                 .text(response.getText())
+                //.parseMode("Markdown")
                 .build();
 
         if (response.hasKeyboard() && keyboardCache.containsKey(response.getKeyboardType())) {
             message.setReplyMarkup(keyboardCache.get(response.getKeyboardType()));
+            System.out.println("⌨️ Добавлена клавиатура: " + response.getKeyboardType());
         }
 
         return message;
@@ -177,8 +220,34 @@ public class TelegramBot extends TelegramLongPollingBot  {
                 botLogic.getKeyboardService().getDictionaryFinalButton(), 2));
         keyboardCache.put("main", createKeyboardFromMap(
                 botLogic.getKeyboardService().getMainButtonCallBack(),1));
+        keyboardCache.put("sing_in_main", createKeyboardFromMap(
+                botLogic.getKeyboardService().getSingInMain(), 2));
+        keyboardCache.put("sing_in_end", createKeyboardFromMap(
+                botLogic.getKeyboardService().getSingInEnd(),2));
+        keyboardCache.put("login_error", createKeyboardFromMap(
+                botLogic.getKeyboardService().getLoginError(),2));
+        keyboardCache.put("my_profile", createKeyboardFromMap(
+                botLogic.getKeyboardService().getMyProfile(), 3));
+        keyboardCache.put("login_password_edit_end", createKeyboardFromMap(
+                botLogic.getKeyboardService().getLoginPasswordEditEnd(), 2));
+        keyboardCache.put("log_out_confirm", createKeyboardFromMap(
+                botLogic.getKeyboardService().getLogOutConfirmation(), 2));
+        keyboardCache.put("schedule_message", createKeyboardFromMap(
+                botLogic.getKeyboardService().getScheduleMessage(), 2));
+        keyboardCache.put("schedule_message_final", createKeyboardFromMap(
+                botLogic.getKeyboardService().getScheduleMessageFinal(), 2));
+        keyboardCache.put("schedule_test", createKeyboardFromMap(
+                botLogic.getKeyboardService().getScheduleTestYesOrNo(),2));
         System.out.println("Клавиатуры инициализированы");
     }
 
-
+    /**
+     * Остановка рассылок
+     */
+    public void shutdown() {
+        wordDistribution.stopDistribution();
+        testDistribution.stopDistribution();
+        oldWordDistribution.stopDistribution();
+        System.out.println("Все рассылки TelegramBot остановлены");
+    }
 }

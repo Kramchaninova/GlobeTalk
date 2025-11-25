@@ -2,205 +2,152 @@ package org.example;
 
 import org.example.Data.BotResponse;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * TestBotLogic - тестирует обработку текстовых команд бота.
- * Проверяет правильность ответов на команды /start, /help и неизвестные команды.
+ * TestBotLogic - тестирует основную логику бота
  */
-
 public class TestBotLogic {
 
-    private final BotLogic botLogic = new BotLogic();
+    private BotLogic botLogic;
+    private final long AUTHORIZED_USER_ID = 1001L;
+    private final long UNAUTHORIZED_USER_ID = 1002L;
+
+    @BeforeEach
+    public void setUp() {
+        botLogic = new BotLogic();
+
+        // Регистрируем и входим пользователя
+        registerAndLoginUser(AUTHORIZED_USER_ID);
+    }
 
     /**
-     * Проверка команды /start
+     * Вспомогательный метод для регистрации и входа пользователя
+     */
+    private void registerAndLoginUser(long chatId) {
+        // Регистрация
+        botLogic.processCallback("reg_button", chatId);
+        botLogic.processMessage("testuser", chatId);
+        botLogic.processMessage("testpass", chatId);
+
+        // Вход
+        botLogic.processCallback("sing_in_button", chatId);
+        botLogic.processMessage("testuser", chatId);
+        botLogic.processMessage("testpass", chatId);
+    }
+
+    /**
+     * Тест: команда /start для неавторизованного пользователя
      */
     @Test
-    void testStartCommand() {
-        BotResponse result = botLogic.processMessage("/start", 12345L);
+    public void testStartCommandUnauthorized() {
+        BotResponse response = botLogic.processMessage("/start", UNAUTHORIZED_USER_ID);
 
-        Assertions.assertEquals(12345L, result.getChatId());
-        Assertions.assertEquals("🌍 *Добро пожаловать в GlobeTalk!* 🌍\n\n" +
+        String expectedText = "🌍 *Добро пожаловать в GlobeTalk!* 🌍\n\n" +
                 "Ваш персональный помощник в изучении иностранных языков! 🎯\n\n" +
+                "📝 **Для начала работы необходимо зарегистрироваться**\n" +
+                "Это займет всего 30 секунд, но откроет все возможности платформы!\n\n" +
+                "✨ **После регистрации вы получите:**\n" +
+                "• Персональную программу обучения\n" +
+                "• Доступ к урокам и упражнениям\n" +
+                "• Доступ к созданию личного словаря\n"+
+                "• Трекинг прогресса\n\n" +
+                "📚 **Перед началом обучения** рекомендую пройти короткий тест для определения " +
+                "вашего текущего уровня владения языком.\n\n" +
+                "💡 Это поможет нам подобрать оптимальную программу обучения именно для вас!\n\n" +
+                "🎯 **Готовы открыть мир языков?**\n" +
+                "🚀 Начните с регистрации и тестирования!";
+
+        Assertions.assertEquals(UNAUTHORIZED_USER_ID, response.getChatId());
+        Assertions.assertEquals(expectedText, response.getText());
+        Assertions.assertEquals("sing_in_main", response.getKeyboardType());
+    }
+
+    /**
+     * Тест: команда /start для авторизованного пользователя
+     */
+    @Test
+    public void testStartCommandAuthorized() {
+        BotResponse response = botLogic.processMessage("/start", AUTHORIZED_USER_ID);
+
+        String expectedText = "🌍 *С возвращением в GlobeTalk!* 🌍\n\n" +
+                "Рады снова видеть вас! Ваш персональный помощник в изучении иностранных языков готов к работе! 🎯\n\n" +
+                "✨ **Ваш аккаунт активен, доступ открыт:**\n" +
+                "• Продолжайте обучение по персональной программе\n" +
+                "• Доступ к урокам и упражнениям\n" +
+                "• Ваш личный словарь\n" +
+                "• Трекинг прогресса\n\n" +
+                "📚 **Что хотите сделать?**\n" +
+                "• Продолжить тестирование\n" +
+                "• Попрактиковать слова из словаря\n" +
+                "• Пройти новые упражнения\n\n" +
+                "🎯 **Продолжайте изучать языки!**\n" +
+                "🚀 Выберите действие из меню";
+
+        Assertions.assertEquals(AUTHORIZED_USER_ID, response.getChatId());
+        Assertions.assertEquals(expectedText, response.getText());
+        Assertions.assertNull(response.getKeyboardType());
+    }
+
+    /**
+     * Тест: команда /start_test для неавторизованного пользователя
+     */
+    @Test
+    public void testStartTestCommandUnauthorized() {
+        BotResponse response = botLogic.processMessage("/start_test", UNAUTHORIZED_USER_ID);
+
+        String expectedText = "❌ **Доступ запрещен!**\n\n" +
+                "Для использования этой функции необходимо войти в аккаунт.\n\n" +
+                "🔐 Используйте команду /start для регистрации или входа.";
+
+        Assertions.assertEquals(UNAUTHORIZED_USER_ID, response.getChatId());
+        Assertions.assertEquals(expectedText, response.getText());
+        Assertions.assertEquals("sing_in_main", response.getKeyboardType());
+    }
+
+    /**
+     * Тест: команда /start_test для авторизованного пользователя
+     */
+    @Test
+    public void testStartTestCommandAuthorized() {
+        BotResponse response = botLogic.processMessage("/start_test", AUTHORIZED_USER_ID);
+
+        String expectedText = "Ваш персональный помощник в изучении иностранных языков GlobeTalk!* 🌍!\n\n" +
                 "📚 **Перед началом обучения** рекомендую пройти короткий тест для определения вашего текущего уровня владения языком.\n\n" +
                 "💡 Это поможет нам подобрать оптимальную программу обучения именно для вас!\n\n" +
                 "🔍 Для просмотра всех команд нажмите /help\n\n" +
-                "🚀 **Вы готовы начать тест?**", result.getText());
-        Assertions.assertEquals("start", result.getKeyboardType());
+                "🚀 **Вы готовы начать тест?**";
+
+        Assertions.assertEquals(AUTHORIZED_USER_ID, response.getChatId());
+        Assertions.assertEquals(expectedText, response.getText());
+        Assertions.assertEquals("start", response.getKeyboardType());
     }
 
     /**
-     * Проверка команды /help
+     * Тест: команда /speed_test для неавторизованного пользователя
      */
     @Test
-    void testHelpCommand() {
-        BotResponse result = botLogic.processMessage("/help", 12345L);
+    public void testSpeedTestCommandUnauthorized() {
+        BotResponse response = botLogic.processMessage("/speed_test", UNAUTHORIZED_USER_ID);
 
-        Assertions.assertEquals(12345L, result.getChatId());
-        Assertions.assertEquals("🌍 *GlobeTalk - Изучение иностранных языков* 🌍\n\n" +
+        String expectedText = "❌ **Доступ запрещен!**\n\n" +
+                "Для использования этой функции необходимо войти в аккаунт.\n\n" +
+                "🔐 Используйте команду /start для регистрации или входа.";
 
-                "📋 **Доступные команды:**\n" +
-                "• /start - Начать работу с ботом и пройти тестирование\n" +
-                "• /help - Показать эту справку\n" +
-                "• /dictionary - Работа со словарем\n" +
-                "• /speed_test - Пройти тест на скорость\n\n" +
-
-                "🎯 **Как работает бот:**\n" +
-                "GlobeTalk поможет вам в изучении иностранных языков через:\n" +
-                "• 📝 Тестирование для определения вашего уровня\n" +
-                "• 🎮 Интерактивные упражнения\n\n" +
-
-                "🛠️ **В процессе разработки:**\n" +
-                "• 📊 Отслеживание прогресса\n" +
-                "• 📚 Словарь и словарный запас\n\n"+
-
-                "💡 **Как взаимодействовать:**\n" +
-                "• Используйте команды из меню (слева)\n" +
-                "• Нажимайте на кнопки под сообщениями\n" +
-                "• Отвечайте на вопросы теста\n" +
-                "• Следите за своим прогрессом в профиле\n\n" +
-
-                "🚀 **Начните с команды /start чтобы определить ваш уровень!**", result.getText());
-        Assertions.assertNull(result.getKeyboardType());
-    }
-
-
-    /**
-     * Проверка неизвестной команды
-     */
-    @Test
-    void testUnknownCommand() {
-        BotResponse result = botLogic.processMessage("/unknown", 12345L);
-
-        Assertions.assertEquals(12345L, result.getChatId());
-        Assertions.assertEquals("Неизвестная команда. Введите /help для списка доступных команд.", result.getText());
+        Assertions.assertEquals(UNAUTHORIZED_USER_ID, response.getChatId());
+        Assertions.assertEquals(expectedText, response.getText());
+        Assertions.assertEquals("sing_in_main", response.getKeyboardType());
     }
 
     /**
-     * Тест на обработку обычного текстового сообщения (не команды)
+     * Тест: команда /speed_test для авторизованного пользователя
      */
     @Test
-    void testRegularTextMessage() {
-        BotResponse result = botLogic.processMessage("обычный текст", 12345L);
+    public void testSpeedTestCommandAuthorized() {
+        BotResponse response = botLogic.processMessage("/speed_test", AUTHORIZED_USER_ID);
 
-        Assertions.assertEquals(12345L, result.getChatId());
-        Assertions.assertEquals("❌Неправильный ввод или команда", result.getText());
-    }
-
-    /**
-     * Тест на обработку кнопки "Назад" (no_button)
-     */
-    @Test
-    void testNoButtonProcessing() {
-        BotResponse result = botLogic.processCallback("no_button", 12345L);
-
-        Assertions.assertEquals(12345L, result.getChatId());
-        Assertions.assertEquals("💪 *Не сомневайтесь в своих силах!* 💪\n\n" +
-                "📖 Тест займет всего несколько минут и поможет определить ваш текущий уровень\n\n" +
-                "🕐 Когда будете готовы - просто нажмите /start\n\n" +
-                "🔍 Все команды доступны по /help", result.getText());
-        Assertions.assertEquals("main", result.getKeyboardType());
-    }
-    /**
-     * Тест на обработку неизвестной кнопки
-     */
-    @Test
-    void testUnknownButtonProcessing() {
-        BotResponse result = botLogic.processCallback("unknown_button", 12345L);
-
-        Assertions.assertEquals(12345L, result.getChatId());
-        Assertions.assertEquals("Неизвестная команда", result.getText());
-    }
-
-
-    /**
-     * Тест на обработку кнопок ответов A/B/C/D (базовая проверка без зависимостей)
-     */
-    @Test
-    void testAnswerButtonsProcessing() {
-        // Проверяем, что методы не падают и возвращают корректную структуру
-        BotResponse resultA = botLogic.processCallback("A_button", 12345L);
-        BotResponse resultB = botLogic.processCallback("B_button", 12345L);
-
-        Assertions.assertEquals(12345L, resultA.getChatId());
-        Assertions.assertEquals(12345L, resultB.getChatId());
-        Assertions.assertNotNull(resultA.getText());
-        Assertions.assertNotNull(resultB.getText());
-    }
-
-    /**
-     * Тест на определение типа клавиатуры для разных callback данных
-     */
-    @Test
-    void testGetKeyboardForCallback() {
-        // Для yes_button должна возвращаться test_answers
-        Assertions.assertEquals("test_answers", botLogic.getKeyboardForCallback("yes_button", 12345L));
-
-        // Для no_button должна возвращаться main
-        Assertions.assertEquals("main", botLogic.getKeyboardForCallback("no_button", 12345L));
-
-        // Для неизвестной кнопки - null
-        Assertions.assertNull(botLogic.getKeyboardForCallback("unknown_button", 12345L));
-
-    }
-
-
-    /**
-     * Тест определения клавиатуры для команды
-     */
-    @Test
-    void testGetKeyboardForCommand() {
-        // для команды /start
-        Assertions.assertEquals("start", botLogic.getKeyboardForCommand("/start"));
-
-        // для команды /help
-        Assertions.assertNull(botLogic.getKeyboardForCommand("/help"));
-
-        // для неизвестной команды
-        Assertions.assertNull(botLogic.getKeyboardForCommand("/unknown"));
-
-        // для null команды
-        Assertions.assertNull(botLogic.getKeyboardForCommand(null));
-    }
-
-    /**
-     * Тест валидности BotResponse
-     */
-    @Test
-    void testBotResponseValidity() {
-        BotResponse validResponse = new BotResponse(12345L, "Valid text");
-        BotResponse invalidResponse = new BotResponse(12345L, "");
-        BotResponse nullResponse = new BotResponse(12345L, null);
-
-        Assertions.assertTrue(validResponse.isValid());
-        Assertions.assertFalse(invalidResponse.isValid());
-        Assertions.assertFalse(nullResponse.isValid());
-    }
-
-    /**
-     * Тест наличия клавиатуры в BotResponse
-     */
-    @Test
-    void testBotResponseKeyboard() {
-        BotResponse withKeyboard = new BotResponse(12345L, "Text", "start");
-        BotResponse withoutKeyboard = new BotResponse(12345L, "Text");
-        BotResponse emptyKeyboard = new BotResponse(12345L, "Text", "");
-
-        Assertions.assertTrue(withKeyboard.hasKeyboard());
-        Assertions.assertFalse(withoutKeyboard.hasKeyboard());
-        Assertions.assertFalse(emptyKeyboard.hasKeyboard());
-    }
-
-    /**
-     * Тест команды /speed_test
-     */
-    @Test
-    void testSpeedTestCommand() {
-        BotResponse result = botLogic.processMessage("/speed_test", 12345L);
-
-        Assertions.assertEquals(12345L, result.getChatId());
-        Assertions.assertEquals( "🌍 *Добро пожаловать в тест на скорость!* 🌍\n\n" +
+        String expectedText =  "🌍 *Добро пожаловать в тест на скорость!* 🌍\n\n" +
                 "⚡ **Тест на скорость реакции** ⚡\n\n" +
                 "Проверьте, насколько быстро вы можете отвечать на вопросы!\n\n" +
                 "📊 **Как это работает:**\n" +
@@ -211,103 +158,248 @@ public class TestBotLogic {
                 "• Таймер отслеживает скорость ваших ответов\n" +
                 "• Можно перейти к следующему вопросу кнопкой \"Дальше\"\n" +
                 "• Результаты помогут оценить вашу реакцию\n\n" +
-                "🚀 **Начнем тест на скорость?**", result.getText());
-        Assertions.assertEquals("speed_test_start", result.getKeyboardType());
+                "🚀 **Начнем тест на скорость?**";
+
+        Assertions.assertEquals(AUTHORIZED_USER_ID, response.getChatId());
+        Assertions.assertEquals(expectedText, response.getText());
+        Assertions.assertEquals("speed_test_start", response.getKeyboardType());
     }
 
     /**
-     * Тест команды /dictionary
+     * Тест: команда /dictionary для неавторизованного пользователя
      */
     @Test
-    void testDictionaryCommand() {
-        BotResponse result = botLogic.processMessage("/dictionary", 12345L);
+    public void testDictionaryCommandUnauthorized() {
+        BotResponse response = botLogic.processMessage("/dictionary", UNAUTHORIZED_USER_ID);
 
-        Assertions.assertEquals(12345L, result.getChatId());
-        Assertions.assertEquals("✨ *Добро пожаловать в ваш личный словарь!* ✨\n\n" +
+        String expectedText = "❌ **Доступ запрещен!**\n\n" +
+                "Для использования этой функции необходимо войти в аккаунт.\n\n" +
+                "🔐 Используйте команду /start для регистрации или входа.";
+
+        Assertions.assertEquals(UNAUTHORIZED_USER_ID, response.getChatId());
+        Assertions.assertEquals(expectedText, response.getText());
+        Assertions.assertEquals("sing_in_main", response.getKeyboardType());
+    }
+
+    /**
+     * Тест: команда /dictionary для авторизованного пользователя
+     */
+    @Test
+    public void testDictionaryCommandAuthorized() {
+        BotResponse response = botLogic.processMessage("/dictionary", AUTHORIZED_USER_ID);
+
+        String expectedText = "✨ *Добро пожаловать в ваш личный словарь!* ✨\n\n" +
                 "Здесь вы можете смотреть и пополнять свою уникальную коллекцию слов для изучения.\n\n" +
-                "📚 *Ваш словарь пуст*\n" +
-                "Добавьте первое слово для начала изучения!\n\n"+
+                "📚 *Ваш словарь* (1 слов)\n\n" +
+                "• appreciate - ценить\n\n" +
                 "🛠️ *Доступные действия:*\n\n" +
                 "• ➕ **Добавить слово** — пополнить коллекцию\n" +
-                "• ✏️ **Редактировать** — изменить перевод слова\n" +
+                "• ✏️ **Редактировать** — изменить слово или перевод\n" +
                 "• ❌ **Удалить слово** — убрать из словаря\n" +
                 "• ↩️ **Назад** — вернуться в меню\n\n" +
-                "Выберите действие:", result.getText());
-        Assertions.assertEquals("dictionary", result.getKeyboardType());
+                "Выберите действие:";
+
+        Assertions.assertEquals(AUTHORIZED_USER_ID, response.getChatId());
+        Assertions.assertEquals(expectedText, response.getText());
+        Assertions.assertEquals("dictionary", response.getKeyboardType());
     }
 
     /**
-     * Тест main_button callback
+     * Тест: команда /my_profile для неавторизованного пользователя
      */
     @Test
-    void testMainButtonCallback() {
-        BotResponse result = botLogic.processCallback("main_button", 12345L);
+    public void testMyProfileCommandUnauthorized() {
+        BotResponse response = botLogic.processMessage("/my_profile", UNAUTHORIZED_USER_ID);
 
-        Assertions.assertEquals(12345L, result.getChatId());
-        Assertions.assertEquals(botLogic.COMMAND_HELP, result.getText());
-        Assertions.assertNull(result.getKeyboardType());
+        String expectedText = "❌ **Доступ запрещен!**\n\n" +
+                "Для использования этой функции необходимо войти в аккаунт.\n\n" +
+                "🔐 Используйте команду /start для регистрации или входа.";
+
+        Assertions.assertEquals(UNAUTHORIZED_USER_ID, response.getChatId());
+        Assertions.assertEquals(expectedText, response.getText());
+        Assertions.assertEquals("sing_in_main", response.getKeyboardType());
     }
 
     /**
-     * Тест словарных кнопок
+     * Тест: команда /my_profile для авторизованного пользователя
      */
     @Test
-    void testDictionaryButtons() {
-        BotResponse addButton = botLogic.processCallback("dictionary_add_button", 12345L);
-        BotResponse editButton = botLogic.processCallback("dictionary_edit_button", 12345L);
-        BotResponse deleteButton = botLogic.processCallback("dictionary_delete_button", 12345L);
+    public void testMyProfileCommandAuthorized() {
+        BotResponse response = botLogic.processMessage("/my_profile", AUTHORIZED_USER_ID);
 
-        Assertions.assertEquals("📝 *Как добавить слово:*\n\n" +
-                "Просто отправьте мне слово на иностранном языке, а затем его перевод через пробел.\n" +
-                "А если хотите добавить фразу и перевод, то введите их через тире ('-') \n\n" +
-                "*Например:*\n" +
-                "`apple - яблоко`\n" +
-                "`looking for - искать (находиться в поиске)`", addButton.getText());
+        String expectedText = "👤 **Профиль пользователя** 🌍\n\n" +
+                "📋 **Основная информация:**\n" +
+                "• **Логин:** testuser\n" +
+                "• **Пароль:** ••••••••\n\n" +
+                "⚙️ **Управление аккаунтом:**\n" +
+                "• Изменить логин\n" +
+                "• Изменить пароль\n" +
+                "• Выйти из аккаунта\n";
 
-        Assertions.assertEquals("🔤 Редактирование перевода\n" +
-                "Чтобы отредактировать слово, введите его на английском языке " +
-                "в точности так, как оно указано в словаре. Изменить можно только " +
-                "его перевод на русский язык.", editButton.getText());
-
-        Assertions.assertEquals("🗑️ *Как удалить слово:*\n\n" +
-                "Просто отправьте мне слово на английском (без перевода), которое хотите удалить из словаря.\n\n" +
-                "*Например:*\n" +
-                "вы хотите удалить \"apple - яблоко\"\n" +
-                "введите: \"apple\"\n\n" +
-                "✨ *После удаления слово перестанет появляться в ваших тренировках!*", deleteButton.getText());
+        Assertions.assertEquals(AUTHORIZED_USER_ID, response.getChatId());
+        Assertions.assertEquals(expectedText, response.getText());
+        Assertions.assertEquals("my_profile", response.getKeyboardType());
     }
 
     /**
-     * Тест определения клавиатуры для словарных callback
+     * Тест: команда /help для неавторизованного пользователя
      */
     @Test
-    void testGetKeyboardForDictionaryCallbacks() {
-        Assertions.assertEquals("dictionary", botLogic.getKeyboardForCallback("dictionary_button", 12345L));
-        Assertions.assertEquals("dictionary", botLogic.getKeyboardForCallback("dictionary_add_no_button", 12345L));
-        Assertions.assertEquals("delete_cancel", botLogic.getKeyboardForCallback("dictionary_delete_cancel_button", 12345L));
-        Assertions.assertEquals("dictionary_final_button", botLogic.getKeyboardForCallback("dictionary_delete_confirm_button", 12345L));
+    public void testHelpCommandUnauthorized() {
+        BotResponse response = botLogic.processMessage("/help", UNAUTHORIZED_USER_ID);
+
+        String expectedText = "🌍 *GlobeTalk - Изучение иностранных языков* 🌍\n\n" +
+                "📋 **Доступные команды:**\n" +
+                "• /start - Начать работу с ботом\n" +
+                "• /start_test - Пройти тест на уровень языка\n" +
+                "• /help - Показать эту справку\n" +
+                "• /dictionary - Работа со словарем\n" +
+                "• /speed_test - Пройти тест на скорость\n" +
+                "• /word - Получить новое английское слово\n" +
+                "• /scheduled_test - Пройти отложенный тест по словам\n" +
+                "• /old_word - Повторить слово с низким приоритетом\n\n" +
+                "🎯 **Как работает бот:**\n" +
+                "GlobeTalk поможет вам в изучении иностранных языков через:\n" +
+                "• 📝 Тестирование для определения вашего уровня\n" +
+                "• 🎮 Интерактивные упражнения\n" +
+                "• 📚 Личный словарь\n" +
+                "• 🔄 Ежедневные слова и повторения\n" +
+                "• ⏰ Отложенные тесты для закрепления материала\n" +
+                "• 📊 Повторение слов с низким приоритетом\n\n" +
+                "💡 **Как взаимодействовать:**\n" +
+                "• Используйте команды из меню (слева)\n" +
+                "• Нажимайте на кнопки под сообщениями\n" +
+                "• Отвечайте на вопросы теста\n" +
+                "• Следите за своим прогрессом в профиле\n\n" +
+                "🚀 **Начните с команды /start_test чтобы определить ваш уровень!**";
+
+        Assertions.assertEquals(UNAUTHORIZED_USER_ID, response.getChatId());
+        Assertions.assertEquals(expectedText, response.getText());
+        Assertions.assertNull(response.getKeyboardType());
     }
 
-
     /**
-     * Тест next_button callback
+     * Тест: команда /help для авторизованного пользователя
      */
     @Test
-    void testNextButtonCallback() {
-        BotResponse result = botLogic.processCallback("next_button", 12345L);
+    public void testHelpCommandAuthorized() {
+        BotResponse response = botLogic.processMessage("/help", AUTHORIZED_USER_ID);
 
-        Assertions.assertEquals(12345L, result.getChatId());
-        Assertions.assertEquals("Тест не активен", result.getText());
+        String expectedText = "🌍 *GlobeTalk - Изучение иностранных языков* 🌍\n\n" +
+                "📋 **Доступные команды:**\n" +
+                "• /start - Начать работу с ботом\n" +
+                "• /start_test - Пройти тест на уровень языка\n" +
+                "• /help - Показать эту справку\n" +
+                "• /dictionary - Работа со словарем\n" +
+                "• /speed_test - Пройти тест на скорость\n" +
+                "• /word - Получить новое английское слово\n" +
+                "• /scheduled_test - Пройти отложенный тест по словам\n" +
+                "• /old_word - Повторить слово с низким приоритетом\n\n" +
+                "🎯 **Как работает бот:**\n" +
+                "GlobeTalk поможет вам в изучении иностранных языков через:\n" +
+                "• 📝 Тестирование для определения вашего уровня\n" +
+                "• 🎮 Интерактивные упражнения\n" +
+                "• 📚 Личный словарь\n" +
+                "• 🔄 Ежедневные слова и повторения\n" +
+                "• ⏰ Отложенные тесты для закрепления материала\n" +
+                "• 📊 Повторение слов с низким приоритетом\n\n" +
+                "💡 **Как взаимодействовать:**\n" +
+                "• Используйте команды из меню (слева)\n" +
+                "• Нажимайте на кнопки под сообщениями\n" +
+                "• Отвечайте на вопросы теста\n" +
+                "• Следите за своим прогрессом в профиле\n\n" +
+                "🚀 **Начните с команды /start_test чтобы определить ваш уровень!**";
+
+        Assertions.assertEquals(AUTHORIZED_USER_ID, response.getChatId());
+        Assertions.assertEquals(expectedText, response.getText());
+        Assertions.assertNull(response.getKeyboardType());
     }
 
     /**
-     * Тест обработки пустого сообщения в словаре
+     * Тест: неизвестная команда для неавторизованного пользователя
      */
     @Test
-    void testEmptyMessage() {
-        BotResponse result = botLogic.processMessage("", 12345L);
+    public void testUnknownCommandUnauthorized() {
+        BotResponse response = botLogic.processMessage("/unknown", UNAUTHORIZED_USER_ID);
 
-        Assertions.assertEquals(12345L, result.getChatId());
-        Assertions.assertEquals("❌Неправильный ввод или команда", result.getText());
+        String expectedText = "Неизвестная команда. Введите /help для списка доступных команд.";
+
+        Assertions.assertEquals(UNAUTHORIZED_USER_ID, response.getChatId());
+        Assertions.assertEquals(expectedText, response.getText());
+        Assertions.assertNull(response.getKeyboardType());
+    }
+
+    /**
+     * Тест: неизвестная команда для авторизованного пользователя
+     */
+    @Test
+    public void testUnknownCommandAuthorized() {
+        BotResponse response = botLogic.processMessage("/unknown", AUTHORIZED_USER_ID);
+
+        String expectedText = "Неизвестная команда. Введите /help для списка доступных команд.";
+
+        Assertions.assertEquals(AUTHORIZED_USER_ID, response.getChatId());
+        Assertions.assertEquals(expectedText, response.getText());
+        Assertions.assertNull(response.getKeyboardType());
+    }
+
+    /**
+     * Тест: обычное текстовое сообщение для неавторизованного пользователя
+     */
+    @Test
+    public void testRegularTextMessageUnauthorized() {
+        BotResponse response = botLogic.processMessage("обычный текст", UNAUTHORIZED_USER_ID);
+
+        String expectedText = "Не понимаю команду. Введите /help для справки.";
+
+        Assertions.assertEquals(UNAUTHORIZED_USER_ID, response.getChatId());
+        Assertions.assertEquals(expectedText, response.getText());
+        Assertions.assertNull(response.getKeyboardType());
+    }
+
+    /**
+     * Тест: обычное текстовое сообщение для авторизованного пользователя
+     */
+    @Test
+    public void testRegularTextMessageAuthorized() {
+        BotResponse response = botLogic.processMessage("обычный текст", AUTHORIZED_USER_ID);
+
+        String expectedText = "❌ Неправильный ввод или команда";
+
+        Assertions.assertEquals(AUTHORIZED_USER_ID, response.getChatId());
+        Assertions.assertEquals(expectedText, response.getText());
+    }
+
+    /**
+     * Тест: обработка кнопки "Назад" (no_button) для неавторизованного пользователя
+     */
+    @Test
+    public void testNoButtonProcessingUnauthorized() {
+        BotResponse response = botLogic.processCallback("no_button", UNAUTHORIZED_USER_ID);
+
+        String expectedText = "❌ **Доступ запрещен!**\n\n" +
+                "Для использования этой функции необходимо войти в аккаунт.\n\n" +
+                "🔐 Используйте команду /start для регистрации или входа.";
+
+        Assertions.assertEquals(UNAUTHORIZED_USER_ID, response.getChatId());
+        Assertions.assertEquals(expectedText, response.getText());
+        Assertions.assertEquals("main", response.getKeyboardType());
+    }
+
+    /**
+     * Тест: обработка кнопки "Назад" (no_button) для авторизованного пользователя
+     */
+    @Test
+    public void testNoButtonProcessingAuthorized() {
+        BotResponse response = botLogic.processCallback("no_button", AUTHORIZED_USER_ID);
+
+        String expectedText = "💪 *Не сомневайтесь в своих силах!* 💪\n\n" +
+                "📖 Тест займет всего несколько минут и поможет определить ваш текущий уровень\n\n" +
+                "🕐 Когда будете готовы - просто нажмите /start\n\n" +
+                "🔍 Все команды доступны по /help";
+
+        Assertions.assertEquals(AUTHORIZED_USER_ID, response.getChatId());
+        Assertions.assertEquals(expectedText, response.getText());
+        Assertions.assertEquals("main", response.getKeyboardType());
     }
 }

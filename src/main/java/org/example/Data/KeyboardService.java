@@ -1,10 +1,5 @@
 package org.example.Data;
-
-import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
-
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -12,6 +7,7 @@ import java.util.Map;
  */
 public class KeyboardService {
 
+    //ТЕСТЫ
     // храним название кнопки и callback для старта в виде словаря
     private final Map<String, String> startButtons = Map.of(
             "Конечно!", "yes_button",
@@ -38,6 +34,7 @@ public class KeyboardService {
     );
 
 
+    //СЛОВАРЬ
     //словарь кнопок дял словаря (главной словаря)
     private final Map<String, String> dictionaryMainButton = Map.of(
             "Добавить", "dictionary_add_button",
@@ -76,13 +73,61 @@ public class KeyboardService {
     );
 
 
+    //АУТЕНТИФИКАЦИЯ
+    private final Map<String, String> singInMain = Map.of(
+            "Войти", "sing_in_button",
+            "Зарегистрироваться", "reg_button"
+    );
+    private final Map<String, String> singInEnd= Map.of(
+            "Войти", "sing_in_button",
+            "В начало", "start_button"
+    );
+    private final Map<String, String> loginError = Map.of(
+            "Еще раз", "login_again_button",
+            "В начало", "start_button"
+    );
+    private final Map<String, String> myProfile = Map.of(
+            "Логин", "login_edit_button",
+            "Пароль", "password_edit_button",
+            "Выйти", "log_out_button"
+    );
+    private final Map<String,String> loginPasswordEditEnd = Map.of(
+            "Мой профиль", "my_profile_button",
+            "На главную", "main_button"
+    );
+    private final Map<String, String> logOutConfirmation = Map.of(
+            "Выйти", "log_out_final_button",
+            "Остаться", "log_out_cancel_button"
+    );
+
+
+    //ОТЛОЖЕННЫЕ СООБЩЕНИЯ
+    private final Map<String, String> scheduleMessage = Map.of(
+            "Знаю", "know_button",
+            "Изучаю", "learn_button"
+    );
+    private final Map<String, String> scheduleMessageFinal = Map.of(
+            "Словарь", "dictionary_button",
+            "Еще слова", "more_word_button"
+    );
+
+    //ОТЛОЖЕННЫЕ ТЕСТЫ
+    private final Map<String, String> scheduleTestYesOrNo = Map.of(
+            "Конечно!", "yes_schedule_test_button",
+            "Нет:(", "no_schedule_test_button"
+    );
+
+
 
     //гетеры возвращающие копию map коллекции
     //@return map где ключ - текст кнопки, значение - callback данные
+    //ТЕСТЫ
     public Map<String, String> getStartButtonConfigs() {return new HashMap<>(startButtons);}
     public Map<String, String> getTestAnswerConfigs() {return new HashMap<>(testAnswerButtons);}
     public Map<String, String> getSpeedTestStartButton() {return new HashMap<>(speedTestStartButton);}
     public Map<String, String> getSpeedTestNextButton() {return new HashMap<>(speedNextButton);}
+
+    //СЛОВАРЬ
     public Map<String, String> getDictionaryMainButton(){return  new HashMap<>(dictionaryMainButton);}
     public Map<String, String> getDictionaryAddAgainButton(){return new HashMap<>(dictionaryAddAgainButton);}
     public Map<String, String> getDictionaryDeleteButton(){return new HashMap<>(dictionaryDeleteButton);}
@@ -90,4 +135,19 @@ public class KeyboardService {
     public Map<String, String> getDictionaryFinalButton() {return new HashMap<>(dictionaryFinalButton);}
     public Map<String,String> getMainButtonCallBack() {return new HashMap<>(mainButtonCallBack );}
 
+    //АУТЕНТИФИКАЦИЯ
+    public Map<String, String> getSingInMain() {return new HashMap<>(singInMain);}
+    public Map<String, String> getSingInEnd() {return new HashMap<>(singInEnd);}
+    public Map<String, String> getLoginError(){return new HashMap<>(loginError);}
+    public Map<String, String> getMyProfile() {return new HashMap<>(myProfile);}
+    public Map<String, String> getLoginPasswordEditEnd() {return new HashMap<>(loginPasswordEditEnd);}
+    public Map<String, String> getLogOutConfirmation() {return new HashMap<>(logOutConfirmation);}
+
+
+    //ОТЛОЖЕННЫЕ СООБЩЕНИЯ И ТЕСТЫ
+    public Map<String, String> getScheduleMessage(){return new HashMap<>(scheduleMessage);}
+    public Map<String, String> getScheduleMessageFinal(){return new HashMap<>(scheduleMessageFinal);}
+
+    //ОТЛОЖЕННЫЕ ТЕСТЫ
+    public Map<String, String> getScheduleTestYesOrNo(){return new HashMap<>(scheduleTestYesOrNo);}
 }

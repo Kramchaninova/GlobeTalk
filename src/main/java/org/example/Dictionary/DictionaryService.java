@@ -3,23 +3,11 @@ package org.example.Dictionary;
 import java.sql.SQLException;
 import java.util.List;
 
-
 /**
  * DictionaryService - интерфейс для работы с хранилищем слов.
  * Определяет контракт для операций со словарем.
  */
-
 public interface DictionaryService {
-
-    //Конастнта для приоритета, в 5 задаче она будет скорее всего больше
-    int DEFAULT_PRIORITY = 2;
-
-    /**
-     * Добавить слово с приоритетом по умолчанию, через перевызов
-     */
-    default void addWord(long userId, String englishWord, String translation) throws SQLException {
-        addWord(userId, englishWord, translation, DEFAULT_PRIORITY);
-    }
 
     /**
      * Добавить слово с указанным приоритетом
@@ -30,6 +18,11 @@ public interface DictionaryService {
      * Получить все слова пользователя
      */
     List<Word> getAllWords(long userId) throws SQLException;
+
+    /**
+     * Получить слова пользователя по приоритету
+     */
+    List<Word> getWordsByPriority(long userId, int priority) throws SQLException;
 
     /**
      * Получить слово по ID
@@ -47,9 +40,17 @@ public interface DictionaryService {
     void updateWord(long userId, int wordId, String newEnglishWord, String newTranslation, Integer newPriority) throws SQLException;
 
     /**
+     * Обновить приоритет слова
+     */
+    void updateWordPriority(long userId, int wordId, int newPriority) throws SQLException;
+
+    /**
      * Удалить слово из словаря
      */
     void deleteWord(long userId, int wordId) throws SQLException;
 
-
+    /**
+     * Получить ID пользователя из БД аутентификации по chatId
+     */
+    long getUserIdByChatId(long chatId) throws SQLException;
 }
