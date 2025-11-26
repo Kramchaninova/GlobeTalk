@@ -308,11 +308,6 @@ public class AuthCommand {
                     System.out.println("[Auth Command] Регистрация пользователя: " + username);
                     boolean success = authService.registerUser(username, password);
                     if (success) {
-                        if (isTelegram) {
-                            authService.linkTelegramChat(username, chatId);
-                        } else {
-                            authService.linkDiscordChannel(username, chatId);
-                        }
                         userStates.remove(chatId);
                         System.out.println("[Auth Command] Регистрация успешна");
                         return REG_FINAL.replace("{username}", username)

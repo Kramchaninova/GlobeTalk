@@ -344,6 +344,7 @@ public class AllParsersTests {
         Assertions.assertEquals("alternative", question.getEnglishWord(), "Английское слово должно совпадать");
         Assertions.assertEquals("альтернатива", question.getTranslation(), "Перевод должен совпадать");
         Assertions.assertEquals("C", question.getCorrectAnswer(), "Правильный ответ должен быть 'C'");
+        Assertions.assertEquals("ПРИОРИТЕТНОЕ", question.getWordType(), "Тип слова должен быть 'ПРИОРИТЕТНОЕ'");
     }
 
     /**
@@ -362,8 +363,30 @@ public class AllParsersTests {
 
         TestsData result = parser.parseTest(testText);
 
-        // В зависимости от реализации парсера - либо 0 вопросов, либо вопрос с типом по умолчанию
+        // Проверяем что результат не null
         Assertions.assertNotNull(result, "Результат не должен быть null");
+
+        // Проверяем количество распарсенных вопросов
+        Assertions.assertEquals(1, result.getQuestions().size(), "Должен быть распарсен 1 вопрос");
+
+        // Проверяем конкретные данные вопроса
+        TestsData.QuestionData question = result.getQuestions().get(0);
+
+        // Проверяем английское слово и перевод
+        Assertions.assertEquals("test", question.getEnglishWord(), "Английское слово должно быть 'test'");
+        Assertions.assertEquals("тест", question.getTranslation(), "Перевод должен быть 'тест'");
+
+        // Проверяем правильный ответ
+        Assertions.assertEquals("A", question.getCorrectAnswer(), "Правильный ответ должен быть 'A'");
+
+        // Проверяем тип слова (по умолчанию должен быть "НОВОЕ")
+        Assertions.assertEquals("НОВОЕ", question.getWordType(), "Тип слова по умолчанию должен быть 'НОВОЕ'");
+
+        // Проверяем что текст вопроса содержит ожидаемые элементы
+        String questionText = question.getQuestionText();
+        Assertions.assertTrue(questionText.contains("A)") && questionText.contains("B)") &&
+                        questionText.contains("C)") && questionText.contains("D)"),
+                "Текст вопроса должен содержать все варианты ответов A-D");
     }
 
     /**
@@ -391,5 +414,6 @@ public class AllParsersTests {
         Assertions.assertEquals("various", question.getEnglishWord(), "Английское слово должно совпадать");
         Assertions.assertEquals("различный", question.getTranslation(), "Перевод должен совпадать");
         Assertions.assertEquals("D", question.getCorrectAnswer(), "Правильный ответ должен быть 'D'");
+        Assertions.assertEquals("НОВОЕ", question.getWordType(), "Тип слова должен быть 'НОВОЕ'");
     }
 }
