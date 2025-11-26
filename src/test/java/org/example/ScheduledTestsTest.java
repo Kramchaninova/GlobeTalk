@@ -262,7 +262,7 @@ public class ScheduledTestsTest {
     }
 
     /**
-     * Тест обработки кнопок начала теста (изолированный)
+     * Тест обработки кнопок начала теста
      */
     @Test
     public void testHandleButtonClick_StartTest() {
@@ -303,7 +303,6 @@ public class ScheduledTestsTest {
         Assertions.assertNotNull(result, "Результат не должен быть null");
         Assertions.assertEquals(expectedQuestion, result, "Должен вернуться заранее подготовленный вопрос");
     }
-
     /**
      * Тест обработки кнопки отказа от теста
      */
@@ -312,9 +311,11 @@ public class ScheduledTestsTest {
         String result = scheduleTests.handleButtonClick("no_schedule_test_button", AUTHORIZED_CHAT_ID);
 
         String expectedMessage = "Хорошо, не сейчас ✨\n\n" +
-                "Знания никуда не убегут — они терпеливо ждут своего часа.";
-        Assertions.assertTrue(result.contains("Хорошо, не сейчас"),
-                "Должно вернуться сообщение об отказе от теста");
+                "Знания никуда не убегут — они терпеливо ждут своего часа.\n\n" +
+                "Когда почувствуете готовность, просто нажмите кнопку /scheduled_test в боковом меню - и мы продолжим!\n\n" +
+                "🌟 Ваше обучение — в ваших руках";
+
+        Assertions.assertEquals(expectedMessage, result, "Сообщение об отказе должно точно совпадать");
     }
 
     /**
@@ -324,11 +325,11 @@ public class ScheduledTestsTest {
     public void testGetTestIntroduction() {
         String introduction = scheduleTests.getTestIntroduction();
 
-        Assertions.assertNotNull(introduction, "Приветственное сообщение не должно быть null");
-        Assertions.assertTrue(introduction.contains("Момент истины"),
-                "Должно содержать ключевые фразы приветствия");
-        Assertions.assertTrue(introduction.contains("Готовы бросить вызов себе"),
-                "Должно содержать призыв к действию");
+        String expectedMessage = "🌙 Момент истины настал!\n\n" +
+                "Знания, которые вы собирали по крупицам в течении недели и не только, готовы проверке!\n\n" +
+                "✨ Готовы бросить вызов себе?";
+
+        Assertions.assertEquals(expectedMessage, introduction, "Приветственное сообщение должно точно совпадать");
     }
 
     /**
@@ -451,20 +452,34 @@ public class ScheduledTestsTest {
         int totalQuestions = testsData.getQuestions().size();
         for (int i = 0; i < totalQuestions; i++) {
             String question = session.getCurrentQuestion();
-            Assertions.assertTrue(question.contains("Вопрос " + (i + 1) + " из " + totalQuestions),
-                    "Должен быть вопрос с правильным номером");
+
+            // Проверка номера вопроса
+            String expectedQuestionStart = "Вопрос " + (i + 1) + " из " + totalQuestions + ":";
+            Assertions.assertTrue(question.startsWith(expectedQuestionStart),
+                    "Вопрос должен начинаться с: " + expectedQuestionStart);
+
+            // Проверяем содержание вопроса
+            TestsData.QuestionData currentQuestionData = testsData.getQuestions().get(i);
+            Assertions.assertTrue(question.contains(currentQuestionData.getEnglishWord()),
+                    "Вопрос должен содержать английское слово: " + currentQuestionData.getEnglishWord());
 
             // Отвечаем правильно (все вопросы в тесте имеют правильный ответ "B")
             boolean isCorrect = session.checkAnswer("B");
             Assertions.assertTrue(isCorrect, "Ответ B должен быть правильным для вопроса " + (i + 1));
 
+            // Проверяем счетчик правильных ответов
+            Assertions.assertEquals(i + 1, session.getCorrectAnswersCount(),
+                    "Счетчик правильных ответов должен быть " + (i + 1) + " после " + (i + 1) + " вопроса");
+
             session.nextQuestion();
         }
 
-        // Проверяем что тест завершен
+        // Проверка завершения теста
         Assertions.assertTrue(session.isTestCompleted(), "Тест должен быть завершен после ответов на все вопросы");
         Assertions.assertEquals(totalQuestions, session.getCorrectAnswersCount(),
-                "Все ответы должны быть правильными");
+                "Все " + totalQuestions + " ответов должны быть правильными");
+        Assertions.assertEquals(totalQuestions, session.getTotalQuestions(),
+                "Общее количество вопросов должно быть " + totalQuestions);
     }
 
     // ТЕСТЫ ДЛЯ ScheduleTestHandler
@@ -543,28 +558,53 @@ public class ScheduledTestsTest {
     }
 
     /**
-     * Тест проверки активности теста
+     * Тест полного цикла теста с ответами на все вопросы
      */
     @Test
     public void testScheduleTestHandler_IsTestActive() {
         TestsParser parser = new TestsParser();
         TestsData testsData = parser.parseTest(TEST_TEXT);
 
-        // Перед началом теста
-        Assertions.assertFalse(scheduleTestHandler.isTestActive(AUTHORIZED_CHAT_ID),
-                "Тест не должен быть активен до начала");
+        TestSession session = new TestSession(testsData, AUTHORIZED_USER_ID);
 
-        // После начала теста
-        scheduleTestHandler.startTest(AUTHORIZED_CHAT_ID, testsData, AUTHORIZED_USER_ID);
-        Assertions.assertTrue(scheduleTestHandler.isTestActive(AUTHORIZED_CHAT_ID),
-                "Тест должен быть активен после начала");
+        // Проверка начального состояния
+        Assertions.assertEquals(0, session.getCorrectAnswersCount(), "Начальное количество правильных ответов должно быть 0");
+        Assertions.assertEquals(4, session.getTotalQuestions(), "Общее количество вопросов должно быть 4");
+        Assertions.assertFalse(session.isTestCompleted(), "Тест не должен быть завершен в начале");
 
-        // После завершения теста
-        for (int i = 0; i < testsData.getQuestions().size(); i++) {
-            scheduleTestHandler.handleAnswer(AUTHORIZED_CHAT_ID, "B_button");
+        // Отвечаем на все вопросы правильно
+        int totalQuestions = testsData.getQuestions().size();
+        for (int i = 0; i < totalQuestions; i++) {
+            String question = session.getCurrentQuestion();
+
+            // Проверка формата вопроса
+            String expectedQuestionStart = "Вопрос " + (i + 1) + " из " + totalQuestions + ":\n\n";
+            Assertions.assertEquals(expectedQuestionStart, question.substring(0, expectedQuestionStart.length()),
+                    "Вопрос должен начинаться с: " + expectedQuestionStart);
+
+            // Проверяем содержание вопроса
+            TestsData.QuestionData currentQuestionData = testsData.getQuestions().get(i);
+            String questionText = question.substring(expectedQuestionStart.length());
+            Assertions.assertEquals(currentQuestionData.getQuestionText(), questionText,
+                    "Текст вопроса должен точно совпадать");
+
+            // Отвечаем правильно и проверяем результат
+            boolean isCorrect = session.checkAnswer("B");
+            Assertions.assertTrue(isCorrect, "Ответ B должен быть правильным для вопроса " + (i + 1));
+
+            // Проверка счетчика правильных ответов
+            Assertions.assertEquals(i + 1, session.getCorrectAnswersCount(),
+                    "Счетчик правильных ответов должен быть " + (i + 1) + " после " + (i + 1) + " вопроса");
+
+            session.nextQuestion();
         }
-        Assertions.assertFalse(scheduleTestHandler.isTestActive(AUTHORIZED_CHAT_ID),
-                "Тест не должен быть активен после завершения");
+
+        // Проверка завершения теста
+        Assertions.assertTrue(session.isTestCompleted(), "Тест должен быть завершен после ответов на все вопросы");
+        Assertions.assertEquals(totalQuestions, session.getCorrectAnswersCount(),
+                "Все " + totalQuestions + " ответов должны быть правильными");
+        Assertions.assertEquals(totalQuestions, session.getTotalQuestions(),
+                "Общее количество вопросов должно быть " + totalQuestions);
     }
 
     /**
@@ -608,5 +648,111 @@ public class ScheduledTestsTest {
 
         Assertions.assertEquals("❌ Не удалось загрузить вопросы для теста.", result,
                 "Должно вернуться сообщение об ошибке при пустых вопросах");
+    }
+
+    /**
+     * Тест финальной фразы для отличного результата (100%)
+     */
+    @Test
+    public void testFormatTestResult_Excellent() {
+        TestsParser parser = new TestsParser();
+        TestsData testsData = parser.parseTest(TEST_TEXT);
+
+        // Начинаем тест
+        scheduleTestHandler.startTest(AUTHORIZED_CHAT_ID, testsData, AUTHORIZED_USER_ID);
+
+        // Отвечаем на все вопросы правильно (4 из 4)
+        String result = "";
+        for (int i = 0; i < 4; i++) {
+            result = scheduleTestHandler.handleAnswer(AUTHORIZED_CHAT_ID, "B_button");
+        }
+
+        String expectedResult = "🎉 Тест завершен! 🎉\n\n" +
+                "📊 Результаты:\n" +
+                "• Всего вопросов: 4\n" +
+                "• Правильных ответов: 4\n" +
+                "• Ошибок: 0\n" +
+                "• Процент правильных: 100%\n\n" +
+                "🎉 *Блестящий результат!*\n" +
+                "Вы ответили правильно на 4 из 4 вопросов!\n" +
+                "Это уровень уверенного знатока языка — так держать! 🚀\n\n" +
+                "📈 Изменения приоритетов:\n" +
+                "• Слова, которые вы хорошо знаете: 2\n" +
+                "• Новые слова, которые вы знаете: 2\n";
+
+        Assertions.assertEquals(expectedResult, result, "Результат должен точно совпадать для 100% правильных ответов");
+    }
+
+    /**
+     * Тест финальной фразы для хорошего результата (50%)
+     */
+    @Test
+    public void testFormatTestResult_Good() {
+        TestsParser parser = new TestsParser();
+        TestsData testsData = parser.parseTest(TEST_TEXT);
+
+        // Начинаем тест
+        scheduleTestHandler.startTest(AUTHORIZED_CHAT_ID, testsData, AUTHORIZED_USER_ID);
+
+        // Отвечаем на 2 из 4 правильно (50%) - первые 2 правильные, вторые 2 неправильные
+        String result = "";
+        for (int i = 0; i < 2; i++) {
+            result = scheduleTestHandler.handleAnswer(AUTHORIZED_CHAT_ID, "B_button"); // Правильные
+        }
+        for (int i = 0; i < 2; i++) {
+            result = scheduleTestHandler.handleAnswer(AUTHORIZED_CHAT_ID, "A_button"); // Неправильные
+        }
+
+        String expectedResult = "🎉 Тест завершен! 🎉\n\n" +
+                "📊 Результаты:\n" +
+                "• Всего вопросов: 4\n" +
+                "• Правильных ответов: 2\n" +
+                "• Ошибок: 2\n" +
+                "• Процент правильных: 50%\n\n" +
+                "📖 *Хорошая основа для роста!*\n" +
+                "Ваш результат: 2 из 4 правильных ответов.\n" +
+                "Вы уже многое знаете, а пробелы — это возможности для новых открытий!\n\n" +
+                "📈 Изменения приоритетов:\n" +
+                "• Слова, которые вы хорошо знаете: 1\n" +
+                "• Слова для повторения: 1\n" +
+                "• Новые слова, которые вы знаете: 1\n" +
+                "• Новые слова для изучения: 1\n";
+
+        Assertions.assertEquals(expectedResult, result, "Результат должен точно совпадать для 50% правильных ответов");
+    }
+
+    /**
+     * Тест финальной фразы для начального результата (25%)
+     */
+    @Test
+    public void testFormatTestResult_Beginner() {
+        TestsParser parser = new TestsParser();
+        TestsData testsData = parser.parseTest(TEST_TEXT);
+
+        // Начинаем тест
+        scheduleTestHandler.startTest(AUTHORIZED_CHAT_ID, testsData, AUTHORIZED_USER_ID);
+
+        // Отвечаем на 1 из 4 правильно (25%) - только первый правильный
+        String result = "";
+        result = scheduleTestHandler.handleAnswer(AUTHORIZED_CHAT_ID, "B_button"); // Правильный
+        for (int i = 0; i < 3; i++) {
+            result = scheduleTestHandler.handleAnswer(AUTHORIZED_CHAT_ID, "A_button"); // Неправильные
+        }
+
+        String expectedResult = "🎉 Тест завершен! 🎉\n\n" +
+                "📊 Результаты:\n" +
+                "• Всего вопросов: 4\n" +
+                "• Правильных ответов: 1\n" +
+                "• Ошибок: 3\n" +
+                "• Процент правильных: 25%\n\n" +
+                "🌱 *Начало пути!*\n" +
+                "Вы ответили правильно на 1 из 4 вопросов.\n" +
+                "Каждый эксперт когда-то начинал с первого шага — и вы его уже сделали!\n\n" +
+                "📈 Изменения приоритетов:\n" +
+                "• Слова, которые вы хорошо знаете: 1\n" +
+                "• Слова для повторения: 1\n" +
+                "• Новые слова для изучения: 2\n";
+
+        Assertions.assertEquals(expectedResult, result, "Результат должен точно совпадать для 25% правильных ответов");
     }
 }
