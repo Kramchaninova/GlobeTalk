@@ -164,7 +164,7 @@ public class MessageTest {
     public void setUp() {
         mockDictionaryService = new MockDictionaryService();
         testGenerator = new TestScheduleGenerateMessage();
-        realParser = new MessageParser(); // Используем реальный парсер
+        realParser = new MessageParser();
 
         message = new Message(mockDictionaryService, testGenerator, realParser);
 
@@ -180,11 +180,19 @@ public class MessageTest {
     public void testGetUniqueWordForUser_Success() throws SQLException {
         String result = message.getUniqueWordForUser(AUTHORIZED_CHAT_ID);
 
-        // Проверяем структуру ответа
-        Assertions.assertNotNull(result, "Результат не должен быть null");
-        Assertions.assertTrue(result.contains("🎉 **Новое слово!** 🎉"), "Должен быть заголовок нового слова");
-        Assertions.assertTrue(result.contains("persistent"), "Должно содержать английское слово");
-        Assertions.assertTrue(result.contains("настойчивый"), "Должно содержать перевод");
+        String expectedMessage = "🎉 **Новое слово!** 🎉\n\n" +
+                "📚 СЛОВО: persistent\n" +
+                "🎯 Перевод: настойчивый\n" +
+                "📊 Уровень: B2\n" +
+                "🔤 Часть речи: adjective\n" +
+                "💫 Пример: She is very persistent in her work.\n" +
+                "🌍 Перевод примера: Она очень настойчивая в своей работе.\n" +
+                "✨ Похожие слова: \n" +
+                "🏷️ Тема: null\n\n" +
+                "✨ Учи с удовольствием!\n" +
+                "Если вы знаете данное слово нажимай на кнопки \"Знаю\", иначе \"Изучаю\"";
+
+        Assertions.assertEquals(expectedMessage, result, "Сообщение должно точно соответствовать ожидаемому формату");
 
         // Проверяем что слово добавилось в словарь
         Word addedWord = mockDictionaryService.getWordByEnglish(AUTHORIZED_USER_ID, "persistent");
@@ -328,13 +336,19 @@ public class MessageTest {
     public void testGetUniqueWordForUser_WordIsUnique() throws SQLException {
         // Проверяем что словаря изначально пуст
         List<Word> wordsBefore = mockDictionaryService.getAllWords(AUTHORIZED_USER_ID);
-        Assertions.assertTrue(wordsBefore.isEmpty(), "Словарь должен быть пуст перед тестом");
+        Assertions.assertEquals(0, wordsBefore.size(), "Словарь должен быть пуст перед тестом");
 
         String result = message.getUniqueWordForUser(AUTHORIZED_CHAT_ID);
 
         // Проверяем что слово добавилось
         List<Word> wordsAfter = mockDictionaryService.getAllWords(AUTHORIZED_USER_ID);
-        Assertions.assertFalse(wordsAfter.isEmpty(), "Уникальное слово должно быть добавлено в словарь");
         Assertions.assertEquals(1, wordsAfter.size(), "Должно быть добавлено ровно одно слово");
+
+        // Проверяем конкретное добавленное слово
+        Word addedWord = wordsAfter.get(0);
+        Assertions.assertEquals("persistent", addedWord.getEnglishWord(), "Добавленное слово должно быть 'persistent'");
+        Assertions.assertEquals("настойчивый", addedWord.getTranslation(), "Перевод должен быть 'настойчивый'");
+        Assertions.assertEquals(5, addedWord.getPriority(), "Приоритет должен быть 5");
+        Assertions.assertEquals(AUTHORIZED_USER_ID, addedWord.getUserId(), "ID пользователя должен совпадать");
     }
 }
