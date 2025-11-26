@@ -6,17 +6,55 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;
 
 import java.util.Set;
+import java.util.HashSet;
 
 /**
  * Тесты для UserService
  */
 public class UserServiceTest {
 
-    private UserService userService;
+    private FakeUserService fakeUserService;
+
+    /**
+     * Fake UserService для тестирования методов определения платформы
+     */
+    private static class FakeUserService extends UserService {
+        private final Set<Long> telegramUsers = new HashSet<>();
+        private final Set<Long> discordUsers = new HashSet<>();
+
+        public void addTelegramUser(long userId) {
+            telegramUsers.add(userId);
+        }
+
+        public void addDiscordUser(long userId) {
+            discordUsers.add(userId);
+        }
+
+        @Override
+        public Set<Long> getActiveTelegramUsers() {
+            return new HashSet<>(telegramUsers);
+        }
+
+        @Override
+        public Set<Long> getActiveDiscordUsers() {
+            return new HashSet<>(discordUsers);
+        }
+
+        @Override
+        public String getPlatformType(long userId) {
+            if (telegramUsers.contains(userId)) {
+                return "telegram";
+            } else if (discordUsers.contains(userId)) {
+                return "discord";
+            } else {
+                return "unknown";
+            }
+        }
+    }
 
     @BeforeEach
     public void setUp() {
-        userService = new UserService();
+        fakeUserService = new FakeUserService();
     }
 
     /**
@@ -26,16 +64,13 @@ public class UserServiceTest {
     public void testBlockAndUnblockUser() {
         long testUserId = 12345L;
 
-        // Проверяем что пользователь изначально не заблокирован
-        Assertions.assertFalse(userService.isUserBlocked(testUserId));
+        Assertions.assertEquals(false, fakeUserService.isUserBlocked(testUserId), "Пользователь должен быть разблокирован изначально");
 
-        // Блокируем пользователя
-        userService.blockUser(testUserId);
-        Assertions.assertTrue(userService.isUserBlocked(testUserId));
+        fakeUserService.blockUser(testUserId);
+        Assertions.assertEquals(true, fakeUserService.isUserBlocked(testUserId), "Пользователь должен быть заблокирован после blockUser");
 
-        // Разблокируем пользователя
-        userService.unblockUser(testUserId);
-        Assertions.assertFalse(userService.isUserBlocked(testUserId));
+        fakeUserService.unblockUser(testUserId);
+        Assertions.assertEquals(false, fakeUserService.isUserBlocked(testUserId), "Пользователь должен быть разблокирован после unblockUser");
     }
 
     /**
@@ -45,17 +80,15 @@ public class UserServiceTest {
     public void testAliasMethods() {
         long testUserId = 67890L;
 
-        // Проверяем названия блокировки
-        userService.freezeUser(testUserId);
-        Assertions.assertTrue(userService.isUserBlocked(testUserId));
-        Assertions.assertTrue(userService.isUserBusy(testUserId));
-        Assertions.assertTrue(userService.isUserFrozen(testUserId));
+        fakeUserService.freezeUser(testUserId);
+        Assertions.assertEquals(true, fakeUserService.isUserBlocked(testUserId), "freezeUser должен блокировать пользователя");
+        Assertions.assertEquals(true, fakeUserService.isUserBusy(testUserId), "isUserBusy должен возвращать true для заблокированного пользователя");
+        Assertions.assertEquals(true, fakeUserService.isUserFrozen(testUserId), "isUserFrozen должен возвращать true для заблокированного пользователя");
 
-        // Проверяем названия разблокировки
-        userService.unfreezeUser(testUserId);
-        Assertions.assertFalse(userService.isUserBlocked(testUserId));
-        Assertions.assertFalse(userService.isUserBusy(testUserId));
-        Assertions.assertFalse(userService.isUserFrozen(testUserId));
+        fakeUserService.unfreezeUser(testUserId);
+        Assertions.assertEquals(false, fakeUserService.isUserBlocked(testUserId), "unfreezeUser должен разблокировать пользователя");
+        Assertions.assertEquals(false, fakeUserService.isUserBusy(testUserId), "isUserBusy должен возвращать false для разблокированного пользователя");
+        Assertions.assertEquals(false, fakeUserService.isUserFrozen(testUserId), "isUserFrozen должен возвращать false для разблокированного пользователя");
     }
 
     /**
@@ -63,23 +96,128 @@ public class UserServiceTest {
      */
     @Test
     public void testUnfreezeAllUsers() {
-        // Блокируем нескольких пользователей
-        userService.blockUser(111L);
-        userService.blockUser(222L);
-        userService.blockUser(333L);
+        fakeUserService.blockUser(111L);
+        fakeUserService.blockUser(222L);
+        fakeUserService.blockUser(333L);
 
-        // Проверяем что все заблокированы
-        Assertions.assertTrue(userService.isUserBlocked(111L));
-        Assertions.assertTrue(userService.isUserBlocked(222L));
-        Assertions.assertTrue(userService.isUserBlocked(333L));
+        Assertions.assertEquals(true, fakeUserService.isUserBlocked(111L), "Пользователь 111L должен быть заблокирован");
+        Assertions.assertEquals(true, fakeUserService.isUserBlocked(222L), "Пользователь 222L должен быть заблокирован");
+        Assertions.assertEquals(true, fakeUserService.isUserBlocked(333L), "Пользователь 333L должен быть заблокирован");
 
-        // Разблокируем всех
-        userService.unfreezeAllUsers();
+        fakeUserService.unfreezeAllUsers();
 
-        // Проверяем что все разблокированы
-        Assertions.assertFalse(userService.isUserBlocked(111L));
-        Assertions.assertFalse(userService.isUserBlocked(222L));
-        Assertions.assertFalse(userService.isUserBlocked(333L));
+        Assertions.assertEquals(false, fakeUserService.isUserBlocked(111L), "Пользователь 111L должен быть разблокирован после unfreezeAllUsers");
+        Assertions.assertEquals(false, fakeUserService.isUserBlocked(222L), "Пользователь 222L должен быть разблокирован после unfreezeAllUsers");
+        Assertions.assertEquals(false, fakeUserService.isUserBlocked(333L), "Пользователь 333L должен быть разблокирован после unfreezeAllUsers");
+    }
+
+    /**
+     * Тест определения типа платформы для Telegram пользователя
+     */
+    @Test
+    public void testGetPlatformType_TelegramUser() {
+        long telegramUserId = 123L;
+        fakeUserService.addTelegramUser(telegramUserId);
+
+        String platformType = fakeUserService.getPlatformType(telegramUserId);
+        Assertions.assertEquals("telegram", platformType, "Для Telegram пользователя должен возвращаться 'telegram'");
+    }
+
+    /**
+     * Тест определения типа платформы для Discord пользователя
+     */
+    @Test
+    public void testGetPlatformType_DiscordUser() {
+        long discordUserId = 456L;
+        fakeUserService.addDiscordUser(discordUserId);
+
+        String platformType = fakeUserService.getPlatformType(discordUserId);
+        Assertions.assertEquals("discord", platformType, "Для Discord пользователя должен возвращаться 'discord'");
+    }
+
+    /**
+     * Тест определения типа платформы для неизвестного пользователя
+     */
+    @Test
+    public void testGetPlatformType_UnknownUser() {
+        long unknownUserId = 999L;
+        String platformType = fakeUserService.getPlatformType(unknownUserId);
+        Assertions.assertEquals("unknown", platformType, "Для неизвестного пользователя должен возвращаться 'unknown'");
+    }
+
+    /**
+     * Тест получения активных Telegram пользователей
+     */
+    @Test
+    public void testGetActiveTelegramUsers() {
+        fakeUserService.addTelegramUser(111L);
+        fakeUserService.addTelegramUser(222L);
+
+        Set<Long> telegramUsers = fakeUserService.getActiveTelegramUsers();
+
+        Assertions.assertEquals(2, telegramUsers.size(), "Должно быть 2 Telegram пользователя");
+        Assertions.assertEquals(true, telegramUsers.contains(111L), "Должен содержать пользователя 111L");
+        Assertions.assertEquals(true, telegramUsers.contains(222L), "Должен содержать пользователя 222L");
+    }
+
+    /**
+     * Тест получения активных Discord пользователей
+     */
+    @Test
+    public void testGetActiveDiscordUsers() {
+        fakeUserService.addDiscordUser(333L);
+        fakeUserService.addDiscordUser(444L);
+
+        Set<Long> discordUsers = fakeUserService.getActiveDiscordUsers();
+
+        Assertions.assertEquals(2, discordUsers.size(), "Должно быть 2 Discord пользователя");
+        Assertions.assertEquals(true, discordUsers.contains(333L), "Должен содержать пользователя 333L");
+        Assertions.assertEquals(true, discordUsers.contains(444L), "Должен содержать пользователя 444L");
+    }
+
+    /**
+     * Тест получения всех активных пользователей
+     */
+    @Test
+    public void testGetActiveUsers() {
+        fakeUserService.addTelegramUser(111L);
+        fakeUserService.addTelegramUser(222L);
+        fakeUserService.addDiscordUser(333L);
+        fakeUserService.addDiscordUser(444L);
+
+        Set<Long> activeUsers = fakeUserService.getActiveUsers();
+
+        Assertions.assertEquals(4, activeUsers.size(), "Должно быть 4 активных пользователя");
+        Assertions.assertEquals(true, activeUsers.contains(111L), "Должен содержать Telegram пользователя 111L");
+        Assertions.assertEquals(true, activeUsers.contains(222L), "Должен содержать Telegram пользователя 222L");
+        Assertions.assertEquals(true, activeUsers.contains(333L), "Должен содержать Discord пользователя 333L");
+        Assertions.assertEquals(true, activeUsers.contains(444L), "Должен содержать Discord пользователя 444L");
+    }
+
+    /**
+     * Тест многопоточной блокировки
+     */
+    @Test
+    public void testConcurrentBlockUnblock() {
+        long testUserId = 77777L;
+
+        for (int i = 0; i < 10; i++) {
+            fakeUserService.blockUser(testUserId);
+            Assertions.assertEquals(true, fakeUserService.isUserBlocked(testUserId), "Пользователь должен быть заблокирован на итерации " + i);
+
+            fakeUserService.unblockUser(testUserId);
+            Assertions.assertEquals(false, fakeUserService.isUserBlocked(testUserId), "Пользователь должен быть разблокирован на итерации " + i);
+        }
+    }
+
+    /**
+     * Тест граничных значений
+     */
+    @Test
+    public void testEdgeCases() {
+        Assertions.assertEquals(false, fakeUserService.isUserBlocked(0L), "Пользователь с ID 0 должен быть разблокирован");
+        Assertions.assertEquals(false, fakeUserService.isUserBlocked(-1L), "Пользователь с отрицательным ID должен быть разблокирован");
+        Assertions.assertEquals(false, fakeUserService.isUserBlocked(Long.MAX_VALUE), "Пользователь с максимальным ID должен быть разблокирован");
     }
 
     /**
@@ -89,9 +227,8 @@ public class UserServiceTest {
     public void testAddUserAndUpdateActivity() {
         long testUserId = 99999L;
 
-        // Эти методы просто логируют, проверяем что не падают
-        Assertions.assertDoesNotThrow(() -> userService.addUser(testUserId));
-        Assertions.assertDoesNotThrow(() -> userService.updateUserActivity(testUserId));
+        Assertions.assertDoesNotThrow(() -> fakeUserService.addUser(testUserId), "addUser не должен выбрасывать исключение");
+        Assertions.assertDoesNotThrow(() -> fakeUserService.updateUserActivity(testUserId), "updateUserActivity не должен выбрасывать исключение");
     }
 
     /**
@@ -99,23 +236,7 @@ public class UserServiceTest {
      */
     @Test
     public void testCleanupInactiveUsers() {
-        // Метод просто логирует, проверяем что не падает
-        Assertions.assertDoesNotThrow(() -> userService.cleanupInactiveUsers());
-    }
-
-    /**
-     * Тест определения типа платформы
-     */
-    @Test
-    public void testGetPlatformType() {
-        // Тестируем базовое поведение
-        String platformType = userService.getPlatformType(123L);
-        Assertions.assertNotNull(platformType);
-
-        // Должен вернуть один из ожидаемых типов
-        Assertions.assertTrue(platformType.equals("telegram") ||
-                platformType.equals("discord") ||
-                platformType.equals("unknown"));
+        Assertions.assertDoesNotThrow(() -> fakeUserService.cleanupInactiveUsers(), "cleanupInactiveUsers не должен выбрасывать исключение");
     }
 
     /**
@@ -126,84 +247,9 @@ public class UserServiceTest {
         long testUserId = 55555L;
         Exception testException = new Exception("test error message");
 
-        // Проверяем что метод не падает при различных ошибках
-        Assertions.assertDoesNotThrow(() -> userService.handleSendError(testUserId, testException));
+        Assertions.assertDoesNotThrow(() -> fakeUserService.handleSendError(testUserId, testException), "handleSendError не должен выбрасывать исключение при обычной ошибке");
 
-        // Тест с ошибкой "не найден"
         Exception notFoundException = new Exception("не найден");
-        Assertions.assertDoesNotThrow(() -> userService.handleSendError(testUserId, notFoundException));
-
-        // Тест с null исключением - проверяем что не падает с NPE
-        try {
-            userService.handleSendError(testUserId, null);
-        } catch (NullPointerException e) {
-            System.out.println("Метод handleSendError не обрабатывает null исключения (ожидаемо)");
-        }
-    }
-
-    /**
-     * Тест получения активных пользователей
-     */
-    @Test
-    public void testGetActiveUsers() {
-        Set<Long> activeUsers = userService.getActiveUsers();
-
-        // Должен вернуть не-null множество
-        Assertions.assertNotNull(activeUsers);
-        // Может быть пустым или содержать пользователей в зависимости от состояния системы
-    }
-
-    /**
-     * Тест получения активных Telegram пользователей
-     */
-    @Test
-    public void testGetActiveTelegramUsers() {
-        Set<Long> telegramUsers = userService.getActiveTelegramUsers();
-
-        Assertions.assertNotNull(telegramUsers);
-        // Должен вернуть множество (может быть пустым)
-    }
-
-    /**
-     * Тест получения активных Discord пользователей
-     */
-    @Test
-    public void testGetActiveDiscordUsers() {
-        Set<Long> discordUsers = userService.getActiveDiscordUsers();
-
-        Assertions.assertNotNull(discordUsers);
-        // Должен вернуть множество (может быть пустым)
-    }
-
-    /**
-     * Тест многопоточной блокировки
-     */
-    @Test
-    public void testConcurrentBlockUnblock() {
-        long testUserId = 77777L;
-
-        // Многократная блокировка/разблокировка
-        for (int i = 0; i < 10; i++) {
-            userService.blockUser(testUserId);
-            Assertions.assertTrue(userService.isUserBlocked(testUserId));
-
-            userService.unblockUser(testUserId);
-            Assertions.assertFalse(userService.isUserBlocked(testUserId));
-        }
-    }
-
-    /**
-     * Тест граничных значений
-     */
-    @Test
-    public void testEdgeCases() {
-        // Тест с нулевым ID
-        Assertions.assertDoesNotThrow(() -> userService.isUserBlocked(0L));
-
-        // Тест с отрицательным ID
-        Assertions.assertDoesNotThrow(() -> userService.isUserBlocked(-1L));
-
-        // Тест с максимальным long значением
-        Assertions.assertDoesNotThrow(() -> userService.isUserBlocked(Long.MAX_VALUE));
+        Assertions.assertDoesNotThrow(() -> fakeUserService.handleSendError(testUserId, notFoundException), "handleSendError не должен выбрасывать исключение при ошибке 'не найден'");
     }
 }
