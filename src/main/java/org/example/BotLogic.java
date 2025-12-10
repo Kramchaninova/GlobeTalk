@@ -1,7 +1,5 @@
 package org.example;
 
-import java.util.Map;
-
 /**
  * BotLogic - класс для обработки логики бота.
  * обрабатывает входящие сообщения, команды и callback запросы от кнопок
@@ -99,7 +97,9 @@ public class BotLogic {
      * Обрабатывает данные callback запросов.
      */
     String processCallbackData(String callbackData, long chatId) {
-        if (callbackData.equals("A_button") ||
+        if (callbackData.equals("main_button")) {
+            return COMMAND_HELP;
+        } else if (callbackData.equals("A_button") ||
                 callbackData.equals("B_button") ||
                 callbackData.equals("C_button") ||
                 callbackData.equals("D_button")) {
@@ -138,12 +138,19 @@ public class BotLogic {
                     return "test_answers";
                 }else if (speedTestHandler.isTestActive(chatId)){
                     return "speed_test_next";
+                }else {
+                    // Если тест завершен - показываем кнопку на главную
+                    return "main";
                 }
             }
+            case "no_button" -> {return "main";}
             case "speed_yes_button" -> {return "test_answers";}
             case "next_button" -> {
                 if (speedTestHandler.isTestActive(chatId)) {
                     return "test_answers";
+                } else {
+                    // Если тест завершен - показываем кнопку на главную
+                    return "main";
                 }
             }
         }

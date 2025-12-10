@@ -75,8 +75,6 @@ public class StartCommand {
 
             case "no_button":
                 return NO_BUTTON_CLICK;
-            case "main_button":
-                return COMMAND_HELP;
             default:
                 return UNKNOWN_CLICK;
         }

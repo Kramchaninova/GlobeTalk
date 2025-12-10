@@ -57,4 +57,25 @@ public class TestKeyboardService {
         Map<String, String> answerButtons = keyboardService.getMainButtonCallBack();
         Assertions.assertEquals("main_button", answerButtons.get("На Главную"));
     }
+
+    /**
+     * Тест на наличие всех кнопок в стартовом словаре теста на сколрость
+     */
+    @Test
+    void testSpeedKeyboardButtons() {
+        Map<String, String> startButtons = keyboardService.getSpeedTestStartButton();
+        Assertions.assertEquals("speed_yes_button", startButtons.get("Да"));
+        Assertions.assertEquals("speed_no_button", startButtons.get("Нет"));
+        Assertions.assertEquals(2, startButtons.size());
+    }
+
+    /**
+     * Тест на наличие кнопки дальше в словаре
+     */
+    @Test
+    void testSpeedNextKeyboardButtons() {
+        Map<String, String> startButtons = keyboardService.getSpeedTestNextButton();
+        Assertions.assertEquals("next_button", startButtons.get("Дальше"));
+        Assertions.assertEquals(1, startButtons.size());
+    }
 }

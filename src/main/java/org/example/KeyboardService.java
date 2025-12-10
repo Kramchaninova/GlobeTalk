@@ -25,6 +25,7 @@ public class KeyboardService {
     //храним кнопку на главнуб (у нас главная будет - help, потому что вся содержательная информацяи там)
     private final Map<String, String> mainButtonCallBack = Map.of(
             "На Главную", "main_button"
+    );
     //храним название кнопок и callback для старта в спид тесте
     private final Map<String, String> speedTestStartButton = Map.of(
             "Да", "speed_yes_button",
