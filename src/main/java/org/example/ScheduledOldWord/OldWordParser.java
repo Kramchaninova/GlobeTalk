@@ -25,7 +25,7 @@ public class OldWordParser {
             );
 
         } catch (Exception e) {
-            System.err.println("[LowPriorityTestParser] Ошибка парсинга теста: " + e.getMessage());
+            System.out.println("[LowPriorityTestParser] Ошибка парсинга теста: " + e.getMessage());
             throw new RuntimeException("Ошибка парсинга теста", e);
         }
     }

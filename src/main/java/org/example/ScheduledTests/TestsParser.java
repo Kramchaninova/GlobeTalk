@@ -43,12 +43,12 @@ public class TestsParser {
                     parsedQuestions++;
                     System.out.println("✅ Вопрос распарсен: '" + question.getEnglishWord() + "' -> '" + question.getTranslation() + "'");
                 } else {
-                    System.err.println("❌ Не удалось распарсить блок " + i);
+                    System.out.println("❌ Не удалось распарсить блок " + i);
                 }
             }
 
         } catch (Exception e) {
-            System.err.println("Ошибка парсинга теста: " + e.getMessage());
+            System.out.println("Ошибка парсинга теста: " + e.getMessage());
             e.printStackTrace();
         }
 
@@ -91,7 +91,7 @@ public class TestsParser {
                     englishWord = altWordMatcher.group(1).trim();
                     translation = altWordMatcher.group(2).trim();
                 } else {
-                    System.err.println("❌ Не удалось извлечь слово и перевод");
+                    System.out.println("❌ Не удалось извлечь слово и перевод");
                     return null;
                 }
             }
@@ -114,7 +114,7 @@ public class TestsParser {
             // Валидация данных
             if (englishWord == null || englishWord.trim().isEmpty() || englishWord.equals("Н/Д") ||
                     translation == null || translation.trim().isEmpty()) {
-                System.err.println("❌ Пустое или невалидное слово/перевод");
+                System.out.println("❌ Пустое или невалидное слово/перевод");
                 return null;
             }
 
@@ -123,7 +123,7 @@ public class TestsParser {
             );
 
         } catch (Exception e) {
-            System.err.println("❌ Ошибка парсинга вопроса " + (questionNumber + 1) + ": " + e.getMessage());
+            System.out.println("❌ Ошибка парсинга вопроса " + (questionNumber + 1) + ": " + e.getMessage());
             return null;
         }
     }
@@ -195,7 +195,7 @@ public class TestsParser {
             return result;
 
         } catch (Exception e) {
-            System.err.println("Ошибка формирования текста вопроса: " + e.getMessage());
+            System.out.println("Ошибка формирования текста вопроса: " + e.getMessage());
             return "Выберите правильный перевод для слова: " + englishWord +
                     "\nA) вариант перевода 1\nB) вариант перевода 2\nC) вариант перевода 3\nD) вариант перевода 4";
         }
