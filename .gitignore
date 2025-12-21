@@ -4,6 +4,7 @@ target/
 !**/src/test/**/target/
 .kotlin
 src/main/resources
+bot_auth.db
 dictionary.db
 
 ### IntelliJ IDEA ###
