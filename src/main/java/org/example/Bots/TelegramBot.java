@@ -2,8 +2,8 @@ package org.example.Bots;
 
 import org.example.BotLogic;
 import org.example.Data.BotResponse;
-import org.example.Interface.DistributionService;
-import org.example.Interface.UniversalDistributionService;
+import org.example.TimePlaner.DistributionService;
+import org.example.TimePlaner.UniversalDistributionService;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;

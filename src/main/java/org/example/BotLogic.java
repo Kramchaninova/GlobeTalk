@@ -2,7 +2,7 @@ package org.example;
 
 import org.example.Data.BotResponse;
 import org.example.Data.KeyboardService;
-import org.example.Interface.UserService;
+import org.example.TimePlaner.UserService;
 import org.example.SpeedTest.SpeedTestCommand;
 import org.example.SpeedTest.SpeedTestHandler;
 import org.example.StartTest.StartCommand;

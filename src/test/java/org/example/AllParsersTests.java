@@ -287,6 +287,7 @@ public class AllParsersTests {
     /**
      * Тест парсера TestsParser с неполными данными вопроса
      * Проверяет обработку вопросов с отсутствующими полями
+     * Он и должен иметь ошибку
      */
     @Test
     public void testTestsParser_IncompleteQuestion() {

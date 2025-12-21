@@ -1,6 +1,6 @@
 package org.example;
 
-import org.example.Interface.UserService;
+import org.example.TimePlaner.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;

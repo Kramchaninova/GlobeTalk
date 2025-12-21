@@ -11,7 +11,7 @@ public class KeyboardService {
     // храним название кнопки и callback для старта в виде словаря
     private final Map<String, String> startButtons = Map.of(
             "Конечно!", "yes_button",
-            "Назад", "no_button"
+            "Назад:(", "no_button"
     );
 
     // храним название кнопки и callback для ответов на тесты в виде словаря
@@ -24,8 +24,8 @@ public class KeyboardService {
 
     //храним название кнопок и callback для старта в спид тесте
     private final Map<String, String> speedTestStartButton = Map.of(
-            "Да", "speed_yes_button",
-            "Нет", "speed_no_button"
+            "Да!", "speed_yes_button",
+            "Нет:(", "speed_no_button"
     );
 
     //храним название кнопок и callback для кнопки дальше
@@ -45,8 +45,8 @@ public class KeyboardService {
 
     //набор кнопок для повторного добавления в словарь
     private final Map<String, String> dictionaryAddAgainButton = Map.of(
-            "Да", "dictionary_add_yes_button",
-            "Нет", "dictionary_add_no_button"
+            "Да!", "dictionary_add_yes_button",
+            "Нет:(", "dictionary_add_no_button"
     );
 
     //набор кнопко подтверждение на удаление

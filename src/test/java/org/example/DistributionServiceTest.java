@@ -1,7 +1,7 @@
 package org.example;
 
 import org.example.Data.BotResponse;
-import org.example.Interface.DistributionService;
+import org.example.TimePlaner.DistributionService;
 import org.junit.Test;
 import org.junit.Assert;
 

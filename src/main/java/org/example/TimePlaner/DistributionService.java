@@ -1,4 +1,4 @@
-package org.example.Interface;
+package org.example.TimePlaner;
 
 /**
  * Интерфейс для управления рассылками сообщений
