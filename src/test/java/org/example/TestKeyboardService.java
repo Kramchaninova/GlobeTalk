@@ -1,8 +1,8 @@
 package org.example;
 
+import org.example.Data.KeyboardService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
 import java.util.Map;
 
 /**
@@ -45,37 +45,101 @@ public class TestKeyboardService {
         Assertions.assertEquals("D_button", answerButtons.get("D"));
 
         // проверяем общее количество кнопок
-        Assertions.assertEquals(4, answerButtons.size(),
-                "Должно быть 4 кнопки в тестовой клавиатуре");
+        Assertions.assertEquals(4, answerButtons.size());
     }
 
     /**
-     * Тест на наличие одной кнопки в словаре
+     * Тест на наличие кнопки в словаре
      */
     @Test
     void testMainKeyboardButton() {
         Map<String, String> answerButtons = keyboardService.getMainButtonCallBack();
-        Assertions.assertEquals("main_button", answerButtons.get("На Главную"));
+        Assertions.assertEquals("main_button", answerButtons.get("На главную"));
     }
 
     /**
-     * Тест на наличие всех кнопок в стартовом словаре теста на сколрость
+     * Тест кнопок speed test start
      */
     @Test
-    void testSpeedKeyboardButtons() {
-        Map<String, String> startButtons = keyboardService.getSpeedTestStartButton();
-        Assertions.assertEquals("speed_yes_button", startButtons.get("Да"));
-        Assertions.assertEquals("speed_no_button", startButtons.get("Нет"));
-        Assertions.assertEquals(2, startButtons.size());
+    void testSpeedTestStartButtons() {
+        Map<String, String> speedButtons = keyboardService.getSpeedTestStartButton();
+
+        Assertions.assertEquals("speed_yes_button", speedButtons.get("Да"));
+        Assertions.assertEquals("speed_no_button", speedButtons.get("Нет"));
+        Assertions.assertEquals(2, speedButtons.size());
     }
 
     /**
-     * Тест на наличие кнопки дальше в словаре
+     * Тест кнопки next для speed test
      */
     @Test
-    void testSpeedNextKeyboardButtons() {
-        Map<String, String> startButtons = keyboardService.getSpeedTestNextButton();
-        Assertions.assertEquals("next_button", startButtons.get("Дальше"));
-        Assertions.assertEquals(1, startButtons.size());
+    void testSpeedTestNextButton() {
+        Map<String, String> nextButton = keyboardService.getSpeedTestNextButton();
+
+        Assertions.assertEquals("next_button", nextButton.get("Дальше"));
+        Assertions.assertEquals(1, nextButton.size());
+    }
+
+    /**
+     * Тест главных кнопок словаря
+     */
+    @Test
+    void testDictionaryMainButtons() {
+        Map<String, String> dictButtons = keyboardService.getDictionaryMainButton();
+
+        Assertions.assertEquals("dictionary_add_button", dictButtons.get("Добавить"));
+        Assertions.assertEquals("dictionary_edit_button", dictButtons.get("Редактировать"));
+        Assertions.assertEquals("dictionary_delete_button", dictButtons.get("Удалить"));
+        Assertions.assertEquals("main_button", dictButtons.get("Назад"));
+        Assertions.assertEquals(4, dictButtons.size());
+    }
+
+    /**
+     * Тест кнопок повторного добавления в словарь
+     */
+    @Test
+    void testDictionaryAddAgainButtons() {
+        Map<String, String> addAgainButtons = keyboardService.getDictionaryAddAgainButton();
+
+        Assertions.assertEquals("dictionary_add_yes_button", addAgainButtons.get("Да"));
+        Assertions.assertEquals("dictionary_add_no_button", addAgainButtons.get("Нет"));
+        Assertions.assertEquals(2, addAgainButtons.size());
+    }
+
+    /**
+     * Тест кнопок подтверждения удаления
+     */
+    @Test
+    void testDictionaryDeleteButtons() {
+        Map<String, String> deleteButtons = keyboardService.getDictionaryDeleteButton();
+
+        Assertions.assertEquals("dictionary_delete_confirm_button", deleteButtons.get("Подтвердить"));
+        Assertions.assertEquals("dictionary_delete_cancel_button", deleteButtons.get("Отменить"));
+        Assertions.assertEquals(2, deleteButtons.size());
+    }
+
+    /**
+     * Тест кнопок отмены удаления
+     */
+    @Test
+    void testDictionaryDeleteCancelButtons() {
+        Map<String, String> cancelButtons = keyboardService.getDictionaryDeleteCancelButton();
+
+        Assertions.assertEquals("dictionary_delete_resume_button", cancelButtons.get("Продлолжить"));
+        Assertions.assertEquals("main_button", cancelButtons.get("На главную"));
+        Assertions.assertEquals("dictionary_button", cancelButtons.get("Словарь"));
+        Assertions.assertEquals(3, cancelButtons.size());
+    }
+
+    /**
+     * Тест финальных кнопок словаря
+     */
+    @Test
+    void testDictionaryFinalButtons() {
+        Map<String, String> finalButtons = keyboardService.getDictionaryFinalButton();
+
+        Assertions.assertEquals("dictionary_button", finalButtons.get("Словарь"));
+        Assertions.assertEquals("main_button", finalButtons.get("На главную"));
+        Assertions.assertEquals(2, finalButtons.size());
     }
 }

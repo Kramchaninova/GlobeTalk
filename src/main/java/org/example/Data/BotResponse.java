@@ -1,10 +1,10 @@
-package org.example;
+package org.example.Data;
 
 /**
  * Ответ бота для отправки сообщения пользователю.
  * Содержит ID чата, текст и тип клавиатуры.
  */
-class BotResponse {
+public class BotResponse {
     private final long chatId;
     private final String text;
     private final String keyboardType;
