@@ -23,7 +23,7 @@ public class Token {
      * Загружает токен бота из файла TOKEN.txt в ресурсах
      */
     public void load() {
-        String fileName = "src/main/resources/TOKEN.txt";
+        String fileName = "src/main/resources/TOKEN_TELEGRAM.txt";
 
         try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
             token = reader.readLine();

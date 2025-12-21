@@ -204,6 +204,9 @@ public class BotLogic {
             case "next_button" -> {
                 if (speedTestHandler.isTestActive(chatId)) {
                     return "test_answers";
+                } else {
+                    // Если тест завершен - показываем кнопку на главную
+                    return "main";
                 }
             }
             case "dictionary_button"-> {

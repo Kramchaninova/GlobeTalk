@@ -14,7 +14,11 @@ import java.util.regex.Pattern;
 public class SpeedTestHandler {
 
     // храним данные для каждого пользователя
-    private final Map<Long, UserData> users = new HashMap<>();
+    private final Map<Long, List<String>> currentTests = new HashMap<>();
+    private final Map<Long, List<String>> correctAnswers = new HashMap<>();
+    private final Map<Long, Integer> currentIndexes = new HashMap<>();
+    private final Map<Long, Integer> totalScore = new HashMap<>();
+    private final Map<Long, List<Integer>> questionPoints = new HashMap<>();
 
     // таймеры для каждого пользователя
     private final ConcurrentHashMap<Long, ScheduledFuture<?>> userTimers = new ConcurrentHashMap<>();
@@ -23,7 +27,7 @@ public class SpeedTestHandler {
             //создание потоков планировщиков
             Executors.newScheduledThreadPool(20);
 
-    // константы времени на ответ в секундах
+    // констатны ответов на задач в секундах
     private static final int TIME_FOR_1_POINT = 5;
     private static final int TIME_FOR_2_POINTS = 10;
     private static final int TIME_FOR_3_POINTS = 20;
@@ -35,6 +39,7 @@ public class SpeedTestHandler {
      * Разбирает текст теста, извлекает вопросы, варианты ответов и правильные ответы.
      * Сохраняет данные для конкретного пользователя и инициализирует индекс текущего вопроса
      * и общий счёт. Возвращает первый вопрос для отображения.
+     *
      */
     public String generateTest(long chatId, String test) {
         Pattern pattern = Pattern.compile(
@@ -79,14 +84,11 @@ public class SpeedTestHandler {
             return ANSWER_ERROR;
         }
 
-        UserData userData = new UserData();
-        userData.setCurrentTest(questions);
-        userData.setCorrectAnswers(answers);
-        userData.setQuestionPoints(pointsList);
-        userData.setCurrentIndex(0);
-        userData.setTotalScore(0);
-
-        users.put(chatId, userData);
+        currentTests.put(chatId, questions);
+        correctAnswers.put(chatId, answers);
+        currentIndexes.put(chatId, 0);
+        totalScore.put(chatId, 0);
+        questionPoints.put(chatId, pointsList);
 
         startQuestionTimer(chatId);
 
@@ -114,7 +116,7 @@ public class SpeedTestHandler {
     }
 
     /**
-     * Обрабатывает ответ от пользователя, с обратной связью
+     * Обрабатывает ответ от пользовтаеля, с обратной связью
      */
     public Map<String, Object> handleAnswerWithFeedback(String callbackData, long chatId) {
         Map<String, Object> result = new HashMap<>();
@@ -124,7 +126,6 @@ public class SpeedTestHandler {
             result.put("isCorrect", false);
             return result;
         }
-
         //получает таймер и смотрит не истекло ли
         ScheduledFuture<?> timer = userTimers.get(chatId);
         if (timer != null && timer.isDone() && !timer.isCancelled()) {
@@ -135,17 +136,14 @@ public class SpeedTestHandler {
             return result;
         }
 
-        //остановка таймера (пользователь ответил)
+        //остановка таймера (пользователь ответи)
         stopTimer(chatId);
-
         //извлекаем выбранную кнопку
         String chosen = callbackData.substring(0, 1);
-
-        //получаем данные пользователя
-        UserData userData = users.get(chatId);
-        int index = userData.getCurrentIndex(); //текущий номер вопроса
-        List<String> correct = userData.getCorrectAnswers(); //правильные ответы
-        List<Integer> pointsList = userData.getQuestionPoints(); //баллы
+        //получаем данные пользоватля
+        int index = currentIndexes.get(chatId);//текущий номер вопсроа
+        List<String> correct = correctAnswers.get(chatId); //правильный ответ
+        List<Integer> pointsList = questionPoints.get(chatId); //баллы
 
         //сравниваем ответы
         String correctAnswer = correct.get(index);
@@ -153,9 +151,9 @@ public class SpeedTestHandler {
 
         String feedback;
         if (isCorrect) {
-            int score = userData.getTotalScore();
+            int score = totalScore.get(chatId);
             score += pointsList.get(index);
-            userData.setTotalScore(score);
+            totalScore.put(chatId, score);
             feedback = "Правильно!";
         } else {
             feedback = "Вы ошиблись, правильный ответ: " + correctAnswer;
@@ -177,19 +175,16 @@ public class SpeedTestHandler {
         if (!isTestActive(chatId)) {
             return AGAIN_TEST;
         }
-
         //обновляем индекс вопроса
-        UserData userData = users.get(chatId);
-        int index = userData.getCurrentIndex();
+        int index = currentIndexes.get(chatId);
         index++;
-        userData.setCurrentIndex(index);
+        currentIndexes.put(chatId, index);
 
-        List<String> questions = userData.getCurrentTest();
+        List<String> questions = currentTests.get(chatId);
         //проверка на конец теста
         if (index >= questions.size()) {
             return finishTest(chatId);
         }
-
         //запускаем таймер для нового вопроса
         startQuestionTimer(chatId);
         //возвращаем следующий вопрос для пользователя
@@ -227,7 +222,6 @@ public class SpeedTestHandler {
         if (!isTestActive(chatId)) {
             return;
         }
-
         //определяет тайм лимит
         int timeLimit = getTimeForPoints(getCurrentQuestionPoints(chatId));
         //останавливаем предыдущий, чтобы избежать наложения
@@ -237,13 +231,12 @@ public class SpeedTestHandler {
         ScheduledFuture<?> timer = TIMER_POOL.schedule(() -> {
             handleTimeExpired(chatId);
         }, timeLimit, TimeUnit.SECONDS);
-
-        //сохраняем ссылку на таймер, чтобы если что его остановить
+        //сохраняем ссылку на таймер, чтобы если что его оставновить
         userTimers.put(chatId, timer);
     }
 
     /**
-     * Остановка таймера
+     * Останавка таймер
      */
     public void stopTimer(long chatId) {
         //достаем таймер из мапа и одновременно удаляем его
@@ -261,9 +254,8 @@ public class SpeedTestHandler {
             return null;
         }
 
-        UserData userData = users.get(chatId);
-        int index = userData.getCurrentIndex();
-        List<String> correct = userData.getCorrectAnswers();
+        int index = currentIndexes.get(chatId);
+        List<String> correct = correctAnswers.get(chatId);
         return correct.get(index);
     }
 
@@ -275,9 +267,8 @@ public class SpeedTestHandler {
             return 0;
         }
 
-        UserData userData = users.get(chatId);
-        int index = userData.getCurrentIndex();
-        List<Integer> pointsList = userData.getQuestionPoints();
+        int index = currentIndexes.get(chatId);
+        List<Integer> pointsList = questionPoints.get(chatId);
         return pointsList.get(index);
     }
 
@@ -285,20 +276,18 @@ public class SpeedTestHandler {
      * Завершает тест и возвращает результат
      */
     private String finishTest(long chatId) {
-        UserData userData = users.get(chatId);
-        List<Integer> pointsList = userData.getQuestionPoints();
-
-        //считаем макс возможное количество баллов
+        List<Integer> pointsList = questionPoints.get(chatId);
+        //считыем макс возможное колво ьаллов
         int totalPoints = pointsList.stream().mapToInt(Integer::intValue).sum();
-        int earnedPoints = userData.getTotalScore(); //фактическое
+        int earnedPoints = totalScore.get(chatId); //фактическое
 
         cleanupTestData(chatId);
-        //делаем финальное сообщение
+        //делаем фиальное сообщение
         return generateSpeedTestResult(earnedPoints, totalPoints);
     }
 
     /**
-     * результат для speed test
+     *  результат для speed test
      */
     private String generateSpeedTestResult(int earnedPoints, int totalPoints) {
         String performanceMessage;
@@ -330,15 +319,19 @@ public class SpeedTestHandler {
      */
     private void cleanupTestData(long chatId) {
         stopTimer(chatId);
-        users.remove(chatId);
+        currentTests.remove(chatId);
+        currentIndexes.remove(chatId);
+        correctAnswers.remove(chatId);
+        totalScore.remove(chatId);
+        questionPoints.remove(chatId);
     }
 
     /**
      * проверка на активность теста
      */
     public boolean isTestActive(long chatId) {
-        UserData userData = users.get(chatId);
-        return userData != null &&
-                userData.getCurrentIndex() < userData.getCurrentTest().size();
+        return currentTests.containsKey(chatId) &&
+                currentIndexes.containsKey(chatId) &&
+                currentIndexes.get(chatId) < currentTests.get(chatId).size();
     }
 }
