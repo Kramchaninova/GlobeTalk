@@ -22,7 +22,7 @@ public class TestKeyboardService {
         Map<String, String> startButtons = keyboardService.getStartButtonConfigs();
 
         Assertions.assertEquals("yes_button", startButtons.get("Конечно!"));
-        Assertions.assertEquals("no_button", startButtons.get("Назад"));
+        Assertions.assertEquals("no_button", startButtons.get("Назад:("));
         Assertions.assertEquals(2, startButtons.size());
     }
 
@@ -57,8 +57,8 @@ public class TestKeyboardService {
     void testSpeedTestStartButtons() {
         Map<String, String> speedButtons = keyboardService.getSpeedTestStartButton();
 
-        Assertions.assertEquals("speed_yes_button", speedButtons.get("Да"));
-        Assertions.assertEquals("speed_no_button", speedButtons.get("Нет"));
+        Assertions.assertEquals("speed_yes_button", speedButtons.get("Да!"));
+        Assertions.assertEquals("speed_no_button", speedButtons.get("Нет:("));
         Assertions.assertEquals(2, speedButtons.size());
     }
 
@@ -94,8 +94,8 @@ public class TestKeyboardService {
     void testDictionaryAddAgainButtons() {
         Map<String, String> addAgainButtons = keyboardService.getDictionaryAddAgainButton();
 
-        Assertions.assertEquals("dictionary_add_yes_button", addAgainButtons.get("Да"));
-        Assertions.assertEquals("dictionary_add_no_button", addAgainButtons.get("Нет"));
+        Assertions.assertEquals("dictionary_add_yes_button", addAgainButtons.get("Да!"));
+        Assertions.assertEquals("dictionary_add_no_button", addAgainButtons.get("Нет:("));
         Assertions.assertEquals(2, addAgainButtons.size());
     }
 
