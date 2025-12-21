@@ -1,4 +1,4 @@
-package org.example.Interface;
+package org.example.SheduleMessages;
 
 import org.example.BotLogic;
 import org.example.Data.BotResponse;

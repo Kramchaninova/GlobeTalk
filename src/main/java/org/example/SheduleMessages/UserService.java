@@ -1,4 +1,4 @@
-package org.example.Interface;
+package org.example.SheduleMessages;
 
 import org.example.Authentication.AuthService;
 import org.example.Authentication.AuthServiceImpl;

@@ -13,8 +13,8 @@ import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import org.example.BotLogic;
 import org.example.Data.BotResponse;
-import org.example.Interface.DistributionService;
-import org.example.Interface.UniversalDistributionService;
+import org.example.SheduleMessages.DistributionService;
+import org.example.SheduleMessages.UniversalDistributionService;
 
 import java.util.HashMap;
 import java.util.List;

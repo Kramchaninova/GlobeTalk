@@ -1,4 +1,4 @@
-package org.example.Interface;
+package org.example.SheduleMessages;
 
 /**
  * Интерфейс для управления рассылками сообщений
